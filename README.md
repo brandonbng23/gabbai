@@ -5,7 +5,7 @@ An online system that allows a synagogue and its members to coordinate Shabbat T
 This project is currently in early development. It is an aspiration for completition to happen before Simchat Torah 5787 (or, before October 3, 2026). Check back for updates.
 
 ## Author
-Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com)
+Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com) - This is the best email for inquiries about this repo!
 - [LinkedIn](https://www.linkedin.com/in/brangold/)
 
 ## Acknowledgments
