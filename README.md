@@ -2,7 +2,7 @@
 An online system that allows a synagogue and its members to coordinate Shabbat Torah readings in advance.
 
 ## Project Status & Timeline
-This project is currently in early development. It is an aspiration for completition to happen before Simchat Torah 5787 (or, before October 3, 2026). Check back for updates.
+Gabbai is currently being developed as a proof of concept, that's what you'll find on this repo. As the proof of concept grows, it will transition into an alpha stages and include an alpha client. It is an aspiration for completition to happen before Simchat Torah 5787 (or, before October 3, 2026). Check back for updates.
 
 ## Author
 Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com) - This is the best email for inquiries about this repo!
