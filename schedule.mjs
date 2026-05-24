@@ -3,7 +3,8 @@ import { HebrewCalendar,
          Event as HebcalEvent,
          ParshaEvent,
          HDate,
-         parshaYear } from '@hebcal/core'
+         parshaYear, 
+         HolidayEvent} from '@hebcal/core'
 
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
@@ -11,16 +12,18 @@ import { Parsha } from "./parsha.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
-     * parshot.
+     * parshot and Holiday readings.
      *
      * hebYear: int repersening the year of the Hebrew calendar 
      * a: integer repersenting amount of aliyot (3, 5, or 7) - before maftir and haftarah
      * il: boolean repersenting if the schedule should follow the diasporic cycle (false) or 
-     * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE*/
+     * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
+     * cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored */
     constructor(hebYear, a) {
         this.hebYear = hebYear;
         this.a = a;
         this.il = false; 
+        this.cal = this.getCalendar();
         this.activeSchedule = this.createSchedule();
     }
 
@@ -35,6 +38,88 @@ export class Schedule {
         }
     }
 
+    /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
+     * triennial Torah reading cycle)
+     * @returns integer repersenting first...third year of triennial cycle */
+    calculateTriennial() {
+        return (this.hebYear % 3) + 1
+    }
+
+    /* Helper function that fetches Hebrew calendar including weekly Torah readings
+     * @returns Event Array accordingly */
+    getRawCalendar() {
+        let rawCal = HebrewCalendar.calendar({
+            sedrot: true
+        })
+        return rawCal;
+    }
+
+    /* Filters and assigns readings based on Shabbat and Yontif conflicts
+     * Uses getRawCalendar() method as a helper function */
+    resolveCalendar() {
+        let rawCal = this.getRawCalendar();
+
+        // Arrays of classified events by event 'type'
+        let sedrot = [];
+        let yontifs = [];
+
+        // Classification 
+        for (let i = 0; i < rawCal.length; i++) {
+            let event = rawCal[i];
+
+            if (event instanceof ParshaEvent) {
+                sedrot.push(event);
+            } else if (event instanceof HolidayEvent) {
+                yontifs.push(event);
+            }
+        }
+
+        /* Filter by Date
+         * Resolves conflicts between Yontifs and Shabbos */
+        let byDate = {};
+
+        // Sedrot
+        for (let i = 0; i < sedrot.length; i++) {
+            let dateKey = sedrot[i].getDate().greg().toISOString().slice(0, 10);
+
+            if (!byDate[dateKey]) {
+                byDate[dateKey] = {sedra: null, holiday: null};
+            }
+
+            byDate[dateKey].sedra = sedrot[i];
+        }
+
+        // Yontifs
+        for (let i = 0; i < yontifs.length; i++) {
+            let dateKey = yontifs[i].getDate().greg().toISOString().slice(0, 10);
+
+            if (!byDate[dateKey]) {
+                byDate[dateKey] = {sedra: null, holiday: null};
+            }
+
+            byDate[dateKey].holiday = yontifs[i];
+        }
+
+        // Conflict Resolution
+        for (let date in byDate) {
+            let day = byDate[date];
+
+            let finalReading = null;
+
+            // A Yontif will always trump a regular reading
+            if (day.holiday) {
+                finalReading = day.holiday;
+            } else if (day.sedra) {
+                finalReading = day.sedra;
+            }
+
+            this.cal.push({
+                date: date,
+                reading: finalReading
+            })
+        }
+    }
+    
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
         let parshaArr = parshaYear(this.hebYear, this.il); // @returns array of ParshaEvent
