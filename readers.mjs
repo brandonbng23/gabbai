@@ -1,4 +1,4 @@
-import { User } from "./user.js"
+import { User } from "./user.mjs"
 
 export class Readers {
     /* Class repersent the weekly honors associated with the reading

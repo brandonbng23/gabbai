@@ -5,9 +5,9 @@ import { HebrewCalendar,
          HDate,
          parshaYear } from '@hebcal/core'
 
-import { LinkedList } from "./linkedList.js";
-import { Readers } from "./readers.js"
-import { Parsha } from "./parsha.js"
+import { LinkedList } from "./linkedList.mjs";
+import { Readers } from "./readers.mjs"
+import { Parsha } from "./parsha.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 

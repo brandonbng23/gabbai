@@ -2,7 +2,7 @@ import { Sedra,
     HDate, 
     Event as HebcalEvent } from '@hebcal/core'
 
-import { Readers } from "./readers.js"
+import { Readers } from "./readers.mjs"
 
 export class Parsha {
     /* Repersents a parsha as organized in a schedule linked list

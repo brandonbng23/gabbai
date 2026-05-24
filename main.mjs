@@ -5,12 +5,10 @@ import { HebrewCalendar,
          HDate,
          parshaYear } from '@hebcal/core'
 
-import { Schedule } from "./schedule.js"
-import { Interface } from "./interface.js"
+import { Schedule } from "./schedule.mjs"
 
 function main() {
     new Schedule(5786, 7).printSchedule();
-    // new Interface(new Schedule(5786, 3), true);
 }
 
 main();

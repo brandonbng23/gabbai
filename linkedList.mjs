@@ -1,4 +1,4 @@
-import { Dnode } from "./dnode.js"
+import { Dnode } from "./dnode.mjs"
 
 export class LinkedList {
 
