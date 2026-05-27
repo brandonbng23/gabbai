@@ -11,7 +11,7 @@ export class Parsha {
      * readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(name, hebYear, readers, il, a) {
+    constructor(name, hebYear, readers, il, a, occassion) {
         this.name = name;
         this.hebYear = hebYear;
         this.il = il;
