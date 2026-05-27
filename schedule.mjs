@@ -18,12 +18,17 @@ export class Schedule {
      * a: integer repersenting amount of aliyot (3, 5, or 7) - before maftir and haftarah
      * il: boolean repersenting if the schedule should follow the diasporic cycle (false) or 
      * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
-     * cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored */
+     * cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
+     * holidays: records if a reading is a holiday (1) or not (0), indices aligns with cal 
+     * schedule: finalized linked list repersenting all readings */
     constructor(hebYear, a) {
         this.hebYear = hebYear;
         this.a = a;
         this.il = false; 
-        this.cal = this.getCalendar();
+        this.cal = []; 
+        this.holidays = []; 
+
+        this.resolveCalendar();
         this.activeSchedule = this.createSchedule();
     }
 
@@ -74,7 +79,7 @@ export class Schedule {
             }
         }
 
-        /* Filter by Date
+        /* Map: Filter by Date
          * Resolves conflicts between Yontifs and Shabbos */
         let byDate = {};
 
@@ -109,32 +114,46 @@ export class Schedule {
             // A Yontif will always trump a regular reading
             if (day.holiday) {
                 finalReading = day.holiday;
+                this.holidays.push(1);
             } else if (day.sedra) {
                 finalReading = day.sedra;
+                this.holidays.push(0);
             }
 
             this.cal.push({
                 date: date,
                 reading: finalReading
-            })
+            })  
         }
     }
-    
+
+    /* Helper function to create an array of all yontif parshot. Called with createSchedule() */
+
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
         let parshaArr = parshaYear(this.hebYear, this.il); // @returns array of ParshaEvent
         let schedule = new LinkedList()
 
-        for (let i = 0; i < parshaArr.length; i++) {
-            schedule.append(new Parsha(parshaArr[i].getDesc().replace("Parashat ", ""), 
-            this.hebYear, 
-            new Readers(),
-            this.il, 
-            this.a));
+        for (let i = 0; i < this.cal.length; i++) {
+            if (this.holidays[i] == 0) {
+                schedule.append(new Parsha(parshaArr[i].getDesc().replace("Parashat ", ""), 
+                this.hebYear, 
+                new Readers(),
+                this.il, 
+                this.a,
+                "Shabbat"));
+            } else if (this.holidays[i] == 1) {
+                schedule.append(new Parsha("",
+                this.hebYear,
+                new Readers(),
+                this.il,
+                this.a,
+                "Yontif"));
+            } 
         }
 
         return schedule;
-    }
+    } 
 
     /* Formats and prints an instance of schedule. Using methods of imported
     classes, loops through linked list of parshot (schedule) and prints parsha
@@ -148,6 +167,4 @@ export class Schedule {
             current = current.next;
         } 
     }
-    
-
 }
