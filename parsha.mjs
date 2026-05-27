@@ -9,13 +9,21 @@ export class Parsha {
      *
      * info: uses data from HebCal library to identify and document parsha
      * readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
-     * haftarah) */
+     * haftarah) 
+     * occassion: repersents when parsha will be read (shabbat, specific yontif) */
     constructor(name, hebYear, readers, il, a) {
         this.name = name;
         this.hebYear = hebYear;
         this.il = il;
         this.readers = readers;
         this.a = a;
+        this.occassion = occassion;
+    }
+
+    /* Accesses occassion field
+    @returns string repersenting occassion when parsha will be read */
+    getOccassion() {
+        return this.occassion;
     }
 
     /* Formats and prints an instance on Parsha
