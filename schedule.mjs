@@ -55,11 +55,7 @@ export class Schedule {
      * The first time this method is called, IL will be set true.
      * The second time thid ethod is called, IL will reset to false. Etc. */
     toggleIL() {
-        if (this.il) {
-            this.il = false;
-        } else {
-            this.il = true;
-        }
+        this.il = !this.il;
     }
 
     /* Toggles state of each yontif as stored in the Yontifs field (a map). By
