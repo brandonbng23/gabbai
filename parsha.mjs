@@ -7,10 +7,10 @@ import { Readers } from "./readers.mjs"
 export class Parsha {
     /* Repersents a parsha as organized in a schedule linked list
      *
-     * info: uses data from HebCal library to identify and document parsha
-     * readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
+     * @field info: uses data from HebCal library to identify and document parsha
+     * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
-     * occassion: repersents when parsha will be read (shabbat, specific yontif) */
+     * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
     constructor(name, hebYear, readers, il, a, occassion) {
         this.name = name;
         this.hebYear = hebYear;

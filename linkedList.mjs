@@ -2,8 +2,10 @@ import { Dnode } from "./dnode.mjs"
 
 export class LinkedList {
 
-    /* head: repersents first node of linked list
-     * tail: repersents last node of linked list */
+    /* Class to connect nodes as a linked list
+     *
+     * @field head: repersents first node of linked list
+     * @field tail: repersents last node of linked list */
     constructor() {
         this.head = null;
         this.tail = null;

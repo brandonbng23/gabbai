@@ -6,9 +6,9 @@ export class Readers {
      * can be toggled to regard the triennial), the maftir reading, and the
      * haftarah reading 
      
-     * fields a1-a7: User repersenting reader of each aliyot (aliyot 1-7)
-     * m: User repersent maftir reader
-     * h: User repersenting haftarh reader 
+     * @field fields a1-a7: User repersenting reader of each aliyot (aliyot 1-7)
+     * @field m: User repersent maftir reader
+     * @field h: User repersenting haftarh reader 
      * @default All fields are set null by default. Readers will be assigned
      * when users register for an honor */
     constructor() {

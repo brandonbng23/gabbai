@@ -1,10 +1,10 @@
 export class User {
     /* Repersents a user in its most basic form
      *
-     * firstN: string repersenting user's first name
-     * lastN: string repersenting user's last name
-     * email: string repersenting user's email address
-     * password: password repersenting user's password as a protective measure */
+     * @field firstN: string repersenting user's first name
+     * @field lastN: string repersenting user's last name
+     * @field email: string repersenting user's email address
+     * @field password: password repersenting user's password as a protective measure */
     constructor(firstN, lastN, email, password) {
         this.firstN = firstN;
         this.lastN = lastN;

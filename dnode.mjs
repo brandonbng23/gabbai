@@ -1,8 +1,10 @@
 export class Dnode {
 
-    /* prev: link to the linked node preceeding current node
-     * value: value stored at current node
-     * next: link to the linked node succeeding current node */
+    /* Node to construct a linked list
+     * 
+     * @field prev: link to the linked node preceeding current node
+     * @field value: value stored at current node
+     * @field next: link to the linked node succeeding current node */
     constructor(value) {
         this.prev = null;
         this.value = value;
