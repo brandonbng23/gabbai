@@ -20,6 +20,9 @@ export class Schedule {
      * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
      * cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
      * holidays: records if a reading is a holiday (1) or not (0), indices aligns with cal 
+     * yontifs: a map repersenting all special Torah readings. Each override a Shabbat Torah
+     *      reading, but when set true, will spawn a seperate reading in the schedule when holiday  
+     *      does not align with Shabbat
      * schedule: finalized linked list repersenting all readings */
     constructor(hebYear, a) {
         this.hebYear = hebYear;
@@ -27,6 +30,22 @@ export class Schedule {
         this.il = false; 
         this.cal = []; 
         this.holidays = []; 
+        this.yontifs = {"rh1": false,           // Rosh Hashanah Day 1
+                        "rh2": false,           // Rosh Hashanah Day 2
+                        "yk": false,            // Yom Kippur
+                        "sukkot1": false,       // Sukkot Day 1
+                        "sukkot2": false,       // Sukkot Day 2
+                        "sukkotCH": false,      // Chol HaMoed Sukkot Shabbat
+                        "sukkotSA": false,      // Shemini Atzeret
+                        "sukkotST": false,      // Simchat Torah
+                        "pesach1": false,       // Pesach Day 1
+                        "pesach2": false,       // Pesach Day 2
+                        "pesachCH": false,      // Chol HaMoed Pesach Shabbat
+                        "pesach7": false,       // Pesach Day 7
+                        "pesach8": false,       // Pesach Day 8
+                        "shavuot1": false,      // Shavuot Day 1
+                        "shavuot2": false       // Shavuot Day 2
+                    };
 
         this.resolveCalendar();
         this.activeSchedule = this.createSchedule();
@@ -43,6 +62,61 @@ export class Schedule {
         }
     }
 
+    /* Toggles state of each yontif as stored in the Yontifs field (a map). By
+     * default, each yontif is set as false. See constructor for full yontif key codes.
+     * y: string repersenting the name of a Yontif reading */
+    toggleYontif(y) {
+        if (y == "rh1") {
+            this.yontifs.set("rh1", !this.yontifs.get("rh1"));
+        } else if (y == "rh2") {
+            this.yontifs.set("rh2", !this.yontifs.get("rh2"));
+        } else if (y == "yk") {
+            this.yontifs.set("yk", !this.yontifs.get("yk"));
+        } else if (y == "sukkot1") {
+            this.yontifs.set("sukkot1", !this.yontifs.get("sukkot1"));
+        } else if (y == "sukkot2") {
+            this.yontifs.set("sukkot2", !this.yontifs.get("sukkot2"));
+        } else if (y == "sukkotCH") {
+            this.yontifs.set("sukkotCH", !this.yontifs.get("sukkotCH"));
+        } else if (y == "sukkotSA") {
+            this.yontifs.set("sukkotSA", !this.yontifs.get("sukkotSA"));
+        } else if (y == "sukkotST") {
+            this.yontifs.set("sukkotST", !this.yontifs.get("sukkotST"));
+        } else if (y == "pesach1") {
+            this.yontifs.set("pesach1", !this.yontifs.get("pesach1"));
+        } else if (y == "pesach2") {
+            this.yontifs.set("pesach2", !this.yontifs.get("pesach2"));
+        } else if (y == "pesachCH") {
+            this.yontifs.set("pesachCH", !this.yontifs.get("pesachCH"));
+        } else if (y == "pesach7") {
+            this.yontifs.set("pesach7", !this.yontifs.get("pesach7"));
+        } else if (y == "pesach8", true) {
+            this.yontifs.set("pesach8", !this.yontifs.get("pesach8"));
+        } else if (y == "shavuot1") {
+            this.yontifs.set("shavuot1", !this.yontifs.get("shavuot1"));
+        } else if (y == "shavuot2") {
+            this.yontifs.set("shavuot2", !this.yontifs.get("shavuot2"));
+        }
+    }
+
+    /* Finds the Yontif name based on yontif item. For example, "Pesach Day 7":
+     * "pesach7" => returns "pesach"
+     * y: string repersenting the name of a Yontif reading
+     * @returns string repersenting Yontif name */
+    getYontifName(y) {
+        if (y.includes("rh")) {
+            return "rh";
+        } else if (y == yk) {
+            return "yk";
+        } else if (y.includes("sukkot")) {
+            return "sukkot";
+        } else if (y.includes("pesach")) {
+            return "pesach";
+        } else if (y.includes("shavuot")) {
+            return "shavuot";
+        }
+    }
+
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
      * triennial Torah reading cycle)
      * @returns integer repersenting first...third year of triennial cycle */
@@ -54,7 +128,9 @@ export class Schedule {
      * @returns Event Array accordingly */
     getRawCalendar() {
         let rawCal = HebrewCalendar.calendar({
-            sedrot: true
+            sedrot: true,
+            noMinorFast: true,
+            noModern: true
         })
         return rawCal;
     }
