@@ -205,9 +205,15 @@ export class Schedule {
      * @returns Event Array accordingly */
     getRawCalendar() {
         let rawCal = HebrewCalendar.calendar({
+            year: this.hebYear,
+            isHebrewYear: true,
+            il: this.il,
             sedrot: true,
+            noRoshChodesh: true,
+            noSpecialShabbat:true,
             noMinorFast: true,
-            noModern: true
+            noModern: true,
+            shabbatMevarchim: false
         })
         return rawCal;
     }
