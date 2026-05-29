@@ -29,7 +29,7 @@ export class Schedule {
         this.a = a;
         this.il = false; 
         this.cal = []; 
-        this.holidays = []; 
+        this.special = []; 
         this.yontifs = {"rh1": false,           // Rosh Hashanah Day 1
                         "rh2": false,           // Rosh Hashanah Day 2
                         "yk": false,            // Yom Kippur
@@ -100,64 +100,64 @@ export class Schedule {
     getYontifs() {
         let y = [];
 
-        if (this.yontifs.get("rh1")) {
-            y = y.push("rh1");
+        if (this.yontifs["rh1"]) {
+            y.push("rh1");
         }
 
-        if (this.yontifs.get("rh2")) {
-            y = y.push("rh2");
+        if (this.yontifs["rh2"]) {
+            y.push("rh2");
         }
 
-        if (this.yontifs.get("yk")) {
-            y = y.push("yk");
+        if (this.yontifs["yk"]) {
+            y.push("yk");
         }
 
-        if (this.yontifs.get("sukkot1")) {
-            y = y.push("sukkot1");
+        if (this.yontifs["sukkot1"]) {
+            y.push("sukkot1");
         }
 
-        if (this.yontifs.get("sukkot2")) {
-            y = y.push("sukkot2");
+        if (this.yontifs["sukkot2"]) {
+            y.push("sukkot2");
         }
 
-        if (this.yontifs.get("sukkotCH")) {
-            y = y.push("sukkotCH");
+        if (this.yontifs["sukkotCH"]) {
+            y.push("sukkotCH");
         }
 
-        if (this.yontifs.get("sukkotSA")) {
-            y = y.push("sukkotSA");
+        if (this.yontifs["sukkotSA"]) {
+            y.push("sukkotSA");
         }
 
-        if (this.yontifs.get("sukkotST")) {
-            y = y.push("sukkotST");
+        if (this.yontifs["sukkotST"]) {
+            y.push("sukkotST");
         }
 
-        if (this.yontifs.get("pesach1")) {
-            y = y.push("pesach1");
+        if (this.yontifs["pesach1"]) {
+            y.push("pesach1");
         }
 
-        if (this.yontifs.get("pesach2")) {
-            y = y.push("pesach2");
+        if (this.yontifs["pesach2"]) {
+            y.push("pesach2");
         }
 
-        if (this.yontifs.get("pesachCH")) {
-            y = y.push("pesachCH");
+        if (this.yontifs["pesachCH"]) {
+            y.push("pesachCH");
         }
 
-        if (this.yontifs.get("pesach7")) {
-            y = y.push("pesach7");
+        if (this.yontifs["pesach7"]) {
+            y.push("pesach7");
         }
 
-        if (this.yontifs.get("pesach8")) {
-            y = y.push("pesach8")
+        if (this.yontifs["pesach8"]) {
+            y.push("pesach8")
         }
 
-        if (this.yontifs.get("shavuot1")) {
-            y = y.push("shavuot1");
+        if (this.yontifs["shavuot1"]) {
+            y.push("shavuot1");
         }
 
-        if (this.yotnigs.get("shavuot2")) {
-            y = y.push("shavuot2");
+        if (this.yontifs["shavuot2"]) {
+            y.push("shavuot2");
         }
 
         return y;
@@ -167,7 +167,7 @@ export class Schedule {
      * @param y: string repersenting the name of a Yontif reading
      * @returns boolean repersenting if Yontif reading is set to true (true) or not (false) */
     findYontif(y) {
-        for (yontif in this.getYontifs()) {
+        for (let yontif of this.getYontifs()) {
             if (y == yontif) {
                 return true;
             }
@@ -218,85 +218,33 @@ export class Schedule {
         return rawCal;
     }
 
-    /* Filters and assigns readings based on Shabbat and Yontif conflicts
-     * Uses getRawCalendar() method as a helper function */
+    /* Filters only Shabbat readings, including Yontif when Yontif aligns with Shabbat,
+     * and selected Yontifs to calendar */
     resolveCalendar() {
         let rawCal = this.getRawCalendar();
 
-        // Arrays of classified events by event 'type'
-        let sedrot = [];
-        let yontifs = [];
+        for (let ev of rawCal) {
+            let desc = ev.getDesc().toLowerCase();
 
-        // Classification 
-        for (let i = 0; i < rawCal.length; i++) {
-            let event = rawCal[i];
+            if (desc.includes("parashat")) {
+                this.cal.push(ev);
+                this.special.push(0);
+            }
 
-            if (event instanceof ParshaEvent) {
-                sedrot.push(event);
-            } else if (event instanceof HolidayEvent) {
-                yontifs.push(event);
+            if (ev.getDate().greg().getDay() == 6) {
+                if (desc.includes("rosh hashana") ||
+                    desc.includes("yom kippur") ||
+                    desc.includes("sukkot") ||
+                    desc.includes("pesach") ||
+                    desc.includes("shavuot")) {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    }
             }
         }
 
-        /* Map: Filter by Date
-         * Resolves conflicts between Yontifs and Shabbos */
-        let byDate = {};
-
-        // Sedrot
-        for (let i = 0; i < sedrot.length; i++) {
-            let dateKey = sedrot[i].getDate().greg().toISOString().slice(0, 10);
-
-            if (!byDate[dateKey]) {
-                byDate[dateKey] = {sedra: null, holiday: null};
-            }
-
-            byDate[dateKey].sedra = sedrot[i];
-        }
-
-        // Yontifs
-        for (let i = 0; i < yontifs.length; i++) {
-            let dateKey = yontifs[i].getDate().greg().toISOString().slice(0, 10);
-
-            if (!byDate[dateKey]) {
-                byDate[dateKey] = {sedra: null, holiday: null};
-            }
-
-            byDate[dateKey].holiday = yontifs[i];
-        }
-
-        // Filtering & Conflict Resolution 
-        for (let date in byDate) {
-            let day = byDate[date];
-
-            let finalReading = null;
-
-            // A Yontif will always override a regular reading
-            if (day.holiday && (day.holiday.getDesc().includes("Rosh Hashana") || 
-                                day.holiday.getDesc().includes("Yom Kippur") || 
-                                day.holiday.getDesc().includes("Sukkot") ||
-                                day.holiday.getDesc().includes("Pesach") ||
-                                day.holiday.getDesc().includes("Shavuot"))) {
-                finalReading = day.holiday;
-                this.holidays.push(1);
-
-            // Adding regular Shabbatot to the schedule
-            } else if (day.sedra) {
-                finalReading = day.sedra;
-                this.holidays.push(0);
-
-            // Adding remaining Yontifs, as filtered by Yontif map (this.yontifs), to schedule
-            } // else if () {
-
-            // }
-
-            this.cal.push({
-                date: date,
-                reading: finalReading
-            })  
-        }
+        
     }
-
-    /* Helper function to create an array of all yontif parshot. Called with createSchedule() */
 
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
@@ -305,7 +253,7 @@ export class Schedule {
         let schedule = new LinkedList()
 
         for (let i = 0; i < this.cal.length; i++) {
-            if (this.holidays[i] == 0) {
+            if (this.special[i] == 0) {
                 schedule.append(new Parsha(parshaArr[parshaIndex].getDesc().replace("Parashat ", ""), 
                 this.hebYear, 
                 new Readers(),
@@ -313,13 +261,19 @@ export class Schedule {
                 this.a,
                 "Shabbat"));
                 parshaIndex++;
-            } else if (this.holidays[i] == 1) {
-                schedule.append(new Parsha("",
+            } else if (this.special[i] == 1) {
+                let desc = this.cal[i].getDesc()
+                    .replace("I", "")
+                    .replace("V", "")
+                    .replace("(CH''M)", "Chol HaMoed Shabbat")
+                    .replace("  ", " ");
+
+                schedule.append(new Parsha(desc,
                 this.hebYear,
                 new Readers(),
                 this.il,
                 this.a,
-                "Yontif"));
+                desc));
             } 
         }
 
