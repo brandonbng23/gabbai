@@ -1,10 +1,3 @@
-import { HebrewCalendar, 
-         Location,
-         Event as HebcalEvent,
-         ParshaEvent,
-         HDate,
-         parshaYear } from '@hebcal/core'
-
 import { Schedule } from "./schedule.mjs"
 
 function main() {
