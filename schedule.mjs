@@ -291,7 +291,7 @@ export class Schedule {
                     } else if (y == "pesach7" && desc == "pesach vii") {
                         this.cal.push(ev);
                         this.special.push(1);
-                    } else if (y == "pesach8" && desc == "pesach vii") {
+                    } else if (y == "pesach8" && desc == "pesach viii") {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "shavuot1" && desc == "shavuot i") {
