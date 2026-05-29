@@ -263,7 +263,7 @@ export class Schedule {
             // Adding readings for selected weekday Yontifs to calendar
             } else {
                 for (let y of this.getYontifs()) {
-                    if (y == "rh1" && desc == "rosh hashana" && desc.includes(this.hebYear.toString())) {
+                    if (y == "rh1" && desc.includes("rosh hashana") && !desc.includes("i") && !desc.includes("e")) {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "rh2" && desc == "rosh hashana ii") {
@@ -337,8 +337,9 @@ export class Schedule {
                                .replace("V", "")
                                .replace("  ", " ")
                                .replace("  ", " ");
-                }
 
+                }
+                
                 if (ev.getDate().greg().getDay() == 6) {
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                 }
