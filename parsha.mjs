@@ -38,7 +38,9 @@ export class Parsha {
      * Parsha name, Hebrew date, Gregorian date, all readers for argued
      * aliyot */
     printParsha() {
-        this.hebDate = new Sedra(this.hebYear, this.il).find(this.name);
+        if (!this.hebDate) {
+            this.hebDate = new Sedra(this.hebYear, this.il).find(this.name);
+        }
 
         if (this.hebDate) {
             this.gregDate = new HebcalEvent(this.hebDate, this.name).greg();
@@ -52,8 +54,7 @@ export class Parsha {
         }
         console.log ("__________________________________________________________________\n");
 
-
-        console.log(hebDate + "   " + gregDate + "\n");
+        console.log(this.hebDate + "   " + this.gregDate + "\n");
         console.log(this.readers.printReaders(this.a));
     }
 }

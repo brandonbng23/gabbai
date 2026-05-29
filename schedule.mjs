@@ -262,18 +262,26 @@ export class Schedule {
                 "Shabbat"));
                 parshaIndex++;
             } else if (this.special[i] == 1) {
-                let desc = this.cal[i].getDesc()
-                    .replace("I", "")
+                let ev = this.cal[i];
+                let desc = ev.getDesc()
+                    .replace("III", "")
+                    .replace("IV", "")
                     .replace("V", "")
+                    .replace("VI", "")
+                    .replace(this.hebYear, "")
                     .replace("(CH''M)", "Chol HaMoed Shabbat")
                     .replace("  ", " ");
 
-                schedule.append(new Parsha(desc,
+                let parsha = new Parsha(desc,
                 this.hebYear,
                 new Readers(),
                 this.il,
                 this.a,
-                desc));
+                desc); 
+
+                parsha.setHebDate(ev.getDate());
+
+                schedule.append(parsha);
             } 
         }
 
