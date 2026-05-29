@@ -1,7 +1,8 @@
 import { Schedule } from "./schedule.mjs"
 
 function main() {
-    new Schedule(5786, 7).printSchedule();
+    let schedule = new Schedule(5786, 7);
+    schedule.printSchedule();
 }
 
 main();

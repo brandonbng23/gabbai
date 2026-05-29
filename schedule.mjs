@@ -20,7 +20,7 @@ export class Schedule {
      * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
      * @field cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
      * @field holidays: records if a reading is a holiday (1) or not (0), indices aligns with cal 
-     * @field yontifs: a map repersenting all special Torah readings. Each override a Shabbat Torah
+     * @field yontifs: an object repersenting all special Torah readings. Each override a Shabbat Torah
      * reading, but when set true, will spawn a seperate reading in the schedule when holiday  
      * does not align with Shabbat
      * @field schedule: finalized linked list repersenting all readings */
@@ -47,6 +47,10 @@ export class Schedule {
                         "shavuot2": false       // Shavuot Day 2
                     };
 
+        // For testing
+        this.toggleAllYontifs();
+
+        // For contstructing
         this.resolveCalendar();
         this.activeSchedule = this.createSchedule();
     }
@@ -58,44 +62,67 @@ export class Schedule {
         this.il = !this.il;
     }
 
-    /* Toggles state of each yontif as stored in the Yontifs field (a map). By
+    /* Toggles state of each yontif as stored in the Yontifs field (an object). By
      * default, each yontif is set as false. See constructor for full yontif key codes.
      * @param y: string repersenting the name of a Yontif reading */
     toggleYontif(y) {
         if (y == "rh1") {
-            this.yontifs.set("rh1", !this.yontifs.get("rh1"));
+            this.yontifs["rh1"] = !this.yontifs["rh1"];
         } else if (y == "rh2") {
-            this.yontifs.set("rh2", !this.yontifs.get("rh2"));
+            this.yontifs["rh2"] = !this.yontifs["rh2"];
         } else if (y == "yk") {
-            this.yontifs.set("yk", !this.yontifs.get("yk"));
+            this.yontifs["yk"] = !this.yontifs["yk"];
         } else if (y == "sukkot1") {
-            this.yontifs.set("sukkot1", !this.yontifs.get("sukkot1"));
+            this.yontifs["sukkot1"] = !this.yontifs["sukkot1"];
         } else if (y == "sukkot2") {
-            this.yontifs.set("sukkot2", !this.yontifs.get("sukkot2"));
+            this.yontifs["sukkot2"] = !this.yontifs["sukkot2"];
         } else if (y == "sukkotCH") {
-            this.yontifs.set("sukkotCH", !this.yontifs.get("sukkotCH"));
+            this.yontifs["sukkotCH"] = !this.yontifs["sukkotCH"];
         } else if (y == "sukkotSA") {
-            this.yontifs.set("sukkotSA", !this.yontifs.get("sukkotSA"));
+            this.yontifs["sukkotSA"] = !this.yontifs["sukkotSA"];
         } else if (y == "sukkotST") {
-            this.yontifs.set("sukkotST", !this.yontifs.get("sukkotST"));
+            this.yontifs["sukkotST"] = !this.yontifs["sukkotST"];
         } else if (y == "pesach1") {
-            this.yontifs.set("pesach1", !this.yontifs.get("pesach1"));
+            this.yontifs["pesach1"] = !this.yontifs["pesach1"];
         } else if (y == "pesach2") {
-            this.yontifs.set("pesach2", !this.yontifs.get("pesach2"));
+            this.yontifs["pesach2"] = !this.yontifs["pesach2"];
         } else if (y == "pesachCH") {
-            this.yontifs.set("pesachCH", !this.yontifs.get("pesachCH"));
+            this.yontifs["pesachCH"] = !this.yontifs["pesachCH"];
         } else if (y == "pesach7") {
-            this.yontifs.set("pesach7", !this.yontifs.get("pesach7"));
+            this.yontifs["pesach7"] = !this.yontifs["pesach7"];
         } else if (y == "pesach8", true) {
-            this.yontifs.set("pesach8", !this.yontifs.get("pesach8"));
+            this.yontifs["pesach8"] = !this.yontifs["pesach8"];
         } else if (y == "shavuot1") {
-            this.yontifs.set("shavuot1", !this.yontifs.get("shavuot1"));
+            this.yontifs["shavuot1"] = !this.yontifs["shavuot1"];
         } else if (y == "shavuot2") {
-            this.yontifs.set("shavuot2", !this.yontifs.get("shavuot2"));
+            this.yontifs["shavuot2"] = !this.yontifs["shavuot2"];
         }
     }
 
-    /* @returns an array repersenting all Yontifs set true in Yontifs maps.
+    /* For testing. Toggles all yontifs to the opposing state from their current state */
+    toggleAllYontifs() {
+        let yontifs = ["rh1", 
+                   "rh2", 
+                   "yk", 
+                   "sukkot1", 
+                   "sukkot2", 
+                   "sukkotCH", 
+                   "sukkotSA",
+                   "sukkotST",
+                   "pesach1",
+                   "pesach2",
+                   "pesachCH",
+                   "pesach7",
+                   "pesach8",
+                   "shavuot1",
+                   "shavuot2"];
+        
+        for (let y of yontifs) {
+            this.toggleYontif(y);
+        }
+    }
+
+    /* @returns an array repersenting all Yontifs set true in the Yontifs object.
      * Can be used as a helper function (see findYontif) */
     getYontifs() {
         let y = [];
@@ -226,12 +253,13 @@ export class Schedule {
         for (let ev of rawCal) {
             let desc = ev.getDesc().toLowerCase();
 
+            // Adding readings for Shabbatot to calendar
             if (desc.includes("parashat")) {
                 this.cal.push(ev);
                 this.special.push(0);
-            }
 
-            if (ev.getDate().greg().getDay() == 6) {
+            // Adding readings for Yontifs on Shabbatot to calendar
+            } else if (ev.getDate().greg().getDay() == 6) {
                 if (desc.includes("rosh hashana") ||
                     desc.includes("yom kippur") ||
                     desc.includes("sukkot") ||
@@ -240,10 +268,59 @@ export class Schedule {
                         this.cal.push(ev);
                         this.special.push(1);
                     }
+
+            // Adding readings for selected weekday Yontifs to calendar
+            } else {
+                for (let y of this.getYontifs()) {
+                    if (y == "rh1" && desc == "rosh hashana i") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "rh2" && desc == "rosh hashana ii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "yk" && desc == "yom kippur") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "sukkot1" && desc == "sukkot i") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "sukkot2" && desc == "sukkot ii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "sukkotCH" && desc.includes("sukkot") && desc.includes("ch\"m")) {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "sukkotSA" && desc.includes("shemini")) {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "sukkotST" && desc.includes("simchat")) {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "pesach1" && desc == "pesach i") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "pesach2" && desc == "pesach ii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "pesachCH" && desc.includes("pesach") && desc.includes("ch\"m")) {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "pesach7" && desc == "pesach vii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "pesach8" && desc == "pesach vii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "shavuot1" && desc == "shavuot i") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    } else if (y == "shavuot2" && desc == "shavuot ii") {
+                        this.cal.push(ev);
+                        this.special.push(1);
+                    }
+                }
             }
         }
-
-        
     }
 
     /* Creates a schedule of parshot. Called within constructor. */
@@ -269,8 +346,12 @@ export class Schedule {
                     .replace("V", "")
                     .replace("VI", "")
                     .replace(this.hebYear, "")
-                    .replace("(CH''M)", "Chol HaMoed Shabbat")
+                    .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
+
+                if (ev.getDate().greg().getDay() == 6) {
+                    desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
+                }
 
                 let parsha = new Parsha(desc,
                 this.hebYear,
