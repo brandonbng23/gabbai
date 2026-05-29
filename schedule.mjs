@@ -84,7 +84,7 @@ export class Schedule {
             this.yontifs["pesach2"] = !this.yontifs["pesach2"];
         } else if (y == "pesach7") {
             this.yontifs["pesach7"] = !this.yontifs["pesach7"];
-        } else if (y == "pesach8", true) {
+        } else if (y == "pesach8") {
             this.yontifs["pesach8"] = !this.yontifs["pesach8"];
         } else if (y == "shavuot1") {
             this.yontifs["shavuot1"] = !this.yontifs["shavuot1"];
@@ -99,13 +99,11 @@ export class Schedule {
                    "rh2", 
                    "yk", 
                    "sukkot1", 
-                   "sukkot2", 
-                   "sukkotCH", 
+                   "sukkot2",  
                    "sukkotSA",
                    "sukkotST",
                    "pesach1",
                    "pesach2",
-                   "pesachCH",
                    "pesach7",
                    "pesach8",
                    "shavuot1",
