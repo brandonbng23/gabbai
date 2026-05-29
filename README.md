@@ -6,9 +6,9 @@ Gabbai is currently being developed as a proof of concept, that's what you'll fi
 
 ### Roadmap
 1. Proof of Concept (Current stage)
-    > Development of the backend
-    > Preliminary Testing
-    > Current limitation: Yontif scheduling
+    > Development of the backend\n
+    > Preliminary Testing\n
+    > Current limitation: Yontif scheduling\n
     > Next: build a test-based interface by developing a Python script
 
 2. Prototype (Alpha)
