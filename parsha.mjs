@@ -18,6 +18,8 @@ export class Parsha {
         this.readers = readers;
         this.a = a;
         this.occassion = occassion;
+        this.hebDate = null;
+        this.gregDate = null;
     }
 
     /* Accesses occassion field
@@ -26,15 +28,20 @@ export class Parsha {
         return this.occassion;
     }
 
+    /* Mutates hebDate field
+     * @param hebDate repersents an HDate to set hebDate field */
+    setHebDate(hebDate) {
+        this.hebDate = hebDate;
+    }
+
     /* Formats and prints an instance on Parsha
      * Parsha name, Hebrew date, Gregorian date, all readers for argued
      * aliyot */
     printParsha() {
-        let hebDate = new Sedra(this.hebYear, this.il).find(this.name);
-        let gregDate = null;
+        this.hebDate = new Sedra(this.hebYear, this.il).find(this.name);
 
-        if (hebDate) {
-            gregDate = new HebcalEvent(hebDate, this.name).greg();
+        if (this.hebDate) {
+            this.gregDate = new HebcalEvent(this.hebDate, this.name).greg();
         }
 
         console.log ("__________________________________________________________________");
