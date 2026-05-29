@@ -35,12 +35,10 @@ export class Schedule {
                         "yk": false,            // Yom Kippur
                         "sukkot1": false,       // Sukkot Day 1
                         "sukkot2": false,       // Sukkot Day 2
-                        "sukkotCH": false,      // Chol HaMoed Sukkot Shabbat
                         "sukkotSA": false,      // Shemini Atzeret
                         "sukkotST": false,      // Simchat Torah
                         "pesach1": false,       // Pesach Day 1
                         "pesach2": false,       // Pesach Day 2
-                        "pesachCH": false,      // Chol HaMoed Pesach Shabbat
                         "pesach7": false,       // Pesach Day 7
                         "pesach8": false,       // Pesach Day 8
                         "shavuot1": false,      // Shavuot Day 1
@@ -76,8 +74,6 @@ export class Schedule {
             this.yontifs["sukkot1"] = !this.yontifs["sukkot1"];
         } else if (y == "sukkot2") {
             this.yontifs["sukkot2"] = !this.yontifs["sukkot2"];
-        } else if (y == "sukkotCH") {
-            this.yontifs["sukkotCH"] = !this.yontifs["sukkotCH"];
         } else if (y == "sukkotSA") {
             this.yontifs["sukkotSA"] = !this.yontifs["sukkotSA"];
         } else if (y == "sukkotST") {
@@ -86,8 +82,6 @@ export class Schedule {
             this.yontifs["pesach1"] = !this.yontifs["pesach1"];
         } else if (y == "pesach2") {
             this.yontifs["pesach2"] = !this.yontifs["pesach2"];
-        } else if (y == "pesachCH") {
-            this.yontifs["pesachCH"] = !this.yontifs["pesachCH"];
         } else if (y == "pesach7") {
             this.yontifs["pesach7"] = !this.yontifs["pesach7"];
         } else if (y == "pesach8", true) {
@@ -147,10 +141,6 @@ export class Schedule {
             y.push("sukkot2");
         }
 
-        if (this.yontifs["sukkotCH"]) {
-            y.push("sukkotCH");
-        }
-
         if (this.yontifs["sukkotSA"]) {
             y.push("sukkotSA");
         }
@@ -165,10 +155,6 @@ export class Schedule {
 
         if (this.yontifs["pesach2"]) {
             y.push("pesach2");
-        }
-
-        if (this.yontifs["pesachCH"]) {
-            y.push("pesachCH");
         }
 
         if (this.yontifs["pesach7"]) {
@@ -250,8 +236,13 @@ export class Schedule {
     resolveCalendar() {
         let rawCal = this.getRawCalendar();
 
+        // For viewing descriptions as provided by HebCal
         for (let ev of rawCal) {
             let desc = ev.getDesc().toLowerCase();
+            
+            /* if (!desc.includes("parashat")) {
+                console.log(desc); 
+            } */
 
             // Adding readings for Shabbatot to calendar
             if (desc.includes("parashat")) {
@@ -272,7 +263,7 @@ export class Schedule {
             // Adding readings for selected weekday Yontifs to calendar
             } else {
                 for (let y of this.getYontifs()) {
-                    if (y == "rh1" && desc == "rosh hashana i") {
+                    if (y == "rh1" && desc == "rosh hashana" && desc.includes(this.hebYear.toString())) {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "rh2" && desc == "rosh hashana ii") {
@@ -287,22 +278,16 @@ export class Schedule {
                     } else if (y == "sukkot2" && desc == "sukkot ii") {
                         this.cal.push(ev);
                         this.special.push(1);
-                    } else if (y == "sukkotCH" && desc.includes("sukkot") && desc.includes("ch\"m")) {
+                    } else if (y == "sukkotSA" && desc == "shmini atzeret") {
                         this.cal.push(ev);
                         this.special.push(1);
-                    } else if (y == "sukkotSA" && desc.includes("shemini")) {
-                        this.cal.push(ev);
-                        this.special.push(1);
-                    } else if (y == "sukkotST" && desc.includes("simchat")) {
+                    } else if (y == "sukkotST" && desc == "simchat torah") {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "pesach1" && desc == "pesach i") {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "pesach2" && desc == "pesach ii") {
-                        this.cal.push(ev);
-                        this.special.push(1);
-                    } else if (y == "pesachCH" && desc.includes("pesach") && desc.includes("ch\"m")) {
                         this.cal.push(ev);
                         this.special.push(1);
                     } else if (y == "pesach7" && desc == "pesach vii") {
@@ -341,13 +326,18 @@ export class Schedule {
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace("III", "")
-                    .replace("IV", "")
-                    .replace("V", "")
-                    .replace("VI", "")
                     .replace(this.hebYear, "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
+
+                if (desc.includes("Chol HaMoed")) {
+                    desc = desc.replace("I", "")
+                               .replace("I", "")
+                               .replace("I", "")
+                               .replace("V", "")
+                               .replace("  ", " ")
+                               .replace("  ", " ");
+                }
 
                 if (ev.getDate().greg().getDay() == 6) {
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
