@@ -1,13 +1,18 @@
+"""Formats argued text as a header and prints formatted text
+@param text: text to be formatted and printed"""
 def header(text):
     print("__________________________________________________________________")
     print("\n               " + text)
     print("__________________________________________________________________\n")
 
+"""Prints menu to display and record possible user actions
+@returns char repersenting user action"""
 def menu():
     header("What would you like to do?")
     print("A:\tView Readings")
     print("B:\tRegister for a Reading")
     print("C:\tAdministrator Settings")
+    print("D:\tQuit")
     return input("\nEnter a letter to take an action: ")
 
 header("Welcome to Gabbai!")
@@ -16,4 +21,16 @@ print("Gabbai is a system that allows a synagoge and its members to coordinate \
 "preliminary testing. Copyright Brandon N. Goldberg 2026. \nAll rights reservered. " \
 "No permission is granted to copy, modify, \nredistribute, or use this code without" \
 "explicit written permission.")
-action = menu()
+action = '1'
+
+while action:
+    action = menu().lower()
+
+    if action == 'a':
+        print()
+    elif action == 'b':
+        print()
+    elif action == 'c':
+        print()
+    elif action == 'd':
+        action = ''
