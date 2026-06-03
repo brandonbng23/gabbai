@@ -57,6 +57,6 @@ export class Parsha {
         console.log ("__________________________________________________________________\n");
 
         console.log(this.hebDate + "   " + this.gregDate + "\n");
-        console.log(this.readers.printReaders(this.name, this.triennial, this.a));
+        console.log(this.readers.printReaders(this.a));
     }
 }

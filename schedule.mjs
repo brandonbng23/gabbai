@@ -317,9 +317,10 @@ export class Schedule {
 
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
-                schedule.append(new Parsha(parshaArr[parshaIndex].getDesc().replace("Parashat ", ""), 
+                let desc = parshaArr[parshaIndex].getDesc().replace("Parashat ", "")
+                schedule.append(new Parsha(desc, 
                 this.hebYear, 
-                new Readers(),
+                new Readers(desc, this.triennial),
                 this.il, 
                 this.a,
                 "Shabbat"),
@@ -348,7 +349,7 @@ export class Schedule {
 
                 let parsha = new Parsha(desc,
                 this.hebYear,
-                new Readers(),
+                new Readers(desc, this.triennial),
                 this.il,
                 this.a,
                 desc,

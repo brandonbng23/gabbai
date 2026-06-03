@@ -1,5 +1,6 @@
 import { User } from "./user.mjs"
-import { Triennial } from "./trienial.mjs"
+import { Triennial } from "./triennial.mjs"
+import fs from "fs"
 
 export class Readers {
     /* Class repersent the weekly honors associated with the reading
@@ -88,15 +89,20 @@ export class Readers {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @returns: string repersenting verses to be read for argued aliyah */
     psukim(a) {
-        let fs = require("fs");
+        if (!this.triennial.getTriennial()) {
+            let sheet = fs.readFileSync("./psukim.csv", "utf8");
+            let rows = sheet.split("\n");
 
-        if (!this.triennial.getTriennial) {
-            const filePath = "./psukim.csv";
-            const stream = fs.createReadStream(filePath);
+            for (let row of rows) {
+                let cells = row.split(",");
 
-            
+                if (cells[0] == this.parsha) {
+                    return cells[a];
+                }
+            }
         }
     }
+
 
     /* Formats and prints an instance of Readers
      * All readers for a parsha reading are printed according to the argued
@@ -158,7 +164,7 @@ export class Readers {
 
         // Maftir and Haftarah are always printed
         if (this.m) {
-            console.log("   Maftir:     " + this.m.nameToString() + "\n");
+            console.log("   Maftir (" + this.psukim(8) + "):     " + this.m.nameToString() + "\n");
         } else {
             console.log("   Maftir:     available \n");
         }
