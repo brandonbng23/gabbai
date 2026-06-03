@@ -23,27 +23,33 @@ export class Schedule {
      * @field yontifs: an object repersenting all special Torah readings. Each override a Shabbat Torah
      * reading, but when set true, will spawn a seperate reading in the schedule when holiday  
      * does not align with Shabbat
+     * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
      * @field schedule: finalized linked list repersenting all readings */
-    constructor(hebYear, a) {
+    constructor(hebYear, a, triennial) {
         this.hebYear = hebYear;
         this.a = a;
         this.il = false; 
         this.cal = []; 
         this.special = []; 
-        this.yontifs = {"rh1": false,           // Rosh Hashanah Day 1
-                        "rh2": false,           // Rosh Hashanah Day 2
-                        "yk": false,            // Yom Kippur
-                        "sukkot1": false,       // Sukkot Day 1
-                        "sukkot2": false,       // Sukkot Day 2
-                        "sukkotSA": false,      // Shemini Atzeret
-                        "sukkotST": false,      // Simchat Torah
-                        "pesach1": false,       // Pesach Day 1
-                        "pesach2": false,       // Pesach Day 2
-                        "pesach7": false,       // Pesach Day 7
-                        "pesach8": false,       // Pesach Day 8
-                        "shavuot1": false,      // Shavuot Day 1
-                        "shavuot2": false       // Shavuot Day 2
+        this.yontifs = {"rh1": false,               // Rosh Hashanah Day 1
+                        "rh2": false,               // Rosh Hashanah Day 2
+                        "yk": false,                // Yom Kippur
+                        "sukkot1": false,           // Sukkot Day 1
+                        "sukkot2": false,           // Sukkot Day 2
+                        "sukkotSA": false,          // Shemini Atzeret
+                        "sukkotST": false,          // Simchat Torah
+                        "pesach1": false,           // Pesach Day 1
+                        "pesach2": false,           // Pesach Day 2
+                        "pesach7": false,           // Pesach Day 7
+                        "pesach8": false,           // Pesach Day 8
+                        "shavuot1": false,          // Shavuot Day 1
+                        "shavuot2": false           // Shavuot Day 2
                     };
+        this.triennial = triennial;
+        /* triennial = {triennial: boolean,         // Repersenting if the aliyot verses should follow the Triennial
+                        triennialMaftir: boolean,   // Repersenting if the Triennial Maftir is read
+                        regularMaftir: boolean,     //Repersenting if the traditional Maftir is read
+                        applyToYitro: boolean}      // Repersenting if the triennial should apply to Parsha Yitro */
 
         // For testing
         this.toggleAllYontifs();
