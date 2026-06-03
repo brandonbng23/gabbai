@@ -48,13 +48,13 @@ export class Parsha {
             this.gregDate = new HebcalEvent(this.hebDate, this.name).greg();
         }
 
-        console.log ("__________________________________________________________________");
+        console.log ("__________________________________________________________________________");
         if (this.name != "Pinchas") {
-            console.log("\n               " + this.name);
+            console.log("\n                   " + this.name);
         } else {
-            console.log("\n               " + this.name + "  (woof!)"); // Phineas!
+            console.log("\n                   " + this.name + "  (woof!)"); // Phineas!
         }
-        console.log ("__________________________________________________________________\n");
+        console.log ("__________________________________________________________________________\n");
 
         console.log(this.hebDate + "   " + this.gregDate + "\n");
         console.log(this.readers.printReaders(this.a));

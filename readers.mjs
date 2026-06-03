@@ -113,14 +113,20 @@ export class Readers {
      * int must be exactly 3, 5, or 7 */
     printReaders(a) {
         let text = "";
+        let valid = true;
         for (let i = 0; i < a+2; i++) {
-            if (i < a ) {
-                text = "   Aliyah " + (i+1) + "      (" + this.psukim(i+1) + ")";
-                
-            } else if (i == a+1) {
-                text = "   Maftir       (" + this.psukim(i+1) + ")";
-            } else if (i == a+2) {
-                text = "   Haftarah     (" + this.psukim(1+2) + ")";
+            let verses = this.psukim(i+1)
+            if (verses != "null") {
+                if (i < a) {
+                    text = "   Aliyah " + (i+1) + "        " + verses + "";
+                    
+                } else if (i == a) {
+                    text = "   Maftir          " + verses + "";
+                } else if (i == a+1) {
+                    text = "   Haftarah        " + verses + "";
+                }
+            } else {
+                valid = false;
             }
 
             let len = text.length;
@@ -136,14 +142,16 @@ export class Readers {
             }
 
             text += "\n";
-            
-            console.log(text);
+
+            if (valid) {
+                console.log(text);
+            }
         }
 
 
 
         // Maftir and Haftarah are always printed
-        if (this.m) {
+        /*if (this.m) {
             console.log("   Maftir (" + this.psukim(8) + ")     " + this.m.nameToString() + "\n");
         } else {
             console.log("   Maftir (" + this.psukim(8) + ")     available \n");
@@ -152,7 +160,7 @@ export class Readers {
         if (this.h) {
             console.log("   Haftarah (" + this.psukim(9) + ")     " + this.h.nameToString() + "\n");
         } else {
-            console.log("   Haftarah (" + this.psukim(9) + ")     available \n");
-        }
+            console.log("   Haftarah (" + this.psukim(9) + ")     available \n"); 
+        } */
     }
 }
