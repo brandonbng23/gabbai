@@ -9,6 +9,7 @@ import { HebrewCalendar,
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
 import { Parsha } from "./parsha.mjs"
+import { Triennial } from "./triennial.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
@@ -46,10 +47,6 @@ export class Schedule {
                         "shavuot2": false           // Shavuot Day 2
                     };
         this.triennial = triennial;
-        /* triennial = {triennial: boolean,         // Repersenting if the aliyot verses should follow the Triennial
-                        triennialMaftir: boolean,   // Repersenting if the Triennial Maftir is read
-                        regularMaftir: boolean,     //Repersenting if the traditional Maftir is read
-                        applyToYitro: boolean}      // Repersenting if the triennial should apply to Parsha Yitro */
 
         // For testing
         this.toggleAllYontifs();
