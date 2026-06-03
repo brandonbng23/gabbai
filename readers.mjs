@@ -118,12 +118,11 @@ export class Readers {
             let verses = this.psukim(i+1)
             if (verses != "null") {
                 if (i < a) {
-                    text = "   Aliyah " + (i+1) + "        " + verses + "";
-                    
+                    text = "   Aliyah " + (i+1) + "        " + verses;
                 } else if (i == a) {
-                    text = "   Maftir          " + verses + "";
+                    text = "   Maftir          " + this.psukim(8);
                 } else if (i == a+1) {
-                    text = "   Haftarah        " + verses + "";
+                    text = "   Haftarah        " + this.psukim(9);
                 }
             } else {
                 valid = false;
@@ -147,20 +146,5 @@ export class Readers {
                 console.log(text);
             }
         }
-
-
-
-        // Maftir and Haftarah are always printed
-        /*if (this.m) {
-            console.log("   Maftir (" + this.psukim(8) + ")     " + this.m.nameToString() + "\n");
-        } else {
-            console.log("   Maftir (" + this.psukim(8) + ")     available \n");
-        }
-
-        if (this.h) {
-            console.log("   Haftarah (" + this.psukim(9) + ")     " + this.h.nameToString() + "\n");
-        } else {
-            console.log("   Haftarah (" + this.psukim(9) + ")     available \n"); 
-        } */
     }
 }
