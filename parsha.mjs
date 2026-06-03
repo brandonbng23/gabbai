@@ -3,6 +3,7 @@ import { Sedra,
     Event as HebcalEvent } from '@hebcal/core'
 
 import { Readers } from "./readers.mjs"
+import { Triennial } from "./triennial.mjs"
 
 export class Parsha {
     /* Repersents a parsha as organized in a schedule linked list
@@ -11,13 +12,14 @@ export class Parsha {
      * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(name, hebYear, readers, il, a, occassion) {
+    constructor(name, hebYear, readers, il, a, occassion, triennial) {
         this.name = name;
         this.hebYear = hebYear;
         this.il = il;
         this.readers = readers;
         this.a = a;
         this.occassion = occassion;
+        this.triennial = this.triennial;
         this.hebDate = null;
         this.gregDate = null;
     }
@@ -55,6 +57,6 @@ export class Parsha {
         console.log ("__________________________________________________________________\n");
 
         console.log(this.hebDate + "   " + this.gregDate + "\n");
-        console.log(this.readers.printReaders(this.a));
+        console.log(this.readers.printReaders(this.name, this.triennial, this.a));
     }
 }

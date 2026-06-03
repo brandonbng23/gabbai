@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "@hebcal/core": "^6.3.1",
-    "@hebcal/leyning": "^9.5.4"
+    "@hebcal/leyning": "^9.5.4",
+    "csv-parser": "^3.2.1"
   },
   "devDependencies": {
     "vite": "^8.0.9"

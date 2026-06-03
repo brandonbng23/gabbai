@@ -1,17 +1,23 @@
 import { User } from "./user.mjs"
+import { Triennial } from "./trienial.mjs"
 
 export class Readers {
     /* Class repersent the weekly honors associated with the reading
      * of Torah on Shabbat. These include readers for each aliyot (1-7 but
      * can be toggled to regard the triennial), the maftir reading, and the
-     * haftarah reading 
+     * haftarah reading. For each reading, these verses are displayed according
+     * to schedule settings
      
+     * @field parsha: string repersenting name of parsha associated with reading
+     * @field triennial: instance of triennail repersenting schedule triennial settings
      * @field fields a1-a7: User repersenting reader of each aliyot (aliyot 1-7)
      * @field m: User repersent maftir reader
      * @field h: User repersenting haftarh reader 
      * @default All fields are set null by default. Readers will be assigned
      * when users register for an honor */
-    constructor() {
+    constructor(parsha, triennial) {
+        this.parsha = parsha;
+        this.triennial = triennial;
         this.a1 = null; // First aliyah reader
         this.a2 = null; // Second aliyah reader
         this.a3 = null; // Third aliyah reader
@@ -75,6 +81,20 @@ export class Readers {
             this.h = user;
         } else { // input r did not match possible options
             return;
+        }
+    }
+
+    /* Finds verses read for each aliyah according to schedule settings
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @returns: string repersenting verses to be read for argued aliyah */
+    psukim(a) {
+        let fs = require("fs");
+
+        if (!this.triennial.getTriennial) {
+            const filePath = "./psukim.csv";
+            const stream = fs.createReadStream(filePath);
+
+            
         }
     }
 

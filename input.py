@@ -1,0 +1,2 @@
+text = ""
+scan = input(text)

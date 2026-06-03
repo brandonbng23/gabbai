@@ -322,7 +322,8 @@ export class Schedule {
                 new Readers(),
                 this.il, 
                 this.a,
-                "Shabbat"));
+                "Shabbat"),
+                this.triennial);
                 parshaIndex++;
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
@@ -350,7 +351,8 @@ export class Schedule {
                 new Readers(),
                 this.il,
                 this.a,
-                desc); 
+                desc,
+                this.triennial); 
 
                 parsha.setHebDate(ev.getDate());
 
