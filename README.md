@@ -22,7 +22,12 @@ Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com) - This is t
 - [LinkedIn](https://www.linkedin.com/in/brangold/)
 
 ## Acknowledgments
-Gabbai makes use of the HebCal API. Hebrew dates and parshas are provided according to the Hebrew calendar by HebCal.
+Gabbai makes use of the HebCal API. Hebrew dates, parshiyot, and occassions (yontifs, special shabbatot) are provided according to the Hebrew calendar by HebCal.
+- Hebcal: https://www.hebcal.com/
+- @hebcal/core: https://github.com/hebcal/hebcal-es6
+<br/>
+Gabbai makes use of CSV-Parser for parsing CSV files containing reader and schedule information. CSV-Parser is distrubuted under the MIT License.
+
 
 ### Use of Artifical Intelligence
 Throughout the development of Gabbai, artifical intelligence was not used to generate code. Throughout its maintenmance, Gabbai artificial intelligence will continue to play a minimal role into Gabbai's development and never be ue used to generate code. At times, a model was consulted when deciding how to best use APIs, advanced debugging, and testing. 
