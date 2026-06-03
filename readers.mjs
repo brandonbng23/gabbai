@@ -97,7 +97,7 @@ export class Readers {
                 let cells = row.split(",");
 
                 if (cells[0] == this.parsha) {
-                    return cells[a];
+                    return cells[a].trim();
                 }
             }
         }
@@ -112,67 +112,47 @@ export class Readers {
      * @param a: integer repersenting quantity of aliyot. For ideal function,
      * int must be exactly 3, 5, or 7 */
     printReaders(a) {
-
-        // Prints no matter quantity of aliyot argued
-        if (this.a1) {
-            console.log("   Aliyah 1:   " + this.a1.nameToString() + "\n");
-        } else {
-            console.log("   Aliyah 1:   available \n");
-        }
-
-        if (this.a2) {
-            console.log("   Aliyah 2:   " + this.a2.nameToString() + "\n");
-        } else {
-            console.log("   Aliyah 2:   available \n");
-        }
-
-        if (this.a3) {
-            console.log("   Aliyah 3:   " + this.a3.nameToString() + "\n");
-        } else {
-            console.log("   Aliyah 3:   availble \n");
-        }
-
-        // Prints only if 5 or 7 aliyot are argued
-        if (a > 3) {
-            if (this.a4) {
-                console.log("   Aliyah 4:   " + this.a4.nameToString() + "\n");
-            } else {
-                console.log("   Aliyah 4:   available \n");
+        let text = "";
+        for (let i = 0; i < a+2; i++) {
+            if (i < a ) {
+                text = "   Aliyah " + (i+1) + "      (" + this.psukim(i+1) + ")";
+                
+            } else if (i == a+1) {
+                text = "   Maftir       (" + this.psukim(i+1) + ")";
+            } else if (i == a+2) {
+                text = "   Haftarah     (" + this.psukim(1+2) + ")";
             }
 
-            if (this.a5) {
-                console.log("   Aliyah 5:   " + this.a5.nameToString() + "\n");
-            } else {
-                console.log("   Aliyah 5:   available \n");
-            }
-        }
+            let len = text.length;
 
-        // Prints only if 7 aliyot are argued
-        if (a > 5) {
-            if (this.a6) {
-                console.log("   Aliyah 6:   " + this.a6.nameToString() + "\n");
-            } else {
-                console.log("   Aliyah 6:   available \n");
+            while (text.length < 50) {
+                text += " ";
             }
 
-            if (this.a7) {
-                console.log("   Aliyah 7:   " + this.a7.nameToString() + "\n");
+            if (this.getReader(a)) {
+                text += this.getReader(i+1).nameToString();
             } else {
-                console.log("   Aliyah 7:   available \n");
+                text += "available";
             }
+
+            text += "\n";
+            
+            console.log(text);
         }
+
+
 
         // Maftir and Haftarah are always printed
         if (this.m) {
-            console.log("   Maftir (" + this.psukim(8) + "):     " + this.m.nameToString() + "\n");
+            console.log("   Maftir (" + this.psukim(8) + ")     " + this.m.nameToString() + "\n");
         } else {
-            console.log("   Maftir:     available \n");
+            console.log("   Maftir (" + this.psukim(8) + ")     available \n");
         }
 
         if (this.h) {
-            console.log("   Haftarh:   " + this.h.nameToString() + "\n");
+            console.log("   Haftarah (" + this.psukim(9) + ")     " + this.h.nameToString() + "\n");
         } else {
-            console.log("   Haftarah:   available \n");
+            console.log("   Haftarah (" + this.psukim(9) + ")     available \n");
         }
     }
 }
