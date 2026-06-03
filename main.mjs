@@ -2,9 +2,7 @@ import { Schedule } from "./schedule.mjs"
 import { Triennial } from "./triennial.mjs"
 
 function main() {
-    let schedule = new Schedule(5786, 7, {triennial: false, 
-                                          triennialMaftir: false, 
-                                          applyToYitro: false});
+    let schedule = new Schedule(5786, 7, new Triennial(false, false, false, false));
     schedule.printSchedule();
 }
 
