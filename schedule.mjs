@@ -367,7 +367,6 @@ export class Schedule {
                 parsha.setHebDate(ev.getDate());
 
                 schedule.append(parsha);
-                console.log(desc);
             } 
         }
 
