@@ -96,9 +96,6 @@ export class Readers {
             for (let row of rows) {
                 let cells = row.split(",");
 
-                console.log("CSV:", JSON.stringify(cells[0]));
-                console.log("PARSHA:", JSON.stringify(this.parsha));
-
                 if (cells[0] == this.parsha) {
                     return cells[a].trim();
                 }

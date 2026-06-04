@@ -354,7 +354,7 @@ export class Schedule {
                     }
                 }
 
-                desc.trim();
+                desc = desc.trim();
 
                 let parsha = new Parsha(desc,
                 this.hebYear,
