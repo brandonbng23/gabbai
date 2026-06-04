@@ -374,8 +374,6 @@ export class Schedule {
                 }
 
                 desc = desc.trim();
-                
-                let parsha = null;
 
                 if (ev.getDate().greg().getDay() == 6) {
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
@@ -387,64 +385,33 @@ export class Schedule {
                         desc = desc.replace("IS", "I S");
                     }
 
-                    parsha = new Parsha(desc,
+                    let parsha = new Parsha(desc,
                                             this.hebYear,
                                             new Readers(desc, this.triennial),
                                             this.il,
                                             this.a,
                                             desc,
                                             this.triennial); 
+
+                    parsha.setHebDate(ev.getDate());
+                    schedule.append(parsha);
                     
                 } else {
-                    if (this.respect) {
-                        if (desc == "Rosh Hashana" ||
-                            desc == "Rosh Hashana II" ||
-                            desc == "Sukkot I" ||
-                            desc == "Sukkot II" ||
-                            desc == "Shmini Atzeret" ||
-                            desc == "Pesach I" ||
-                            desc == "Pesach II" ||
-                            desc == "Pesach VII" ||
-                            desc == "Pesach VII" ||
-                            desc == "Shavuot I" ||
-                            desc == "Shavuot II") {
-                                parsha = new Parsha(desc,
-                                                    this.hebYear,
-                                                    new Readers(desc, this.triennial),
-                                                    this.il,
-                                                    5,
-                                                    desc,
-                                                    this.triennial);
-                            }
-                        
-
-                        if (desc == "Yom Kippur") {
-                            parsha = new Parsha(desc,
-                                                this.hebYear,
-                                                new Readers(desc, this.triennial),
-                                                this.il,
-                                                6,
-                                                desc,
-                                                this.triennial);
-                        
-                        }
-
-                        if (desc == "Simchat Torah") {
-                            parsha = new Parsha(desc,
-                                                this.hebYear,
-                                                new Readers(desc, this.triennial),
-                                                this.il,
-                                                7,
-                                                desc,
-                                                this.triennial);
-                        }
-                    }
-                }
-
-                if (parsha) {
+                    let parsha = new Parsha(desc, 
+                                            this.hebYear, 
+                                            new Readers(desc, this.triennial), 
+                                            this.il, 
+                                            this.a, 
+                                            desc, 
+                                            this.triennial);
+                    
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
                 }
+                   
+
+                
+                
             } 
         }
 

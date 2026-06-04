@@ -52,7 +52,7 @@ export class Parsha {
         if (this.name != "Pinchas") {
             console.log("\n                   " + this.name);
         } else {
-            console.log("\n                   " + this.name + "  (woof!)"); // Phineas!
+            console.log("\n                   " + this.name + "  (woof!)");     // Phineas!
         }
         console.log ("_______________________________________________________________________________________\n");
 
