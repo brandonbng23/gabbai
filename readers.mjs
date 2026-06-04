@@ -96,6 +96,9 @@ export class Readers {
             for (let row of rows) {
                 let cells = row.split(",");
 
+                console.log("CSV:", JSON.stringify(cells[0]));
+                console.log("PARSHA:", JSON.stringify(this.parsha));
+
                 if (cells[0] == this.parsha) {
                     return cells[a].trim();
                 }
@@ -130,7 +133,7 @@ export class Readers {
 
             let len = text.length;
 
-            while (text.length < 50) {
+            while (text.length < 55) {
                 text += " ";
             }
 
@@ -145,6 +148,7 @@ export class Readers {
             if (valid) {
                 console.log(text);
             }
+            valid = true;
         }
     }
 }

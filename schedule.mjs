@@ -345,7 +345,16 @@ export class Schedule {
                 
                 if (ev.getDate().greg().getDay() == 6) {
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
+                    if (!desc.includes("Shabbat")) {
+                        desc += "Shabbat";
+                    }
+
+                    if (desc.includes("IS")) {
+                        desc = desc.replace("IS", "I S");
+                    }
                 }
+
+                desc.trim();
 
                 let parsha = new Parsha(desc,
                 this.hebYear,
@@ -358,6 +367,7 @@ export class Schedule {
                 parsha.setHebDate(ev.getDate());
 
                 schedule.append(parsha);
+                console.log(desc);
             } 
         }
 
