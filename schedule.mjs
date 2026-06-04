@@ -17,6 +17,9 @@ export class Schedule {
      *
      * @field hebYear: int repersening the year of the Hebrew calendar 
      * @field a: integer repersenting amount of aliyot (3, 5, or 7) - before maftir and haftarah
+     * @field respect: boolean dictating if Yontifs will follow traditional amount of aliyot (true) or the
+     * argued amount of aliyot (false; If the argued amount of aliyot is greater than the amount of aliyot for 
+     * a Yontif, the traditional quantity will be respect)
      * @field il: boolean repersenting if the schedule should follow the diasporic cycle (false) or 
      * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
      * @field cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
@@ -26,9 +29,10 @@ export class Schedule {
      * does not align with Shabbat
      * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
      * @field schedule: finalized linked list repersenting all readings */
-    constructor(hebYear, a, triennial) {
+    constructor(hebYear, a, respect, triennial) {
         this.hebYear = hebYear;
         this.a = a;
+        this.respect = respect;
         this.il = false; 
         this.cal = []; 
         this.special = []; 
@@ -61,6 +65,32 @@ export class Schedule {
      * The second time thid ethod is called, IL will reset to false. Etc. */
     toggleIL() {
         this.il = !this.il;
+    }
+
+    /* Accesses amount of Aliyot
+     * @returns integer repersenting aliyot to be read 1-7 */
+    getAliyotCount() {
+        return this.a;
+    }
+
+    /* Mutates amount of Aliyot
+     * @param a: interger repersenting how many aliyot to be read 1-7 */
+    setAliyotCount(a) {
+        if (a <= 1 && a<=7) {
+            this.a = a;
+        }
+    }
+
+    /* Accesses if amount of aliyot is to respect Yontif (true) readings or argued setting (false)
+     @returns boolean */
+    getRespect() {
+        return this.respect;
+    }
+
+    /* Mutates respect setting. If amount of aliyot respect Yontif traditions (true), respect will be
+     * set to false. If amount of aliyot is to respect argued setting (false), respect will be set true */
+    toggleRespect() {
+        this.respect = !this.respect;
     }
 
     /* Toggles state of each yontif as stored in the Yontifs field (an object). By
@@ -364,49 +394,50 @@ export class Schedule {
                                             this.a,
                                             desc,
                                             this.triennial); 
-
                     
                 } else {
-                    if (desc == "Rosh Hashana" ||
-                        desc == "Rosh Hashana II" ||
-                        desc == "Sukkot I" ||
-                        desc == "Sukkot II" ||
-                        desc == "Shmini Atzeret" ||
-                        desc == "Pesach I" ||
-                        desc == "Pesach II" ||
-                        desc == "Pesach VII" ||
-                        desc == "Pesach VII" ||
-                        desc == "Shavuot I" ||
-                        desc == "Shavuot II") {
+                    if (this.respect) {
+                        if (desc == "Rosh Hashana" ||
+                            desc == "Rosh Hashana II" ||
+                            desc == "Sukkot I" ||
+                            desc == "Sukkot II" ||
+                            desc == "Shmini Atzeret" ||
+                            desc == "Pesach I" ||
+                            desc == "Pesach II" ||
+                            desc == "Pesach VII" ||
+                            desc == "Pesach VII" ||
+                            desc == "Shavuot I" ||
+                            desc == "Shavuot II") {
+                                parsha = new Parsha(desc,
+                                                    this.hebYear,
+                                                    new Readers(desc, this.triennial),
+                                                    this.il,
+                                                    5,
+                                                    desc,
+                                                    this.triennial);
+                            }
+                        
+
+                        if (desc == "Yom Kippur") {
                             parsha = new Parsha(desc,
                                                 this.hebYear,
                                                 new Readers(desc, this.triennial),
                                                 this.il,
-                                                5,
+                                                6,
+                                                desc,
+                                                this.triennial);
+                        
+                        }
+
+                        if (desc == "Simchat Torah") {
+                            parsha = new Parsha(desc,
+                                                this.hebYear,
+                                                new Readers(desc, this.triennial),
+                                                this.il,
+                                                7,
                                                 desc,
                                                 this.triennial);
                         }
-                    
-
-                    if (desc == "Yom Kippur") {
-                        parsha = new Parsha(desc,
-                                            this.hebYear,
-                                            new Readers(desc, this.triennial),
-                                            this.il,
-                                            6,
-                                            desc,
-                                            this.triennial);
-                    
-                    }
-
-                    if (desc == "Simchat Torah") {
-                        parsha = new Parsha(desc,
-                                            this.hebYear,
-                                            new Readers(desc, this.triennial),
-                                            this.il,
-                                            7,
-                                            desc,
-                                            this.triennial);
                     }
                 }
 
