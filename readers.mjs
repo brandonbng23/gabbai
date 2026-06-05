@@ -11,14 +11,16 @@ export class Readers {
      
      * @field parsha: string repersenting name of parsha associated with reading
      * @field triennial: instance of triennail repersenting schedule triennial settings
+     * @field special: string repersenting name of occassion that employs a special reading
      * @field fields a1-a7: User repersenting reader of each aliyot (aliyot 1-7)
      * @field m: User repersent maftir reader
      * @field h: User repersenting haftarh reader 
      * @default All fields are set null by default. Readers will be assigned
      * when users register for an honor */
-    constructor(parsha, triennial) {
+    constructor(parsha, triennial, special) {
         this.parsha = parsha;
         this.triennial = triennial;
+        this.special = special;
         this.a1 = null; // First aliyah reader
         this.a2 = null; // Second aliyah reader
         this.a3 = null; // Third aliyah reader
