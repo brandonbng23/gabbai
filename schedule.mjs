@@ -397,11 +397,29 @@ export class Schedule {
                     schedule.append(parsha);
                     
                 } else {
+                    let yontifAliyot = this.a;
+                    if (this.respect && ["Rosh Hashana",
+                                         "Rosh Hashana II",
+                                         "Sukkot I",
+                                         "Sukkot II",
+                                         "Pesach I",
+                                         "Pesach II",
+                                         "Pesach VII",
+                                         "Pesach VIII",
+                                         "Shavuot I",
+                                         "Shavuot II"].includes(desc)) {
+                        yontifAliyot = 5;  
+                    } else if (this.respect && desc == "Yom Kippur") {
+                        yontifAliyot = 6;
+                    } else if (this.respect && desc == "Simchat Torah") {
+                        yontifAliyot = 7;
+                    }
+
                     let parsha = new Parsha(desc, 
                                             this.hebYear, 
                                             new Readers(desc, this.triennial), 
                                             this.il, 
-                                            this.a, 
+                                            yontifAliyot, 
                                             desc, 
                                             this.triennial);
                     

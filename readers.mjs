@@ -113,19 +113,16 @@ export class Readers {
      * int must be exactly 3, 5, or 7 */
     printReaders(a) {
         let text = "";
-        let valid = true;
+
         for (let i = 0; i < a+2; i++) {
             let verses = this.psukim(i+1)
-            if (verses != "null") {
-                if (i < a) {
-                    text = "   Aliyah " + (i+1) + "        " + verses;
-                } else if (i == a) {
-                    text = "   Maftir          " + this.psukim(8);
-                } else if (i == a+1) {
-                    text = "   Haftarah        " + this.psukim(9);
-                }
-            } else {
-                valid = false;
+
+            if (i < a) {
+                text = "   Aliyah " + (i+1) + "        " + verses;
+            } else if (i == a) {
+                text = "   Maftir          " + this.psukim(8);
+            } else if (i == a+1) {
+                text = "   Haftarah        " + this.psukim(9);
             }
 
             let len = text.length;
@@ -141,11 +138,7 @@ export class Readers {
             }
 
             text += "\n";
-
-            if (valid) {
-                console.log(text);
-            }
-            valid = true;
+            console.log(text);
         }
     }
 }
