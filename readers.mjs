@@ -89,8 +89,9 @@ export class Readers {
 
     /* Finds verses read for each aliyah according to schedule settings
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
-    psukim(a) {
+    psukim(a, flag) {
         if (!this.triennial.getTriennial()) {
             let sheet = fs.readFileSync("./psukim.csv", "utf8");
             let rows = sheet.split("\n");
@@ -98,8 +99,18 @@ export class Readers {
             for (let row of rows) {
                 let cells = row.split(",");
 
-                if (cells[0] == this.parsha) {
-                    return cells[a].trim();
+                if (!this.special.trim() || flag) {
+                    if (cells[0] == this.parsha) {
+                        return cells[a].trim();
+                    }
+                } else {
+                    if (cells[0].trim() == this.special) {
+                        if (cells[a].trim() == "ref") {
+                            return this.psukim(a, true);
+                        } else {
+                            return cells[a].trim() + "\n                   " + this.special;      
+                        }
+                    }
                 }
             }
         }
@@ -117,20 +128,26 @@ export class Readers {
         let text = "";
 
         for (let i = 0; i < a+2; i++) {
-            let verses = this.psukim(i+1)
+            let verses = this.psukim(i+1, false)
 
             if (i < a) {
                 text = "   Aliyah " + (i+1) + "        " + verses;
             } else if (i == a) {
-                text = "   Maftir          " + this.psukim(8);
+                text = "   Maftir          " + this.psukim(8, false);
             } else if (i == a+1) {
-                text = "   Haftarah        " + this.psukim(9);
+                text = "   Haftarah        " + this.psukim(9, false);
             }
 
             let len = text.length;
 
-            while (text.length < 55) {
-                text += " ";
+            if (text.length > 55) {
+                while (text.length < 80) {
+                    text += " ";
+                }
+            } else {
+                while (text.length < 55) {
+                    text += " ";
+                }
             }
 
             if (this.getReader(a)) {

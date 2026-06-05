@@ -419,6 +419,13 @@ export class Schedule {
             if (this.special[i] == 0) {
                 let desc = parshaArr[parshaIndex].getDesc().replace("Parashat ", "");
                 let occassions = getHolidaysOnDate(parshaArr[parshaIndex].getDate());
+
+                if (occassions) {
+                    for (let i = 0; i < occassions.length; i++) {
+                        occassions[i] = occassions[i].getDesc();
+                    }
+                }
+
                 let RO = "";
                 let ROs = ["Chanukah I Shabbat",                        // ROs = Reading Occassions
                                          "Chanukah II Shabbat",
