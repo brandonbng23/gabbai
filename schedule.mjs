@@ -416,10 +416,33 @@ export class Schedule {
 
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
-                let desc = parshaArr[parshaIndex].getDesc().replace("Parashat ", "")
+                let desc = parshaArr[parshaIndex].getDesc().replace("Parashat ", "");
+                let occassions = getHolidaysOnDate(parshaArr[parshaIndex].getDate());
+                let RO = "";
+                let ROs = ["Chanukah I Shabbat",                        // ROs = Reading Occassions
+                                         "Chanukah II Shabbat",
+                                         "Chanukah III Shabbat",
+                                         "Chanukah IV Shabbat",
+                                         "Chanukah V Shabbat",
+                                         "Chnukah VII Shabbat",
+                                         "Chanukah VII Shabbat Rosh Chodesh",
+                                         "Chanukah VIII",
+                                         "Shabbat Shuva",
+                                         "Shabbat Shekalim",
+                                         "Shabbat Zachor",
+                                         "Shabbat Parah",
+                                         "Shabbat HaChodesh",
+                                         "Shabbat HaGadol"];
+                
+                for (let i = 0; i < ROs.length; i++) {
+                    if (occassions.includes(ROs[i])) {
+                        RO = ROs[i];
+                    }
+                }
+
                 schedule.append(new Parsha(desc, 
                 this.hebYear, 
-                new Readers(desc, this.triennial),
+                new Readers(desc, this.triennial, RO),
                 this.il, 
                 this.calculateAliyot(desc),
                 "Shabbat"),
@@ -456,7 +479,7 @@ export class Schedule {
 
                     let parsha = new Parsha(desc,
                                             this.hebYear,
-                                            new Readers(desc, this.triennial),
+                                            new Readers(desc, this.triennial, ""),
                                             this.il,
                                             this.calculateAliyot(desc),
                                             desc,
@@ -468,7 +491,7 @@ export class Schedule {
                 } else {
                     let parsha = new Parsha(desc, 
                                             this.hebYear, 
-                                            new Readers(desc, this.triennial), 
+                                            new Readers(desc, this.triennial, ""), 
                                             this.il, 
                                             this.calculateAliyot(desc), 
                                             desc, 
@@ -476,11 +499,7 @@ export class Schedule {
                     
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
-                }
-                   
-
-                
-                
+                }    
             } 
         }
 
