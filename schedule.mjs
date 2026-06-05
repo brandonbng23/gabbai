@@ -4,7 +4,8 @@ import { HebrewCalendar,
          ParshaEvent,
          HDate,
          parshaYear, 
-         HolidayEvent} from '@hebcal/core'
+         HolidayEvent,
+         getHolidaysOnDate} from '@hebcal/core'
 
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
@@ -435,7 +436,7 @@ export class Schedule {
                                          "Shabbat HaGadol"];
                 
                 for (let i = 0; i < ROs.length; i++) {
-                    if (occassions.includes(ROs[i])) {
+                    if (occassions?.includes(ROs[i])) {
                         RO = ROs[i];
                     }
                 }
