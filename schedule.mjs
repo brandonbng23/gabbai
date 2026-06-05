@@ -456,9 +456,12 @@ export class Schedule {
             } else {
                 let day = parsha.getDate().greg();
                 let nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
-                if (nextDay.getDay() == 7 && getHolidaysOnDate(nextDay).some(o => o.toLowerCase()
-                                                                                   .trim()
-                                                                                   .includes("rosh chodesh"))) {
+                let hday = new HDate(nextDay);
+                let nextDayOccassions = getHolidaysOnDate(hday);
+                if (day.getDay() == 6 && nextDayOccassions?.some(o => o?.getDesc()
+                                                                      ?.toLowerCase()
+                                                                      ?.trim()
+                                                                      ?.includes("rosh chodesh"))) {
                     return "Machar Chodesh";
                 }
             }
