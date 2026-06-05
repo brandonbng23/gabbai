@@ -353,7 +353,7 @@ export class Schedule {
                     } else if (y == "shavuot2" && desc == "shavuot ii") {
                         this.cal.push(ev);
                         this.special.push(1);
-                    }
+                    } 
                 }
             }
         }
@@ -409,6 +409,64 @@ export class Schedule {
         return this.a;
     }
 
+    readingOccassion(parsha) {
+        let occassions = getHolidaysOnDate(parsha.getDate());
+
+        if (occassions) {
+            for (let i = 0; i < occassions.length; i++) {
+                occassions[i] = occassions[i].getDesc().toLowerCase().trim();
+                console.log(occassions[i]);
+                console.log("  " + parsha.getDate())
+            }
+        }
+
+        let ROs = ["shabbat shuva",
+                   "shabbat shekalim",
+                   "shabbat zachor",
+                   "shabbat parah",
+                   "shabbat hachodesh",
+                   "shabbat hagadol"];
+
+        for (let i = 0; i < occassions?.length; i++) {
+            if (occassions.includes(ROs[i])) {
+                return ROs[i];
+            } else if (occassions.includes("chanukah")) {
+                if (parsha.getDate().greg().getDay() == 6) {
+                    if (occassions.some(o => o.includes("1"))) {
+                        return "Chanukah I Shabbat";
+                    } else if (occassions.some(o => o.includes("2"))) {
+                        return "Chanukah II Shabbat";
+                    } else if (occassions.some(o => o.includes("3"))) {
+                        return "Chanukah III Shabbat";
+                    } else if (occassions.some(o => o.includes("4"))) {
+                        return "Chanukah IV Shabbat";
+                    } else if (occassions.some(o => o.includes("5"))) {
+                        return "Chanukah V Shabbat";
+                    } else if (occassions.some(o => o.includes("7")) && !occassions.some(o => o.includes("rosh chodesh"))) {
+                        return "Chanukah VII Shabbat";
+                    } else if (occassions.some(o => o.includes("8"))) {
+                        return "Chanukah VIII Shabbat";
+                    }
+                }
+            } else if (occassions.some(o => o.includes("rosh chodesh")) && occassions.some(o => o.includes("7"))) {
+                return "Chanukah VII Shabbat Rosh Chodesh";
+            } else if (occassions.some(o => o.includes("rosh chodesh")) &&
+                       parsha.getDate().greg().getDay() == 6) {
+                return "Rosh Chodesh";
+            } else {
+                let day = parsha.getDate().greg();
+                let nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
+                if (nextDay.getDay() == 7 && getHolidaysOnDate(nextDay).some(o => o.toLowerCase()
+                                                                                   .trim()
+                                                                                   .includes("rosh chodesh"))) {
+                    return "Machar Chodesh";
+                }
+            }
+
+            return "";
+        }
+    }   
+
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
         let parshaArr = parshaYear(this.hebYear, this.il); // @returns array of ParshaEvent
@@ -417,41 +475,12 @@ export class Schedule {
 
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
-                let desc = parshaArr[parshaIndex].getDesc().replace("Parashat ", "");
-                let occassions = getHolidaysOnDate(parshaArr[parshaIndex].getDate());
-
-                if (occassions) {
-                    for (let i = 0; i < occassions.length; i++) {
-                        occassions[i] = occassions[i].getDesc();
-                    }
-                }
-
-                let RO = "";
-                let ROs = ["Chanukah I Shabbat",                        // ROs = Reading Occassions
-                                         "Chanukah II Shabbat",
-                                         "Chanukah III Shabbat",
-                                         "Chanukah IV Shabbat",
-                                         "Chanukah V Shabbat",
-                                         "Chnukah VII Shabbat",
-                                         "Chanukah VII Shabbat Rosh Chodesh",
-                                         "Chanukah VIII",
-                                         "Shabbat Shuva",
-                                         "Shabbat Shekalim",
-                                         "Shabbat Zachor",
-                                         "Shabbat Parah",
-                                         "Shabbat HaChodesh",
-                                         "Shabbat HaGadol",
-                                         "Rosh Chodesh"];
-                
-                for (let i = 0; i < ROs.length; i++) {
-                    if (occassions?.includes(ROs[i])) {
-                        RO = ROs[i];
-                    }
-                }
+                let reading = parshaArr[parshaIndex];
+                let desc = reading.getDesc().replace("Parashat ", "");
 
                 schedule.append(new Parsha(desc, 
                 this.hebYear, 
-                new Readers(desc, this.triennial, RO),
+                new Readers(desc, this.triennial, this.readingOccassion(reading)),
                 this.il, 
                 this.calculateAliyot(desc),
                 "Shabbat"),
@@ -471,7 +500,6 @@ export class Schedule {
                                .replace("V", "")
                                .replace("  ", " ")
                                .replace("  ", " ");
-
                 }
 
                 desc = desc.trim();
