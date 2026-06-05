@@ -101,7 +101,7 @@ export class Readers {
             for (let row of rows) {
                 let cells = row.split(",");
 
-                if (!this.special.trim() || flag) {
+                if (!this.special?.trim() || flag) {
                     if (cells[0] == this.parsha) {
                         return cells[a].trim();
                     }
