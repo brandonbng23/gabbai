@@ -339,6 +339,31 @@ export class Schedule {
         }
     }
 
+    /* Calculates how many aliyot will be read according to argued settings pertaining to Shabbat
+     * and Yontif readings
+     * @param desc: string repersenting name of reading occassion
+     * @returns integer (3-7) repersenting how many aliyot will be read, not including Maftir and Haftarah */
+    calculateAliyot(desc) {
+        let yontifAliyot = this.a;
+                    if (this.respect && ["Rosh Hashana",
+                                         "Rosh Hashana II",
+                                         "Sukkot I",
+                                         "Sukkot II",
+                                         "Pesach I",
+                                         "Pesach II",
+                                         "Pesach VII",
+                                         "Pesach VIII",
+                                         "Shavuot I",
+                                         "Shavuot II"].includes(desc)) {
+                        yontifAliyot = 5;  
+                    } else if (this.respect && desc == "Yom Kippur") {
+                        yontifAliyot = 6;
+                    } else if (this.respect && desc == "Simchat Torah") {
+                        yontifAliyot = 7;
+                    }
+        return yontifAliyot;
+    }
+
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
         let parshaArr = parshaYear(this.hebYear, this.il); // @returns array of ParshaEvent
@@ -352,7 +377,7 @@ export class Schedule {
                 this.hebYear, 
                 new Readers(desc, this.triennial),
                 this.il, 
-                this.a,
+                this.calculateAliyot(desc),
                 "Shabbat"),
                 this.triennial);
                 parshaIndex++;
@@ -389,7 +414,7 @@ export class Schedule {
                                             this.hebYear,
                                             new Readers(desc, this.triennial),
                                             this.il,
-                                            this.a,
+                                            this.calculateAliyot(desc),
                                             desc,
                                             this.triennial); 
 
@@ -397,29 +422,11 @@ export class Schedule {
                     schedule.append(parsha);
                     
                 } else {
-                    let yontifAliyot = this.a;
-                    if (this.respect && ["Rosh Hashana",
-                                         "Rosh Hashana II",
-                                         "Sukkot I",
-                                         "Sukkot II",
-                                         "Pesach I",
-                                         "Pesach II",
-                                         "Pesach VII",
-                                         "Pesach VIII",
-                                         "Shavuot I",
-                                         "Shavuot II"].includes(desc)) {
-                        yontifAliyot = 5;  
-                    } else if (this.respect && desc == "Yom Kippur") {
-                        yontifAliyot = 6;
-                    } else if (this.respect && desc == "Simchat Torah") {
-                        yontifAliyot = 7;
-                    }
-
                     let parsha = new Parsha(desc, 
                                             this.hebYear, 
                                             new Readers(desc, this.triennial), 
                                             this.il, 
-                                            yontifAliyot, 
+                                            this.calculateAliyot(desc), 
                                             desc, 
                                             this.triennial);
                     
