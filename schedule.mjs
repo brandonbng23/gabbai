@@ -363,24 +363,49 @@ export class Schedule {
      * @param desc: string repersenting name of reading occassion
      * @returns integer (3-7) repersenting how many aliyot will be read, not including Maftir and Haftarah */
     calculateAliyot(desc) {
-        let yontifAliyot = this.a;
-                    if (this.respect && ["Rosh Hashana",
-                                         "Rosh Hashana II",
-                                         "Sukkot I",
-                                         "Sukkot II",
-                                         "Pesach I",
-                                         "Pesach II",
-                                         "Pesach VII",
-                                         "Pesach VIII",
-                                         "Shavuot I",
-                                         "Shavuot II"].includes(desc)) {
-                        yontifAliyot = 5;  
-                    } else if (this.respect && desc == "Yom Kippur") {
-                        yontifAliyot = 6;
-                    } else if (this.respect && desc == "Simchat Torah") {
-                        yontifAliyot = 7;
-                    }
-        return yontifAliyot;
+            // 5 Aliyot Yontifs
+            if (["Sukkot I",
+                 "Sukkot II",
+                 "Shmini Atzeret",
+                 "Pesach I",
+                 "Pesach II",
+                 "Pesach VII",
+                 "Pesach VII",
+                 "Shavuot I",
+                 "Shavuot II"].includes(desc)) {
+                if (this.respect) {
+                    return 5;
+                } else if (this.a > 5) {
+                    return 5;
+                }
+            }
+            
+            // Rosh Hashana (5 Aliyot High Holiday)
+            if (desc.includes("Rosh Hashana")) {
+                if (this.respect || this.hhRespect) {
+                    return 5;
+                } else if (this.a > 5) {
+                    return 5;
+                }
+            }
+
+            // Yom Kippur (6 Aliyot High Holiday)
+            if (desc == "Yom Kippur") {
+                if (this.respect || this.hhRespect) {
+                    return 6;
+                } else if (this.a > 6) {
+                    return 6;
+                }
+            }
+            
+            // Simchat Torah (7 Aliyot High Holiday)
+            if (desc == "Simchat Torah") {
+                if (this.respect || this.hhRespect) {
+                    return 7;
+                } 
+            }
+                    
+        return this.a;
     }
 
     /* Creates a schedule of parshot. Called within constructor. */
