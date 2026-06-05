@@ -440,7 +440,8 @@ export class Schedule {
                                          "Shabbat Zachor",
                                          "Shabbat Parah",
                                          "Shabbat HaChodesh",
-                                         "Shabbat HaGadol"];
+                                         "Shabbat HaGadol",
+                                         "Rosh Chodesh"];
                 
                 for (let i = 0; i < ROs.length; i++) {
                     if (occassions?.includes(ROs[i])) {

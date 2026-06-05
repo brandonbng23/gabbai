@@ -30,6 +30,7 @@ export class Readers {
         this.a7 = null; // Seventh aliyah reader
         this.m = null; // Maftir reader
         this.h = null; // Haftarah reader
+        this.RO = false; // Boolean repersenting if a reading is special or not
     }
 
     /* Accesses reader assigned to a reading
@@ -91,6 +92,7 @@ export class Readers {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
+
     psukim(a, flag) {
         if (!this.triennial.getTriennial()) {
             let sheet = fs.readFileSync("./psukim.csv", "utf8");
@@ -108,7 +110,8 @@ export class Readers {
                         if (cells[a].trim() == "ref") {
                             return this.psukim(a, true);
                         } else {
-                            return cells[a].trim() + "\n                   " + this.special;      
+                            this.RO = true;
+                            return cells[a].trim();
                         }
                     }
                 }
@@ -128,6 +131,7 @@ export class Readers {
         let text = "";
 
         for (let i = 0; i < a+2; i++) {
+            this.RO = false;
             let verses = this.psukim(i+1, false)
 
             if (i < a) {
@@ -156,8 +160,13 @@ export class Readers {
                 text += "available";
             }
 
-            text += "\n";
             console.log(text);
+
+            if (this.RO) {
+                console.log("                   **" + this.special);
+            } 
+
+            console.log("\n");
         }
     }
 }
