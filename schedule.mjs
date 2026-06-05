@@ -86,7 +86,7 @@ export class Schedule {
         }
     }
 
-    /* Accesses if amount of aliyot is to respect Yontif (true) readings or argued setting (false)
+    /* Accesses if amount of aliyot for Yontifs are to respect Yontif (true) readings or argued setting (false)
      @returns boolean */
     getRespect() {
         return this.respect;
@@ -96,6 +96,20 @@ export class Schedule {
      * set to false. If amount of aliyot is to respect argued setting (false), respect will be set true */
     toggleRespect() {
         this.respect = !this.respect;
+    }
+
+    /* Accesses if amount of aliyot for High Holidays are to respect High Holiday traditions (true) or argurd
+     * setting (false) !!NOTE: High Holidays only include Rosh Hashana (all days), Yom Kippur, and Simchat Torah
+     * @returns boolean */
+    getHhRespect() {
+        return this.hhRespect;
+    }
+
+    /* Mutates respect setting. If amount of aliyot respect High Holiday traditions (true), hhRespect will be
+     * set to false. If amount of aliyot is to respect argued setting (false), hhRespect will be set true 
+     * !!NOTE: High Holidays only include Rosh Hashana (all days), Yom Kippur, and Simchat Torah */
+    toggleHhRespect() {
+        this.hhRespect = !this.hhRespect;
     }
 
     /* Toggles state of each yontif as stored in the Yontifs field (an object). By
