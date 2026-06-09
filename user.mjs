@@ -60,4 +60,27 @@ export class User {
     setPassword(p) {
         this.password = p; // future expansion: return false is string does not match password format
     }
+
+    /* Converts an exisiting user to an admin. Removes exisiting user from shul's users array and adds an
+     * appropriate instance of Admin to shul's admin array
+     * @param user: instance of User repersenting existing user to become an Admin
+     * @param title: string repsenting the title of the position this admin holds
+     * @param shul: instance of Shul repersenting the shul for which this admin will administrate
+     * @param key: repersents key to verify admin's association with shul */
+    convertToAdmin(key, shul, title) {
+        if (key == shul?.getKey()) {
+            shul?.removeUser(this);
+            let newAdmin = new Admin(this.firstN,
+                                     this.lastN,
+                                     this.email,
+                                     this.password,
+                                     title,
+                                     shul,
+                                     key);
+        
+            shul?.addAdmin(newAdmin);
+            return newAdmin;
+        }
+        return null;
+    }
 }
