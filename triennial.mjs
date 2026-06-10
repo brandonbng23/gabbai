@@ -38,12 +38,15 @@ export class Triennial {
         return this.yitro;
     }
 
-    /* Mutates Triennial setting. If triennial is set true, triennial becomes false. If triennial is set false, 
-     * triennial becomes true */
-    toggleTriennial() {
-        this.triennial = !this.triennial;
+    /* Mutates Triennial setting
+     * @param t: boolean repersenting triennial setting on (true) or off (false) */
+    setTriennial(t) {
+        this.triennial = t;
     }
 
+    /* Mutates Maftir setting
+     * @param m: string repersenting triennial maftir reading ("tri"), traditional maftir reading ("trad"), or no maftir
+     * reading ("none") */
     setMaftir(m) {
         if (m == "tri") {
             this.triMaftir = true;
@@ -55,9 +58,9 @@ export class Triennial {
         }
     }
 
-    /* Mutates Yitro setting. If Yitro is set true, Yitro becomes false. If Yitro is set false, Yitro becomes
-     * true */
-    toggleYitro() {
-        this.yitro = !this.yitro;
+    /* Mutates subscription to triennial reading pattern regarding Parsha Yitro
+     * @param y: boolean repersenting triennial subscription to Parsha Yitro (true) or not (false) */
+    setYitro(y) {
+        this.yitro = y;
     }
 }
