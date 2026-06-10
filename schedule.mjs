@@ -1,16 +1,13 @@
 import { HebrewCalendar, 
-         Location,
-         Event as HebcalEvent,
-         ParshaEvent,
          HDate,
          parshaYear, 
-         HolidayEvent,
          getHolidaysOnDate} from '@hebcal/core'
 
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
 import { Parsha } from "./parsha.mjs"
 import { Triennial } from "./triennial.mjs"
+import { Settings } from "./settings.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
@@ -34,7 +31,8 @@ export class Schedule {
      * does not align with Shabbat
      * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
      * @field schedule: finalized linked list repersenting all readings */
-    constructor(hebYear, a, respect, hhRespect, triennial) {
+    constructor(hebYear, a, respect, hhRespect, triennial, settings) {
+        this.settings = 
         this.hebYear = hebYear;
         this.a = a;
         this.respect = respect;
