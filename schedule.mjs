@@ -424,8 +424,8 @@ export class Schedule {
                    "Shabbat Shekalim",
                    "Shabbat Zachor",
                    "Shabbat Parah",
-                   "Shabbat Hachodesh",
-                   "Shabbat Hagadol"];
+                   "Shabbat HaChodesh",
+                   "Shabbat HaGadol"];
 
         for (let i = 0; i < ROs.length; i++) {
             for (let j = 0; j < occassions?.length; j++) {
