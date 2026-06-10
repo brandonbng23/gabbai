@@ -17,9 +17,9 @@ export class Readers {
      * @field h: User repersenting haftarh reader 
      * @default All fields are set null by default. Readers will be assigned
      * when users register for an honor */
-    constructor(parsha, triennial, special) {
+    constructor(parsha, settings, special) {
+        this.settings = settings;
         this.parsha = parsha;
-        this.triennial = triennial;
         this.special = special;
         this.a1 = null; // First aliyah reader
         this.a2 = null; // Second aliyah reader
@@ -94,7 +94,7 @@ export class Readers {
      * @returns: string repersenting verses to be read for argued aliyah */
 
     psukim(a, flag) {
-        if (!this.triennial.getTriennial()) {
+        if (!this.settings.getTriennial()) {
             let sheet = fs.readFileSync("./psukim.csv", "utf8");
             let rows = sheet.split("\n");
 
