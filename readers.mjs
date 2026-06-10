@@ -105,6 +105,12 @@ export class Readers {
                     }
                 } else {
                     if (cells[0].trim() == this.special) {
+                        if (a == this.settings.getAliyotCount() && 
+                            this.special == "Chanukah VII Shabbat Rosh Chodesh" &&
+                            this.settings.getSpecialSeventh()) {
+                            a = 7;
+                        }
+
                         if (cells[a].trim() == "ref") {
                             return this.psukim(a, true);
                         } else {
