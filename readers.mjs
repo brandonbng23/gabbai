@@ -176,11 +176,12 @@ export class Readers {
                     } else if (verses == "double") {
                         return "Currently Unavailable";
                     } 
-                } 
+                } else {
+                    return this.psukim(a, false, false);
+                }
             }
         }
     }
-
 
     /* Formats and prints an instance of Readers
      * All readers for a parsha reading are printed according to the argued
