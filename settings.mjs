@@ -55,6 +55,10 @@ export class Settings {
                     // NOTE: should a subscription to the triennial and traditional maftir be false, no maftir will be read
                                        true); // Subscribe to triennial pattern for Parsha Yitro reading (true) or not (false) @default: true
         
+        /* Special Seventh: rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
+         * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
+         * @default: true */
+        this.specialSeventh = true;
     }
 
     /* Accesses set Hebrew year */
@@ -169,5 +173,16 @@ export class Settings {
      * @param t: subscibes Parsha Yitro to triennial reading pattern (true) or unsubscribes (false) */
     setYitro(t) {
         this.triennial.setYitro(t);
+    }
+
+    /* Accesses special seventh state */
+    getSpecialSeventh() {
+        return this.specialSeventh;
+    }
+
+    /* Mutates special seventh state
+     * @param r: overrides final aliyah with special seventh aliyah when applicable (true) or not (false) */
+    setSpecialSeventh(r) {
+        this.specialSeventh = t;
     }
 }
