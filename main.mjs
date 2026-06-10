@@ -1,6 +1,7 @@
 import { Schedule } from "./schedule.mjs"
 import { Triennial } from "./triennial.mjs"
 import { Shul } from "./shul.mjs"
+import { Settings } from "./settings.mjs"
 
 function main() {
     let triennial = new Triennial(false, false, false, false);

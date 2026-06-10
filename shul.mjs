@@ -1,6 +1,7 @@
 import { User } from "./user.mjs"
 import { Admin } from "./admin.mjs"
 import { Schedule } from "./schedule.mjs"
+import { Settings } from "./settings.mjs"
 
 export class Shul {
     /* Repersents a shul and its congregation
@@ -20,6 +21,7 @@ export class Shul {
         this.schedule = schedule;
         this.url = url;
         this.donationUrl = donationUrl;
+        this.settings = new Settings();
     }
 
     /* Accesses shul's name */
