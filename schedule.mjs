@@ -31,138 +31,14 @@ export class Schedule {
      * does not align with Shabbat
      * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
      * @field schedule: finalized linked list repersenting all readings */
-    constructor(hebYear, a, respect, hhRespect, triennial, settings) {
-        this.settings = 
-        this.hebYear = hebYear;
-        this.a = a;
-        this.respect = respect;
-        this.hhRespect = hhRespect;
-        this.il = false; 
-        this.cal = []; 
-        this.special = []; 
-        this.yontifs = {"rh1": false,               // Rosh Hashanah Day 1
-                        "rh2": false,               // Rosh Hashanah Day 2
-                        "yk": false,                // Yom Kippur
-                        "sukkot1": false,           // Sukkot Day 1
-                        "sukkot2": false,           // Sukkot Day 2
-                        "sukkotSA": false,          // Shemini Atzeret
-                        "sukkotST": false,          // Simchat Torah
-                        "pesach1": false,           // Pesach Day 1
-                        "pesach2": false,           // Pesach Day 2
-                        "pesach7": false,           // Pesach Day 7
-                        "pesach8": false,           // Pesach Day 8
-                        "shavuot1": false,          // Shavuot Day 1
-                        "shavuot2": false           // Shavuot Day 2
-                    };
-        this.triennial = triennial;
-
-        // For testing
-        this.toggleAllYontifs();
-
+    constructor(settings) {
+       this.settings = settings;
+                    
         // For contstructing
+        this.special = []; 
+        this.cal = []; 
         this.resolveCalendar();
         this.activeSchedule = this.createSchedule();
-    }
-
-    /* Toggles state of IL field, which is false by default.
-     * The first time this method is called, IL will be set true.
-     * The second time thid ethod is called, IL will reset to false. Etc. */
-    toggleIL() {
-        this.il = !this.il;
-    }
-
-    /* Accesses amount of Aliyot
-     * @returns integer repersenting aliyot to be read 1-7 */
-    getAliyotCount() {
-        return this.a;
-    }
-
-    /* Mutates amount of Aliyot
-     * @param a: interger repersenting how many aliyot to be read 1-7 */
-    setAliyotCount(a) {
-        if (a <= 1 && a<=7) {
-            this.a = a;
-        }
-    }
-
-    /* Accesses if amount of aliyot for Yontifs are to respect Yontif (true) readings or argued setting (false)
-     @returns boolean */
-    getRespect() {
-        return this.respect;
-    }
-
-    /* Mutates respect setting. If amount of aliyot respect Yontif traditions (true), respect will be
-     * set to false. If amount of aliyot is to respect argued setting (false), respect will be set true */
-    toggleRespect() {
-        this.respect = !this.respect;
-    }
-
-    /* Accesses if amount of aliyot for High Holidays are to respect High Holiday traditions (true) or argurd
-     * setting (false) !!NOTE: High Holidays only include Rosh Hashana (all days), Yom Kippur, and Simchat Torah
-     * @returns boolean */
-    getHhRespect() {
-        return this.hhRespect;
-    }
-
-    /* Mutates respect setting. If amount of aliyot respect High Holiday traditions (true), hhRespect will be
-     * set to false. If amount of aliyot is to respect argued setting (false), hhRespect will be set true 
-     * !!NOTE: High Holidays only include Rosh Hashana (all days), Yom Kippur, and Simchat Torah */
-    toggleHhRespect() {
-        this.hhRespect = !this.hhRespect;
-    }
-
-    /* Toggles state of each yontif as stored in the Yontifs field (an object). By
-     * default, each yontif is set as false. See constructor for full yontif key codes.
-     * @param y: string repersenting the name of a Yontif reading */
-    toggleYontif(y) {
-        if (y == "rh1") {
-            this.yontifs["rh1"] = !this.yontifs["rh1"];
-        } else if (y == "rh2") {
-            this.yontifs["rh2"] = !this.yontifs["rh2"];
-        } else if (y == "yk") {
-            this.yontifs["yk"] = !this.yontifs["yk"];
-        } else if (y == "sukkot1") {
-            this.yontifs["sukkot1"] = !this.yontifs["sukkot1"];
-        } else if (y == "sukkot2") {
-            this.yontifs["sukkot2"] = !this.yontifs["sukkot2"];
-        } else if (y == "sukkotSA") {
-            this.yontifs["sukkotSA"] = !this.yontifs["sukkotSA"];
-        } else if (y == "sukkotST") {
-            this.yontifs["sukkotST"] = !this.yontifs["sukkotST"];
-        } else if (y == "pesach1") {
-            this.yontifs["pesach1"] = !this.yontifs["pesach1"];
-        } else if (y == "pesach2") {
-            this.yontifs["pesach2"] = !this.yontifs["pesach2"];
-        } else if (y == "pesach7") {
-            this.yontifs["pesach7"] = !this.yontifs["pesach7"];
-        } else if (y == "pesach8") {
-            this.yontifs["pesach8"] = !this.yontifs["pesach8"];
-        } else if (y == "shavuot1") {
-            this.yontifs["shavuot1"] = !this.yontifs["shavuot1"];
-        } else if (y == "shavuot2") {
-            this.yontifs["shavuot2"] = !this.yontifs["shavuot2"];
-        }
-    }
-
-    /* For testing. Toggles all yontifs to the opposing state from their current state */
-    toggleAllYontifs() {
-        let yontifs = ["rh1", 
-                   "rh2", 
-                   "yk", 
-                   "sukkot1", 
-                   "sukkot2",  
-                   "sukkotSA",
-                   "sukkotST",
-                   "pesach1",
-                   "pesach2",
-                   "pesach7",
-                   "pesach8",
-                   "shavuot1",
-                   "shavuot2"];
-        
-        for (let y of yontifs) {
-            this.toggleYontif(y);
-        }
     }
 
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
@@ -170,55 +46,55 @@ export class Schedule {
     getYontifs() {
         let y = [];
 
-        if (this.yontifs["rh1"]) {
+        if (this.settings.getYontif("rh1")) {
             y.push("rh1");
         }
 
-        if (this.yontifs["rh2"]) {
+        if (this.settings.getYontif("rh2")) {
             y.push("rh2");
         }
 
-        if (this.yontifs["yk"]) {
+        if (this.settings.getYontif("yk")) {
             y.push("yk");
         }
 
-        if (this.yontifs["sukkot1"]) {
+        if (this.settings.getYontif("sukkot1")) {
             y.push("sukkot1");
         }
 
-        if (this.yontifs["sukkot2"]) {
+        if (this.settings.getYontif("sukkot2")) {
             y.push("sukkot2");
         }
 
-        if (this.yontifs["sukkotSA"]) {
+        if (this.settings.getYontif("sukkotSA")) {
             y.push("sukkotSA");
         }
 
-        if (this.yontifs["sukkotST"]) {
+        if (this.settings.getYontif("sukkotST")) {
             y.push("sukkotST");
         }
 
-        if (this.yontifs["pesach1"]) {
+        if (this.settings.getYontif("pesach1")) {
             y.push("pesach1");
         }
 
-        if (this.yontifs["pesach2"]) {
+        if (this.settings.getYontif("pesach2")) {
             y.push("pesach2");
         }
 
-        if (this.yontifs["pesach7"]) {
+        if (this.settings.getYontif("pesach7")) {
             y.push("pesach7");
         }
 
-        if (this.yontifs["pesach8"]) {
+        if (this.settings.getYontif("pesach8")) {
             y.push("pesach8")
         }
 
-        if (this.yontifs["shavuot1"]) {
+        if (this.settings.getYontif("shavuot1")) {
             y.push("shavuot1");
         }
 
-        if (this.yontifs["shavuot2"]) {
+        if (this.settings.getYontif("shavuot2")) {
             y.push("shavuot2");
         }
 
@@ -235,24 +111,6 @@ export class Schedule {
             }
 
             return false;
-        }
-    }
-
-    /* Finds the Yontif name based on yontif item. For example, "Pesach Day 7":
-     * "pesach7" => returns "pesach"
-     * @param y: string repersenting the name of a Yontif reading
-     * @returns string repersenting Yontif name */
-    getYontifName(y) {
-        if (y.includes("rh")) {
-            return "rh";
-        } else if (y == yk) {
-            return "yk";
-        } else if (y.includes("sukkot")) {
-            return "sukkot";
-        } else if (y.includes("pesach")) {
-            return "pesach";
-        } else if (y.includes("shavuot")) {
-            return "shavuot";
         }
     }
 
@@ -374,7 +232,7 @@ export class Schedule {
                  "Shavuot II"].includes(desc)) {
                 if (this.respect) {
                     return 5;
-                } else if (this.a > 5) {
+                } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
                 }
             }
@@ -383,7 +241,7 @@ export class Schedule {
             if (desc.includes("Rosh Hashana")) {
                 if (this.respect || this.hhRespect) {
                     return 5;
-                } else if (this.a > 5) {
+                } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
                 }
             }
@@ -392,7 +250,7 @@ export class Schedule {
             if (desc == "Yom Kippur") {
                 if (this.respect || this.hhRespect) {
                     return 6;
-                } else if (this.a > 6) {
+                } else if (this.settings.getAliyotCount() > 6) {
                     return 6;
                 }
             }
@@ -404,7 +262,7 @@ export class Schedule {
                 } 
             }
                     
-        return this.a;
+        return this.settings.getAliyotCount();
     }
 
     readingOccassion(parsha) {
@@ -479,7 +337,7 @@ export class Schedule {
 
     /* Creates a schedule of parshot. Called within constructor. */
     createSchedule() {
-        let parshaArr = parshaYear(this.hebYear, this.il); // @returns array of ParshaEvent
+        let parshaArr = parshaYear(this.settings.getHebYear(), this.settings.getIL()); // @returns array of ParshaEvent
         let parshaIndex = 0; // Only increments for non-Yontif readings
         let schedule = new LinkedList()
 
@@ -489,17 +347,17 @@ export class Schedule {
                 let desc = reading.getDesc().replace("Parashat ", "");
 
                 schedule.append(new Parsha(desc, 
-                this.hebYear, 
-                new Readers(desc, this.triennial, this.readingOccassion(reading)),
-                this.il, 
+                this.settings.getHebYear(), 
+                new Readers(desc, this.settings.getFullTriennial(), this.readingOccassion(reading)),
+                this.settings.getIL(), 
                 this.calculateAliyot(desc),
                 "Shabbat"),
-                this.triennial);
+                this.settings.getFullTriennial());
                 parshaIndex++;
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace(this.hebYear, "")
+                    .replace(this.settings.getHebYear(), "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
@@ -525,24 +383,24 @@ export class Schedule {
                     }
 
                     let parsha = new Parsha(desc,
-                                            this.hebYear,
-                                            new Readers(desc, this.triennial, ""),
-                                            this.il,
+                                            this.settings.getHebYear(),
+                                            new Readers(desc, this.settings.getFullTriennial(), ""),
+                                            this.settings.getIL(),
                                             this.calculateAliyot(desc),
                                             desc,
-                                            this.triennial); 
+                                            this.settings.getFullTriennial()); 
 
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
                     
                 } else {
                     let parsha = new Parsha(desc, 
-                                            this.hebYear, 
-                                            new Readers(desc, this.triennial, ""), 
-                                            this.il, 
+                                            this.settings.getHebYear(), 
+                                            new Readers(desc, this.settings.getFullTriennial(), ""), 
+                                            this.settings.getIL(), 
                                             this.calculateAliyot(desc), 
                                             desc, 
-                                            this.triennial);
+                                            this.settings.getFullTriennial());
                     
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
