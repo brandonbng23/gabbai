@@ -5,8 +5,11 @@ import { Settings } from "./settings.mjs"
 
 function main() {
     let triennial = new Triennial(false, false, false, false);
-    let schedule = new Schedule(5786, 3, false, false, triennial);
-    let shul = new Shul("Test Shul", [], [], schedule);
+    let shul = new Shul("Test Shul", [], [], null);
+
+    let schedule = new Schedule(5786, 3, false, false, triennial, shul.getSettings());
+    shul.setSchedule(schedule);
+    
     shul.getSchedule().printSchedule();
 }
 
