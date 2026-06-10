@@ -175,6 +175,10 @@ export class Settings {
         this.triennial.setYitro(t);
     }
 
+    getFullTriennial() {
+        return this.triennial;
+    }
+
     /* Accesses special seventh state */
     getSpecialSeventh() {
         return this.specialSeventh;
