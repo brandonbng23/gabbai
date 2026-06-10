@@ -5,12 +5,16 @@ export class Triennial {
      * @field triennial: boolean repersenting the following of a triennial schedule (true) or not (false)
      * @field triMaftir: boolean repersenting the following of the triennial maftir (true) or not (false)
      * @field tradMaftir: boolean repersenting the following of the traditional maftir (true) or not (false)
-     * @fiedl yitro: boolean repersenting if the triennial schedule should apply to Parsha Yitro (true) or not (false) */
-    constructor (triennial, triMaftir, tradMaftir, yitro) {
+     * @fiedl yitro: boolean repersenting if the triennial schedule should apply to Parsha Yitro (true) or not (false)
+     * @field vaetchanan: boolean repersenting if the triennial schedule should apply to Parsha Vaetchanan (true), meaning
+     * the Ten Commandments and Shema are read strictly in years 2 and 3 respectively, or if the Ten Commandments will be
+     * read every year and the Shema read in both years 2 and 3 (false)  */
+    constructor (triennial, triMaftir, tradMaftir, yitro, vaetchanan) {
         this.triennial = triennial;
         this.triMaftir = triMaftir;
         this.tradMaftir = tradMaftir;
         this.yitro = yitro;
+        this.vaetchanan = vaetchanan;
     }
 
     /* Access triennial setting
@@ -38,6 +42,12 @@ export class Triennial {
         return this.yitro;
     }
 
+    /* Accesses Vaetchanan setting determing if/how the triennial schedule will apply to Parsha Vaetchanan
+     * @returns boolean repersenting if/how the triennial schedule will apply to Parsha Vaetchanan (true) or not (false) */
+    getVaetchanan() {
+        return this.vaetchanan;
+    }
+
     /* Mutates Triennial setting
      * @param t: boolean repersenting triennial setting on (true) or off (false) */
     setTriennial(t) {
@@ -62,5 +72,11 @@ export class Triennial {
      * @param y: boolean repersenting triennial subscription to Parsha Yitro (true) or not (false) */
     setYitro(y) {
         this.yitro = y;
+    }
+
+    /* Mutates subscription to triennial reading pattern regarding Parsha Vaetchanan
+     * @param v: boolean repersenting if/how triennial subscription to Parsha Vaetchanan (true) or not (false) */
+     setVaetchanan(v) {
+        this.vaetchanan = v;
     }
 }
