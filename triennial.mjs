@@ -24,15 +24,15 @@ export class Triennial {
     }
 
     /* Access maftir fields (triMaftir and tradMaftir) and returns which is set true, or "None" if both are set false 
-     * @returns string repersenting which maftir is set true: "Triennial" if triMaftir, "Traditional" if tradMaftir, or 
-     * "None" if both are set false */
+     * @returns string repersenting which maftir is set true: "tri" if triMaftir, "trad" if tradMaftir, or 
+     * "none" if both are set false */
     getMaftir() {
         if (this.triMaftir) {
-            return "Triennial";
+            return "tri";
         } else if (this.tradMaftir) {
-            return "Traditional";
+            return "trad";
         } else {
-            return "None";
+            return "none";
         }
     }
 
