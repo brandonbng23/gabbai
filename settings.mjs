@@ -187,6 +187,6 @@ export class Settings {
     /* Mutates special seventh state
      * @param r: overrides final aliyah with special seventh aliyah when applicable (true) or not (false) */
     setSpecialSeventh(r) {
-        this.specialSeventh = t;
+        this.specialSeventh = r;
     }
 }
