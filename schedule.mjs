@@ -230,7 +230,7 @@ export class Schedule {
                  "Pesach VII",
                  "Shavuot I",
                  "Shavuot II"].includes(desc)) {
-                if (this.respect) {
+                if (this.settings.getYRespect()) {
                     return 5;
                 } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
@@ -239,7 +239,7 @@ export class Schedule {
             
             // Rosh Hashana (5 Aliyot High Holiday)
             if (desc.includes("Rosh Hashana")) {
-                if (this.respect || this.hhRespect) {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
                     return 5;
                 } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
@@ -248,7 +248,7 @@ export class Schedule {
 
             // Yom Kippur (6 Aliyot High Holiday)
             if (desc == "Yom Kippur") {
-                if (this.respect || this.hhRespect) {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
                     return 6;
                 } else if (this.settings.getAliyotCount() > 6) {
                     return 6;
