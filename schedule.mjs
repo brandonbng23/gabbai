@@ -112,13 +112,6 @@ export class Schedule {
         }
     }
 
-    /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
-     * triennial Torah reading cycle)
-     * @returns integer repersenting first...third year of triennial cycle */
-    calculateTriennial() {
-        return (this.hebYear % 3) + 1
-    }
-
     /* Helper function that fetches Hebrew calendar including weekly Torah readings
      * @returns Event Array accordingly */
     getRawCalendar() {
