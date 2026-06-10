@@ -28,7 +28,7 @@ export class Settings {
          * (this.a) Aliyot count (false) during Yontifs. If true, High Holiday Aliyot Count becomes true. If false,
          * High Holiday Aliyot Count does NOT become false
          * @default: true (traditional count) */
-        this.respect = true;
+        this.yRespect = true;
 
         /* Observed Yontifs: For each Yontif, indicates if a special reading should be added to the reading schedule
          * (true) or not (false) when the Yontif is on a weekday.
@@ -59,4 +59,98 @@ export class Settings {
         
     }
 
+    /* Accesses set Hebrew year */
+    getHebYear() {
+        return this.hebYear;
+    }
+
+    /* Mutates set Hebrew year
+     * @param year: number repersenting Hebrew year to update field */
+    setHebYear(year) {
+        this.hebYear = year;
+    } 
+
+    /* Accesses subscription setting to diasporic (false) or Israeli (true) reading pattern */
+    getIL() {
+        return this.il;
+    }
+
+    /* Mutates disaporic subscripting setting
+     * @param il: boolean repersenting subscription to disaporic (false) or Israeli (true) reading apttern */
+    setIL(il) {
+        this.il = il;
+    }
+
+    /* Accesses set aliyot count */
+    getAliyotCount() {
+        return this.a;
+    }
+
+    /* Mutates aliyot count
+     * @param a: number repersenting aliyot count to update field */
+    setAliyotCount(a) {
+        this.a = a;
+    }
+
+    /* Accesses subscription to High Holiday aliyot count (true) or not (false) */
+    getHhRespect() {
+        return this.hhRespect;
+    }
+
+    /* Mutates subscription to High Holiday aliyot count
+     * @param r: subscribes to traditional High Holiday aliyot acount (true) or unsubscribes (false) */
+    setHhRespect(r) {
+        this.hhRespect = r;
+    }
+
+    /* Accesses subscription to Yontif aliyot count (true) or not (false) */
+    getYRespect() {
+        return this.yRespect;
+    }
+
+    /* Mutates subscription to Yontif aliyot count
+     * @param r: subscribes to traditional Yontif aliyot count (true) or unsubscribes (false) */
+    setYRespect(r) {
+        this.yRespect = r;
+    }
+
+    getYontif(y) {
+        return this.yontifs[y];
+    }
+
+    setYontif(y, r) {
+        this.yontifs[y] = r;
+    }
+
+    getTriennial() {
+        return this.triennial.getTriennial();
+    }
+
+    setTriennial(t) {
+        this.triennial.setTriennial(t);
+    }
+
+    getMaftir() {
+        return this.triennial.getMaftir()
+    }
+
+    setTriMaftir() {
+        this.triennial.setMaftir("tri")
+    }
+
+    setTradMaftir() {
+        this.triennial.setMaftir("trad");
+    }
+
+    setNoMaftir() {
+        this.triennial.setMaftir("none");
+    }
+
+    getYitro() {
+        return this.triennial.getYitro();
+    }
+
+    setYitro() {
+        this.triennial.setYitro(t);
+    }
 }
