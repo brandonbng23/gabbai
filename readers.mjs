@@ -91,8 +91,17 @@ export class Readers {
      * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
 
-    psukim(a, flag) {
-        if (!this.settings.getTriennial()) {
+    /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
+     * triennial Torah reading cycle)
+     * @returns integer repersenting first...third year of triennial cycle */
+    calculateTriennial() {
+        return ((this.settings.getHebYear() + 1) % 3) + 1;
+    }
+
+    psukim(a, flag, trad) {
+
+        // Traditional Reading Schedule
+        if (!this.settings.getTriennial() || trad) {
             let sheet = fs.readFileSync("./psukim.csv", "utf8");
             let rows = sheet.split("\n");
 
@@ -112,13 +121,62 @@ export class Readers {
                         }
 
                         if (cells[a].trim() == "ref") {
-                            return this.psukim(a, true);
+                            return this.psukim(a, true, false);
                         } else {
                             this.RO = true;
                             return cells[a].trim();
                         }
                     }
                 }
+            }
+
+        // Triennial Reading Schedule
+        } else {
+
+            // If Parsha Yitro does not subscribe to triennial reading schedule
+            if (!this.settings.getYitro()) {
+                return this.psukim(a, false, true);
+            }
+
+            // If/How Parsha Vaetchanan subscribes to triennial reading schedule
+            if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
+                this.parsha = "Vaetchanan T";
+            } else if (this.parsha == "Vaetchanan") {
+                this.parsha = "Vaetchanan F";
+            }
+
+            let sheet = fs.readFileSync("./triennial.csv", "utf8");
+            let rows = sheet.split("\n");
+
+            for (let row of rows) {
+                let cells = row.split(",");
+
+                if (!this.special.trim() || flag) {
+                    let tri = this.calculateTriennial();
+                    let verses = "";
+
+                    if (a == 8 && !this.settings.getMaftir() == "trad") {
+                        return this.psukim(a, false, true)
+                    }
+
+                    if (cells[0] == this.parsha) {
+                        if (tri == 1) {
+                            verses = cells[a].trim();
+                        } else if (tri == 2) {
+                            verses = cells[a+8].trim();
+                        } else if (tri == 3) {
+                            verses = cells[a+16].trim();
+                        }
+                    }
+
+                    if (verses != "trad" && verses != "double") {
+                        return verses;
+                    } else if (verses == "trad") {
+                        return this.psukim(a, false, true);
+                    } else if (verses == "double") {
+                        return "Currently Unavailable";
+                    } 
+                } 
             }
         }
     }
@@ -136,14 +194,14 @@ export class Readers {
 
         for (let i = 0; i < a+2; i++) {
             this.RO = false;
-            let verses = this.psukim(i+1, false)
+            let verses = this.psukim(i+1, false, false)
 
             if (i < a) {
                 text = "   Aliyah " + (i+1) + "        " + verses;
-            } else if (i == a) {
-                text = "   Maftir          " + this.psukim(8, false);
+            } else if (i == a && this.settings.getMaftir() != "none") {
+                text = "   Maftir          " + this.psukim(8, false, false);
             } else if (i == a+1) {
-                text = "   Haftarah        " + this.psukim(9, false);
+                text = "   Haftarah        " + this.psukim(9, false, false);
             }
 
             let len = text.length;
