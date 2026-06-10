@@ -33,21 +33,19 @@ export class Settings {
         /* Observed Yontifs: For each Yontif, indicates if a special reading should be added to the reading schedule
          * (true) or not (false) when the Yontif is on a weekday.
          * @default (for each Yontif): true */
-        this.yontifs = {rh1: true,
-                        rh2: true,
-                        yk: true,
-                        sukkot1: true,
-                        sukkot2: true,
-                        sukkotCH: true,
-                        sukkotSA: true,
-                        sukkotST: true,
-                        pesach1: true,
-                        pesach2: true,
-                        pesachCH: true,
-                        pesach7: true,
-                        pesach8: true,
-                        shavuot1: true,
-                        shavuot2: true};
+        this.yontifs = {rh1: true,                                  // Rosh Hashana Day 1
+                        rh2: true,                                  // Rosh Hashana Day 2
+                        yk: true,                                   // Yom Kippur
+                        sukkot1: true,                              // Sukkot Day 1
+                        sukkot2: true,                              // Sukkot Day 2
+                        sukkotSA: true,                             // Shmini Atzeret                          
+                        sukkotST: true,                             // Simchat Torah
+                        pesach1: true,                              // Pesach Day 1
+                        pesach2: true,                              // Pesach Day 2
+                        pesach7: true,                              // Pesach Day 7
+                        pesach8: true,                              // Pesach Day 8
+                        shavuot1: true,                             // Shavuot Day 1
+                        shavuot2: true};                            // Shavuot Day 2
 
         /* Triennial Settings: Subscribe to different traditions regarding a triennial Torah reading pattern. For more
          * details, refer to the Triennial class */
@@ -114,43 +112,62 @@ export class Settings {
         this.yRespect = r;
     }
 
+    /* Accesses state of specificed Yontif. If true, weekday Yontif reading will be added if applicable for
+     * specific Yontif 
+     * @param y: string repersenting a Yontif name. Possible names include: rh1, rh2, yk, sukkot1, sukkot2,
+     * sukkotSA, sukkotST, pesach1, peasch2, peasch7, pesach8, shavuot1, shavuot2. See code key above. */
     getYontif(y) {
         return this.yontifs[y];
     }
 
+    /* Mutates state of specific Yontif
+     * @param y: string repersenting a Yontif name. Possible names include: rh1, rh2, sukkot1, sukkot2, sukkotSA,
+     * sukkotST, pesach1, pesach2, pesach7, pesach8, shavuot1, shavuot2. See code key above.
+     * @param r: boolean repersenting state for which to update Yontif */
     setYontif(y, r) {
         this.yontifs[y] = r;
     }
 
+    /* Accesses subscription to triennial reading pattern */
     getTriennial() {
         return this.triennial.getTriennial();
     }
 
+    /* Mutates subscription to triennial reading pattern
+     * @param t: boolean repersenting state for which to update Yontif */
     setTriennial(t) {
         this.triennial.setTriennial(t);
     }
 
+    /* Accesses current Maftir setting
+     * @returns: "tri" for triennial maftir reading, "trad" for traditional maftir reading, or "none" */
     getMaftir() {
         return this.triennial.getMaftir()
     }
 
+    /* Subscribes to triennial maftir reading */
     setTriMaftir() {
         this.triennial.setMaftir("tri")
     }
 
+    /* Subscribes to traditional maftir reading */
     setTradMaftir() {
         this.triennial.setMaftir("trad");
     }
 
+    /* Disables maftir readings */
     setNoMaftir() {
         this.triennial.setMaftir("none");
     }
 
+    /* Accesses triennial subscription to Parsha Yitro */
     getYitro() {
         return this.triennial.getYitro();
     }
 
-    setYitro() {
+    /* Mutates triennial subscription to Parsha Yitro
+     * @param t: subscibes Parsha Yitro to triennial reading pattern (true) or unsubscribes (false) */
+    setYitro(t) {
         this.triennial.setYitro(t);
     }
 }
