@@ -7,7 +7,7 @@ function main() {
     let triennial = new Triennial(false, false, false, false);
     let shul = new Shul("Test Shul", [], [], null);
 
-    let schedule = new Schedule(5786, 3, false, false, triennial, shul.getSettings());
+    let schedule = new Schedule(shul.getSettings());
     shul.setSchedule(schedule);
     
     shul.getSchedule().printSchedule();
