@@ -6,8 +6,6 @@ import { HebrewCalendar,
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
 import { Parsha } from "./parsha.mjs"
-import { Triennial } from "./triennial.mjs"
-import { Settings } from "./settings.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 

@@ -1,5 +1,3 @@
-import { User } from "./user.mjs"
-import { Triennial } from "./triennial.mjs"
 import fs from "fs"
 
 export class Readers {

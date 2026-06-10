@@ -1,9 +1,5 @@
 import { Sedra, 
-    HDate, 
-    Event as HebcalEvent } from '@hebcal/core'
-
-import { Readers } from "./readers.mjs"
-import { Triennial } from "./triennial.mjs"
+         Event as HebcalEvent } from '@hebcal/core'
 
 export class Parsha {
     /* Repersents a parsha as organized in a schedule linked list

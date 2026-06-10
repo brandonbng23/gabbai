@@ -1,6 +1,3 @@
-import { User } from "./user.mjs"
-import { Admin } from "./admin.mjs"
-import { Schedule } from "./schedule.mjs"
 import { Settings } from "./settings.mjs"
 
 export class Shul {
