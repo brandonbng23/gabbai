@@ -53,7 +53,8 @@ export class Settings {
                                        false, // Subscribe to triennial maftir (true) or not (false) @default: false
                                        true, // Subscribe to traditional maftir (true) or not (false) @default: true
                     // NOTE: should a subscription to the triennial and traditional maftir be false, no maftir will be read
-                                       true); // Subscribe to triennial pattern for Parsha Yitro reading (true) or not (false) @default: true
+                                       true, // Subscribe to triennial pattern for Parsha Yitro reading (true) or not (false) @default: true
+                                       true); // Subscribe to triennial pattern for Parsha Vaetchanan or not (false) @default: true
         
         /* Special Seventh: rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
          * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
