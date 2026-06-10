@@ -348,7 +348,7 @@ export class Schedule {
 
                 schedule.append(new Parsha(desc, 
                 this.settings.getHebYear(), 
-                new Readers(desc, this.settings.getFullTriennial(), this.readingOccassion(reading)),
+                new Readers(desc, this.settings, this.readingOccassion(reading)),
                 this.settings.getIL(), 
                 this.calculateAliyot(desc),
                 "Shabbat"),
@@ -384,7 +384,7 @@ export class Schedule {
 
                     let parsha = new Parsha(desc,
                                             this.settings.getHebYear(),
-                                            new Readers(desc, this.settings.getFullTriennial(), ""),
+                                            new Readers(desc, this.settings, ""),
                                             this.settings.getIL(),
                                             this.calculateAliyot(desc),
                                             desc,
@@ -396,7 +396,7 @@ export class Schedule {
                 } else {
                     let parsha = new Parsha(desc, 
                                             this.settings.getHebYear(), 
-                                            new Readers(desc, this.settings.getFullTriennial(), ""), 
+                                            new Readers(desc, this.settings, ""), 
                                             this.settings.getIL(), 
                                             this.calculateAliyot(desc), 
                                             desc, 
