@@ -138,4 +138,9 @@ export class Shul {
         }
     }
 
+    /* Accesses shul's adminstration settings */
+    getSettings() {
+        return this.settings;
+    }
+
 }
