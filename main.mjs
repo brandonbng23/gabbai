@@ -4,7 +4,7 @@ import { Shul } from "./shul.mjs"
 
 function main() {
     let triennial = new Triennial(false, false, false, false);
-    let schedule = new Schedule(5786, 3, false, false, new Triennial(false, false, false, false));
+    let schedule = new Schedule(5786, 3, false, false, triennial);
     let shul = new Shul("Test Shul", [], [], schedule);
     shul.getSchedule().printSchedule();
 }
