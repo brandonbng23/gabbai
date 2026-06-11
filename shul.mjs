@@ -10,7 +10,7 @@ export class Shul {
      * @field schedule: instance of Schedule repersenting a shul's Shabbat and Yontif reading schedule
      * @field url: string repersenting the url of a shul's website
      * @field url: string repersenting the url of a shul's online donation portal */
-    constructor(name, admin, users, schedule, url, donationUrl) {
+    constructor(name, admin, users, schedule, url, donationUrl, settings) {
         this.name = name;
         this.key = Math.floor(Math.random() * 90000000) + 10000000;
         this.admin = admin;
@@ -18,7 +18,7 @@ export class Shul {
         this.schedule = schedule;
         this.url = url;
         this.donationUrl = donationUrl;
-        this.settings = new Settings();
+        this.settings = settings;
     }
 
     /* Accesses shul's name */
