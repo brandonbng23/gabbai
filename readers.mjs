@@ -134,12 +134,15 @@ export class Readers {
         let rows = sheet.split("\n");
         let cycle = this.calculateTriennial(5786);
         let verses = "";
+        let desc = this.parsha
 
-        if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
-            this.parsha = "Vaetchanan T";
-        } else if (this.parsha == "Vaetchanan") {
-            this.parsha = "Vaetchanan F";
-        } 
+        if (a < 8 && this.parsha == "Vaetchanan") {
+            if (!this.settings.getVaetchanan()) {
+                desc += " T";
+            } else {
+                desc += " F";
+            } 
+        }
 
         for (let row of rows) {
             let cells = row.split(",");
@@ -149,11 +152,11 @@ export class Readers {
                     return this.tradPsukim(8, false);
                 } else if (a == 9) {
                     return this.tradPsukim(9, false);
-                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
+                } else if (this.settings.getYitro() && desc == "Yitro") {
                     return this.tradPsukim(a, false);
                 } 
 
-                if (cells[0] == this.parsha) {
+                if (cells[0] == desc) {
                     if (cycle == 1) {
                         verses = cells[a];
                     } else if (cycle == 2) {
@@ -171,9 +174,10 @@ export class Readers {
             return this.tradPsukim(a, false);
         } else if (verses == "double") {
             return "Currently Unavailable";
-        } else {
+        } else if (verses != "") {
             return verses;
-        }
+        } else
+            return this.tradPsukim(a, false);
     }
     
 
