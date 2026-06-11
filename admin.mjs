@@ -1,3 +1,5 @@
+// This comment is to a test for git control
+
 import { User } from "./user.mjs"
 
 export class Admin extends User {
