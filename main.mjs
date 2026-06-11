@@ -1,10 +1,13 @@
+import { Settings } from "./settings.mjs"
 import { Schedule } from "./schedule.mjs"
 import { Shul } from "./shul.mjs"
 
 function main() {
-    let shul = new Shul("Test Shul", [], [], null);
-    shul.getSettings().setHebYear(5787);
-    shul.getSettings().setTriennial(true);
+    let settings = new Settings(5787);
+    settings.setTriennial(true);
+
+    let shul = new Shul("Test Shul", [], [], null, "", "", settings);
+    
 
     let schedule = new Schedule(shul.getSettings());
     shul.setSchedule(schedule);
