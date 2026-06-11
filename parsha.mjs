@@ -1,6 +1,8 @@
 import { Sedra, 
          Event as HebcalEvent } from '@hebcal/core'
 
+// Update class to find settings from settings class, not fields
+
 export class Parsha {
     /* Repersents a parsha as organized in a schedule linked list
      *
@@ -18,6 +20,14 @@ export class Parsha {
         this.triennial = this.triennial;
         this.hebDate = null;
         this.gregDate = null;
+    }
+
+    getName() {
+        return this.name;
+    }
+
+    getHebYear() {
+        return this.hebYear;
     }
 
     /* Accesses occassion field
