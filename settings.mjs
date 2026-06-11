@@ -4,12 +4,16 @@ export class Settings {
     /* Streamlined class repersenting all administration settings. Fields
      * are documented in-line. All fields are set to a default value and be
      * modified with its corresponding methods */
-    constructor() {
+    constructor(hebYear) {
 
         /* Hebrew Year: Starting Hebrew Year
          * @default: 5786 */
-        this.hebYear = 5786;
-
+        if (hebYear) {
+            this.hebYear = hebYear;
+        } else {
+            this.hebYear = 5786;
+        }
+        
         /* Reading Pattern: Subscribe to diasparic (false) or Israeli (true) reading pattern
          * @default: false (diasparic) */
         this.il = false
