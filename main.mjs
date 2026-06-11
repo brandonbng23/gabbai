@@ -6,6 +6,7 @@ function main() {
 
     let schedule = new Schedule(shul.getSettings());
     shul.setSchedule(schedule);
+    shul.getSettings().setTriennial(true);
     
     shul.getSchedule().printSchedule();
 }

@@ -98,19 +98,16 @@ export class Readers {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
-    psukim(a, flag, trad) {
+    tradPsukim(a, flag) {
+        let sheet = fs.readFileSync("./psukim.csv", "utf8");
+        let rows = sheet.split("\n");
 
-        // Traditional Reading Schedule
-        if (!this.settings.getTriennial() || trad) {
-            let sheet = fs.readFileSync("./psukim.csv", "utf8");
-            let rows = sheet.split("\n");
+        for (let row of rows) {
+            let cells = row.split(",");
 
-            for (let row of rows) {
-                let cells = row.split(",");
-
-                if (!this.special?.trim() || flag) {
+            if (!this.special?.trim() || flag) {
                     if (cells[0] == this.parsha) {
-                        return cells[a].trim();
+                        return cells[a]?.trim();
                     }
                 } else {
                     if (cells[0].trim() == this.special) {
@@ -120,68 +117,65 @@ export class Readers {
                             a = 7;
                         }
 
-                        if (cells[a].trim() == "ref") {
-                            return this.psukim(a, true, false);
-                        } else {
-                            this.RO = true;
-                            return cells[a].trim();
-                        }
+                    if (cells[a].trim() == "ref") {
+                        return this.tradPsukim(a, true);
+                        
+                    } else {
+                        this.RO = true;
+                        return cells[a].trim();
                     }
-                }
-            }
-
-        // Triennial Reading Schedule
-        } else {
-
-            // If Parsha Yitro does not subscribe to triennial reading schedule
-            if (!this.settings.getYitro() && this.parsha == "Yitro") {
-                return this.psukim(a, false, true);
-            }
-
-            // If/How Parsha Vaetchanan subscribes to triennial reading schedule
-            if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
-                this.parsha = "Vaetchanan T";
-            } else if (this.parsha == "Vaetchanan") {
-                this.parsha = "Vaetchanan F";
-            }
-
-            let sheet = fs.readFileSync("./triennial.csv", "utf8");
-            let rows = sheet.split("\n");
-
-            for (let row of rows) {
-                let cells = row.split(",");
-
-                if (!this.special.trim() || flag) {
-                    let tri = this.calculateTriennial();
-                    let verses = "";
-
-                    if (a == 8 && !this.settings.getMaftir() == "trad") {
-                        return this.psukim(a, false, true)
-                    }
-
-                    if (cells[0] == this.parsha) {
-                        if (tri == 1) {
-                            verses = cells[a].trim();
-                        } else if (tri == 2) {
-                            verses = cells[a+8].trim();
-                        } else if (tri == 3) {
-                            verses = cells[a+16].trim();
-                        }
-                    }
-
-                    if (verses != "trad" && verses != "double") {
-                        return verses;
-                    } else if (verses == "trad") {
-                        return this.psukim(a, false, true);
-                    } else if (verses == "double") {
-                        return "Currently Unavailable";
-                    } 
-                } else {
-                    return this.psukim(a, false, true);
                 }
             }
         }
     }
+
+    triPsukim(a) {
+        let sheet = fs.readFileSync("./triennial.csv", "utf8");
+        let rows = sheet.split("\n");
+        let cycle = this.calculateTriennial(5786);
+        let verses = "";
+
+        if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
+            this.parsha = "Vaetchanan T";
+        } else if (this.parsha == "Vaetchanan") {
+            this.parsha = "Vaetchanan F";
+        } 
+
+        for (let row of rows) {
+            let cells = row.split(",");
+
+            if (!this.special?.trim()) {
+                if (this.settings.getMaftir() == "trad" && a == 8) {
+                    return this.tradPsukim(8, false);
+                } else if (a == 9) {
+                    return this.tradPsukim(9, false);
+                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
+                    return this.tradPsukim(a, false);
+                } 
+
+                if (cells[0] == this.parsha) {
+                    if (cycle == 1) {
+                        verses = cells[a];
+                    } else if (cycle == 2) {
+                        verses = cells[a+8];
+                    } else if (cycle == 3) {
+                        verses = cells[a+16];
+                    }
+                } 
+            } else {
+                return this.tradPsukim(a, false);
+            }
+        }
+
+        if (verses == "trad") {
+            return this.tradPsukim(a, false);
+        } else if (verses == "double") {
+            return "Currently Unavailable";
+        } else {
+            return verses;
+        }
+    }
+    
 
     /* Formats and prints an instance of Readers
      * All readers for a parsha reading are printed according to the argued
@@ -195,14 +189,23 @@ export class Readers {
 
         for (let i = 0; i < a+2; i++) {
             this.RO = false;
-            let verses = this.psukim(i+1, false, false)
+            let verses = "";
+
+            if (!this.settings.getFullTriennial()) {
+                verses = this.tradPsukim(i+1, false);
+            } else {
+                verses = this.triPsukim(i+1);
+            }
 
             if (i < a) {
                 text = "   Aliyah " + (i+1) + "        " + verses;
             } else if (i == a && this.settings.getMaftir() != "none") {
-                text = "   Maftir          " + this.psukim(8, false, false);
+                if (!this.settings.getFullTriennial() || this.settings.getMaftir() == "trad") {
+                    text = "   Maftir          " + this.tradPsukim(8, false);
+                }
+                text = "   Maftir          " + this.triPsukim(8);
             } else if (i == a+1) {
-                text = "   Haftarah        " + this.psukim(9, false, false);
+                text = "   Haftarah        " + this.tradPsukim(9, false);
             }
 
             let len = text.length;
