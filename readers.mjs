@@ -1,4 +1,5 @@
 import { Settings } from "./settings.mjs"
+import { Schedule } from "./schedule.mjs"
 import fs from "fs"
 
 export class Readers {
@@ -191,8 +192,8 @@ export class Readers {
         }
 
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
-        current = schedule[2].head
-;       while (current) {
+        current = schedule[2].head;
+        while (current) {
             if (current.value.getName() == double) {
                 year3 = true;
                 break;
@@ -270,6 +271,24 @@ export class Readers {
                 pattern = "C";
             }
         }
+
+        let sheet = fs.readFileSync("./double_triennial.csv", "utf8");
+        let rows = sheet.split("\n");
+
+        for (let row of rows) {
+            let cells = row.split(",");
+
+            if (cells[0] == this.parsha) {
+                if (cells[1] == pattern) {
+                    if (cells[2] == cycle) {
+                        console.log(cycle);
+                        return cells[a+2];
+                    }
+                }
+            }
+        }
+
+        return "Verse Finding Failed";
     }
 
     triPsukim(a) {
@@ -313,13 +332,12 @@ export class Readers {
         if (verses == "trad") {
             return this.tradPsukim(a, false);
         } else if (verses == "double") {
-            return "Currently Unavailable";
+            return this.doublePsukim(a);
         } else {
             return verses;
         }
     }
     
-
     /* Formats and prints an instance of Readers
      * All readers for a parsha reading are printed according to the argued
      * quantity of aliyot (either 3, 5, or 7). Maftir and haftarah are always
