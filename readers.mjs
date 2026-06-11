@@ -88,11 +88,6 @@ export class Readers {
         }
     }
 
-    /* Finds verses read for each aliyah according to schedule settings
-     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-     * @param flag: boolean indicating control flow when the method is called recusively 
-     * @returns: string repersenting verses to be read for argued aliyah */
-
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
      * triennial Torah reading cycle)
      * @returns integer repersenting first...third year of triennial cycle */
@@ -100,6 +95,10 @@ export class Readers {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
+    /* Finds verses read for each aliyah according to schedule settings
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @param flag: boolean indicating control flow when the method is called recusively 
+     * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a, flag) {
         let sheet = fs.readFileSync("./psukim.csv", "utf8");
         let rows = sheet.split("\n");
@@ -139,19 +138,19 @@ export class Readers {
         let pattern = "";
 
         if (cycle == 1) {
-            schedule = [new Schedule(new Settings()).createSchedule(),
-                        new Schedule(new Settings().setHebYear(year+1)).createSchedule(),
-                        new Schedule(new Settings().setHebYear(year+2)).createSchedule()
+            schedule = [new Schedule(new Settings()).createSimpleSchedule(),
+                        new Schedule(new Settings(year+1)).createSimpleSchedule(),
+                        new Schedule(new Settings(year+2)).createSimpleSchedule()
             ];
         } else if (cycle == 2) {
-            schedule = [new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
-                        new Schedule(new Settings()).createSchedule(),
-                        new Schedule(new Settings().setHebYear(year+1)).createSchedule()
+            schedule = [new Schedule(new Settings(year-1)).createSimpleSchedule(),
+                        new Schedule(new Settings()).createSimpleSchedule(),
+                        new Schedule(new Settings(year+1)).createSimpleSchedule()
             ];
         } else if (cycle == 3) {
-            schedule = [new Schedule(new Settings().setHebYear(year-2)).createSchedule(),
-                        new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
-                        new Schedule(new Settings()).createSchedule()  
+            schedule = [new Schedule(new Settings(year-2)).createSimpleSchedule(),
+                        new Schedule(new Settings(year-1)).createSimpleSchedule(),
+                        new Schedule(new Settings()).createSimpleSchedule()  
             ];
         }
 
@@ -172,7 +171,7 @@ export class Readers {
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
         let current = schedule[0].head;
         while (current) {
-            if (current.value.getName() == double) {
+            if (current.value["desc"] == double) {
                 year1 = true;
                 break;
             }
@@ -183,7 +182,7 @@ export class Readers {
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
         current = schedule[1].head;
         while(current) {
-            if (current.value.getName() == double) {
+            if (current.value["desc"] == double) {
                 year2 = true;
                 break;
             }
@@ -194,7 +193,7 @@ export class Readers {
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
         current = schedule[2].head;
         while (current) {
-            if (current.value.getName() == double) {
+            if (current.value["desc"] == double) {
                 year3 = true;
                 break;
             }
@@ -352,7 +351,7 @@ export class Readers {
             this.RO = false;
             let verses = "";
 
-            if (!this.settings.getFullTriennial()) {
+            if (!this.settings.getTriennial()) {
                 verses = this.tradPsukim(i+1, false);
             } else {
                 verses = this.triPsukim(i+1);
@@ -361,7 +360,7 @@ export class Readers {
             if (i < a) {
                 text = "   Aliyah " + (i+1) + "        " + verses;
             } else if (i == a && this.settings.getMaftir() != "none") {
-                if (!this.settings.getFullTriennial() || this.settings.getMaftir() == "trad") {
+                if (!this.settings.getTriennial() || this.settings.getMaftir() == "trad") {
                     text = "   Maftir          " + this.tradPsukim(8, false);
                 }
                 text = "   Maftir          " + this.triPsukim(8);
