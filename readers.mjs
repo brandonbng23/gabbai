@@ -322,8 +322,11 @@ export class Readers {
                     } else if (cycle == 3) {
                         verses = cells[a+16];
                     }
+
+                    break;
                 } 
             } else {
+                console.log("trad");
                 return this.tradPsukim(a, false);
             }
         }
@@ -351,10 +354,10 @@ export class Readers {
             this.RO = false;
             let verses = "";
 
-            if (!this.settings.getTriennial()) {
-                verses = this.tradPsukim(i+1, false);
-            } else {
+            if (this.settings.getTriennial()) {
                 verses = this.triPsukim(i+1);
+            } else {
+                verses = this.tradPsukim(i+1, false);
             }
 
             if (i < a) {
