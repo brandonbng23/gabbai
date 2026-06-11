@@ -6,6 +6,7 @@ import { HebrewCalendar,
 import { LinkedList } from "./linkedList.mjs";
 import { Readers } from "./readers.mjs"
 import { Parsha } from "./parsha.mjs"
+import { Settings } from "./settings.mjs"
 
 export class Schedule {
     /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
@@ -31,12 +32,8 @@ export class Schedule {
      * @field schedule: finalized linked list repersenting all readings */
     constructor(settings) {
        this.settings = settings;
-                    
-        // For contstructing
         this.special = []; 
         this.cal = []; 
-        this.resolveCalendar();
-        this.activeSchedule = this.createSchedule();
     }
 
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
@@ -116,9 +113,9 @@ export class Schedule {
      * @returns Event Array accordingly */
     getRawCalendar() {
         let rawCal = HebrewCalendar.calendar({
-            year: this.hebYear,
+            year: this.settings.getHebYear(),
             isHebrewYear: true,
-            il: this.il,
+            il: this.settings.getIL(),
             sedrot: true,
             noRoshChodesh: true,
             noSpecialShabbat:true,
@@ -126,6 +123,7 @@ export class Schedule {
             noModern: true,
             shabbatMevarchim: false
         })
+
         return rawCal;
     }
 
@@ -262,8 +260,6 @@ export class Schedule {
         if (occassions) {
             for (let i = 0; i < occassions.length; i++) {
                 occassions[i] = occassions[i].getDesc().toLowerCase().trim();
-                console.log(occassions[i]);
-                console.log("  " + parsha.getDate())
             }
         }
 
@@ -326,8 +322,69 @@ export class Schedule {
         return "";
     }
 
-    /* Creates a schedule of parshot. Called within constructor. */
+    /* Creates a simplifedc schedule of parshiyot for algorithmic use */
+    createSimpleSchedule() {
+        this.resolveCalendar();
+        let parshaArr = parshaYear (this.settings.getHebYear(), this.settings.getIL()); // @returns array of ParshaEvent
+        let parshaIndex = 0; // Only increments for non-Yontif readings
+        let simpleSchedule = new LinkedList();
+
+        for (let i = 0; i < this.cal.length; i++) {
+            if (this.special[i] == 0) {
+                let reading = parshaArr[parshaIndex];
+                let desc = reading.getDesc().replace("Parashat ", "");
+
+                simpleSchedule.append({desc: desc,
+                                       hebYear: this.settings.getHebYear()
+                                      })
+            } else if (this.special[i] == 1) {
+                let ev = this.cal[i];
+                let desc = ev.getDesc()
+                      .replace(this.settings.getHebYear(), "")
+                      .replace("(CH''M", "Chol HaMoed")
+                      .replace("  ", " ");
+                
+                if (desc.includes("Chol HaMoed")) {
+                    desc = desc.replace("I", "")
+                               .replace("I", "")
+                               .replace("I", "")
+                               .replace("V", "")
+                               .replace("  ", " ")
+                               .replace("  ", " ");
+                }
+
+                desc = desc.trim();
+
+                if (ev.getDate().greg().getDay() == 6) {
+                    desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
+                    if (!desc.includes("Shabbat")) {
+                        desc += "Shabbat";
+                    }
+
+                    if (desc.includes("IS")) {
+                        desc = desc.replace("IS", "I S");
+                    }
+
+                    simpleSchedule.append({desc: desc,
+                                           hebYear: this.settings.getHebYear()
+                                         });
+                } else {
+                    simpleSchedule.append({desc: desc,
+                                           hebYear: this.settings.getHebYear()
+                                         });
+                }
+                    
+                }
+            }
+
+            return simpleSchedule;
+        }
+
+        
+
+    /* Creates a schedule of parshiyot */
     createSchedule() {
+        this.resolveCalendar();
         let parshaArr = parshaYear(this.settings.getHebYear(), this.settings.getIL()); // @returns array of ParshaEvent
         let parshaIndex = 0; // Only increments for non-Yontif readings
         let schedule = new LinkedList()
@@ -407,7 +464,7 @@ export class Schedule {
     name, Hebrew date, Gregorian date, and readers for all aliyot, maftir, and
     haftarah */
     printSchedule() {
-        let current = this.activeSchedule.head;
+        let current = this.createSchedule().head;
         while (current) {
             current.value.printParsha();
             console.log ("\n\n");
