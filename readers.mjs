@@ -1,3 +1,4 @@
+import { Settings } from "./settings.mjs"
 import fs from "fs"
 
 export class Readers {
@@ -129,20 +130,55 @@ export class Readers {
         }
     }
 
+    doublePsukim(a) {
+        let year = this.settings.getHebYear()
+        let cycle = this.calculateTriennial(year);
+        let schedule = [];
+        let double = "";
+
+        if (cycle == 1) {
+            schedule = [new Schedule(new Settings()).createSchedule(),
+                        new Schedule(new Settings().setHebYear(year+1)).createSchedule(),
+                        new Schedule(new Settings().setHebYear(year+2)).createSchedule()
+                ];
+        } else if (cycle == 2) {
+            schedule = [new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
+                        new Schedule(new Settings()).createSchedule(),
+                        new Schedule(new Settings().setHebYear(year+1)).createSchedule()
+                ];
+        } else if (cycle == 3) {
+            schedule;e = [new Schedule(new Settings().setHebYear(year-2)).createSchedule(),
+                          new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
+                          new Schedule(new Settings()).createSchedule()  
+                ];
+        }
+
+        if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
+            double = "Vayakhel-Pekudei";
+        } else if (["Tazria", "Metzora"].includes(this.parsha)) {
+            double = "Tazria-Metzora";
+        } else if (["Achrei Mot", "Kedoshim"].includes(this.parsha)) {
+            double = "Achrei Mot-Kedoshim";
+        } else if (["Behar", "Bechukotai"].includes(this.parsha)) {
+            double = "Behar-Bechukotai";
+        } else if (["Chukat", "Balak"].includes(this.parsha)) {
+            double = "Chukat-Balak";
+        } else if (["Matot", "Masei"].includes(this.parsha)) {
+            double = "Matot-Masei";
+        }
+    }
+
     triPsukim(a) {
         let sheet = fs.readFileSync("./triennial.csv", "utf8");
         let rows = sheet.split("\n");
         let cycle = this.calculateTriennial(5786);
         let verses = "";
-        let desc = this.parsha
 
-        if (a < 8 && this.parsha == "Vaetchanan") {
-            if (!this.settings.getVaetchanan()) {
-                desc += " T";
-            } else {
-                desc += " F";
-            } 
-        }
+        if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
+            this.parsha = "Vaetchanan T";
+        } else if (this.parsha == "Vaetchanan") {
+            this.parsha = "Vaetchanan F";
+        } 
 
         for (let row of rows) {
             let cells = row.split(",");
@@ -152,11 +188,11 @@ export class Readers {
                     return this.tradPsukim(8, false);
                 } else if (a == 9) {
                     return this.tradPsukim(9, false);
-                } else if (this.settings.getYitro() && desc == "Yitro") {
+                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
                     return this.tradPsukim(a, false);
                 } 
 
-                if (cells[0] == desc) {
+                if (cells[0] == this.parsha) {
                     if (cycle == 1) {
                         verses = cells[a];
                     } else if (cycle == 2) {
@@ -174,10 +210,9 @@ export class Readers {
             return this.tradPsukim(a, false);
         } else if (verses == "double") {
             return "Currently Unavailable";
-        } else if (verses != "") {
+        } else {
             return verses;
-        } else
-            return this.tradPsukim(a, false);
+        }
     }
     
 
