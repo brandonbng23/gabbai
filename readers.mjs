@@ -133,38 +133,142 @@ export class Readers {
     doublePsukim(a) {
         let year = this.settings.getHebYear()
         let cycle = this.calculateTriennial(year);
-        let schedule = [];
-        let double = "";
+        let schedule = null;
+        let double = 0;
+        let pattern = "";
 
         if (cycle == 1) {
             schedule = [new Schedule(new Settings()).createSchedule(),
                         new Schedule(new Settings().setHebYear(year+1)).createSchedule(),
                         new Schedule(new Settings().setHebYear(year+2)).createSchedule()
-                ];
+            ];
         } else if (cycle == 2) {
             schedule = [new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
                         new Schedule(new Settings()).createSchedule(),
                         new Schedule(new Settings().setHebYear(year+1)).createSchedule()
-                ];
+            ];
         } else if (cycle == 3) {
-            schedule;e = [new Schedule(new Settings().setHebYear(year-2)).createSchedule(),
-                          new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
-                          new Schedule(new Settings()).createSchedule()  
-                ];
+            schedule = [new Schedule(new Settings().setHebYear(year-2)).createSchedule(),
+                        new Schedule(new Settings().setHebYear(year-1)).createSchedule(),
+                        new Schedule(new Settings()).createSchedule()  
+            ];
         }
 
         if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
-            double = "Vayakhel-Pekudei";
+            double = 1;              //Vayakhel-Pekudei
         } else if (["Tazria", "Metzora"].includes(this.parsha)) {
-            double = "Tazria-Metzora";
+            double = 2;             //Tazria-Metzora
         } else if (["Achrei Mot", "Kedoshim"].includes(this.parsha)) {
-            double = "Achrei Mot-Kedoshim";
+            double = 3;             //Achrei Mot-Kedoshim
         } else if (["Behar", "Bechukotai"].includes(this.parsha)) {
-            double = "Behar-Bechukotai";
+            double = 4;             //Behar-Bechukotai
         } else if (["Chukat", "Balak"].includes(this.parsha)) {
-            double = "Chukat-Balak";
+            double = 5;             //Chukat-Balak
         } else if (["Matot", "Masei"].includes(this.parsha)) {
-            double = "Matot-Masei";
+            double = 6;             //Matot-Masei
+        }
+        
+        let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
+        let current = schedule[0].head;
+        while (current) {
+            if (current.value.getName() == double) {
+                year1 = true;
+                break;
+            }
+
+            current = current.next;            
+        }
+
+        let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
+        current = schedule[1].head;
+        while(current) {
+            if (current.value.getName() == double) {
+                year2 = true;
+                break;
+            }
+
+            current = current.next;
+        }
+
+        let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
+        current = schedule[2].head
+;       while (current) {
+            if (current.value.getName() == double) {
+                year3 = true;
+                break;
+            }
+
+            current = current.next;
+        }
+
+        if (double == 1) {          //Vayakhel-Pekudei
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (year1 && !year2 && !year3) {
+                pattern = "C";
+            } else if (!year1 && !year2 && year3) {
+                pattern = "D";
+            } else if (!year1 && year2 && !year3) {
+                pattern = "E";
+            } else if (!year1 && year2 && year3) {
+                pattern = "F";
+            }
+        } else if (double == 2) {   //Tazria-Metzora
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (!year1 && year2 && year3) {
+                pattern = "C";
+            } else if (!year1 && year2 && !year3) {
+                pattern = "D";
+            }
+        } else if (double == 3) {    //Achrei Mot-Kedoshim
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (!year1 && year2 && year3) {
+                pattern = "C";
+            } else if (!year1 && year2 && !year3) {
+                pattern = "D";
+            }
+        } else if (double == 4) {   //Behar-Bechukotai
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (!year1 && year2 && year3) {
+                pattern = "C";
+            } else if (!year1 && year2 && !year3) {
+                pattern = "D";
+            }
+        } else if (double == 5) {   //Chukat-Balak
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (year1 && !year2 && !year3) {
+                pattern = "C";
+            } else if (!year1 && !year2 && year3) {
+                pattern = "D";
+            } else if (!year1 && year2 && !year3) {
+                pattern = "E";
+            } else if (!year1 && year2 && year3) {
+                pattern = "F";
+            } else if (!year1 && !year2 && !year3) {
+                pattern = "G";
+            }
+        } else if (dobule == 6) {   //Matot-Masei
+            if (year1 && year2 && !year3) {
+                pattern = "A";
+            } else if (year1 && !year2 && year3) {
+                pattern = "B";
+            } else if (!year1 && year2 && year3) {
+                pattern = "C";
+            }
         }
     }
 
