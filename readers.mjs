@@ -134,7 +134,7 @@ export class Readers {
         } else {
 
             // If Parsha Yitro does not subscribe to triennial reading schedule
-            if (!this.settings.getYitro()) {
+            if (!this.settings.getYitro() && this.parsha == "Yitro") {
                 return this.psukim(a, false, true);
             }
 
@@ -177,7 +177,7 @@ export class Readers {
                         return "Currently Unavailable";
                     } 
                 } else {
-                    return this.psukim(a, false, false);
+                    return this.psukim(a, false, true);
                 }
             }
         }

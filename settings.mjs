@@ -190,4 +190,8 @@ export class Settings {
     setSpecialSeventh(r) {
         this.specialSeventh = r;
     }
+
+    getVaetchanan() {
+        return this.triennial.setVaetchanan();
+    }
 }
