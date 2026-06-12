@@ -30,8 +30,9 @@ export class Schedule {
      * does not align with Shabbat
      * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
      * @field schedule: finalized linked list repersenting all readings */
-    constructor(settings) {
-       this.settings = settings;
+    constructor(settings, hebYear) {
+        this.settings = settings;
+        this.hebYear = hebYear;
         this.special = []; 
         this.cal = []; 
     }
@@ -113,7 +114,7 @@ export class Schedule {
      * @returns Event Array accordingly */
     getRawCalendar() {
         let rawCal = HebrewCalendar.calendar({
-            year: this.settings.getHebYear(),
+            year: this.hebYear,
             isHebrewYear: true,
             il: this.settings.getIL(),
             sedrot: true,
@@ -325,7 +326,7 @@ export class Schedule {
     /* Creates a simplifedc schedule of parshiyot for algorithmic use */
     createSimpleSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear (this.settings.getHebYear(), this.settings.getIL()); // @returns array of ParshaEvent
+        let parshaArr = parshaYear (this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
         let parshaIndex = 0; // Only increments for non-Yontif readings
         let simpleSchedule = new LinkedList();
 
@@ -335,12 +336,14 @@ export class Schedule {
                 let desc = reading.getDesc().replace("Parashat ", "");
 
                 simpleSchedule.append({desc: desc,
-                                       hebYear: this.settings.getHebYear()
+                                       hebYear: this.hebYear
                                       })
+                parshaIndex++;
+
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                      .replace(this.settings.getHebYear(), "")
+                      .replace(this.hebYear, "")
                       .replace("(CH''M", "Chol HaMoed")
                       .replace("  ", " ");
                 
@@ -366,11 +369,11 @@ export class Schedule {
                     }
 
                     simpleSchedule.append({desc: desc,
-                                           hebYear: this.settings.getHebYear()
+                                           hebYear: this.hebYear
                                          });
                 } else {
                     simpleSchedule.append({desc: desc,
-                                           hebYear: this.settings.getHebYear()
+                                           hebYear: this.hebYear
                                          });
                 }
                     
@@ -385,7 +388,7 @@ export class Schedule {
     /* Creates a schedule of parshiyot */
     createSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear(this.settings.getHebYear(), this.settings.getIL()); // @returns array of ParshaEvent
+        let parshaArr = parshaYear(this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
         let parshaIndex = 0; // Only increments for non-Yontif readings
         let schedule = new LinkedList()
 
@@ -395,8 +398,8 @@ export class Schedule {
                 let desc = reading.getDesc().replace("Parashat ", "");
 
                 schedule.append(new Parsha(desc, 
-                this.settings.getHebYear(), 
-                new Readers(desc, this.settings, this.readingOccassion(reading)),
+                this.HebYear, 
+                new Readers(desc, this.settings, this.readingOccassion(reading), this.hebYear),
                 this.settings.getIL(), 
                 this.calculateAliyot(desc),
                 "Shabbat"),
@@ -405,7 +408,7 @@ export class Schedule {
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace(this.settings.getHebYear(), "")
+                    .replace(this.HebYear, "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
@@ -435,8 +438,8 @@ export class Schedule {
                     }
 
                     let parsha = new Parsha(desc,
-                                            this.settings.getHebYear(),
-                                            new Readers(desc, this.settings, ""),
+                                            this.HebYear,
+                                            new Readers(desc, this.settings, "", this.hebYear),
                                             this.settings.getIL(),
                                             this.calculateAliyot(desc),
                                             desc,
@@ -447,8 +450,8 @@ export class Schedule {
                     
                 } else {
                     let parsha = new Parsha(desc, 
-                                            this.settings.getHebYear(), 
-                                            new Readers(desc, this.settings, ""), 
+                                            this.HebYear, 
+                                            new Readers(desc, this.settings, "", this.hebYear), 
                                             this.settings.getIL(), 
                                             this.calculateAliyot(desc), 
                                             desc, 

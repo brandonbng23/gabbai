@@ -17,7 +17,7 @@ export class Readers {
      * @field h: User repersenting haftarh reader 
      * @default All fields are set null by default. Readers will be assigned
      * when users register for an honor */
-    constructor(parsha, settings, special) {
+    constructor(parsha, settings, special, hebYear) {
         this.settings = settings;
         this.parsha = parsha;
         this.special = special;
@@ -31,6 +31,7 @@ export class Readers {
         this.m = null; // Maftir reader
         this.h = null; // Haftarah reader
         this.RO = false; // Boolean repersenting if a reading is special or not
+        this.hebYear = hebYear;
     }
 
     /* Accesses reader assigned to a reading
@@ -133,45 +134,78 @@ export class Readers {
     doublePsukim(a) {
         let year = this.settings.getHebYear()
         let cycle = this.calculateTriennial(year);
-        let schedule = null;
-        let double = 0;
-        let pattern = "";
+        let schedule = [];
+        let pattern = "no pattern found";
+        let thisDouble = "";
+        let doubles = {0: "Vaykhel-Pekudei",
+                       1: "Tazria-Metzora",
+                       2: "Achrei Mot-Kedoshim",
+                       3: "Behar-Bechukotai",
+                       4: "Chukat-Balak",
+                       5: "Matot-Masei"
+            };
+
+        let simpleSchedule = new Schedule(new Settings(year));
 
         if (cycle == 1) {
-            schedule = [new Schedule(new Settings()).createSimpleSchedule(),
-                        new Schedule(new Settings(year+1)).createSimpleSchedule(),
-                        new Schedule(new Settings(year+2)).createSimpleSchedule()
-            ];
+            schedule = [];
+
+            simpleSchedule.year = year;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = year + 1;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = year + 2;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
         } else if (cycle == 2) {
-            schedule = [new Schedule(new Settings(year-1)).createSimpleSchedule(),
-                        new Schedule(new Settings()).createSimpleSchedule(),
-                        new Schedule(new Settings(year+1)).createSimpleSchedule()
-            ];
+            schedule = [];
+
+            simpleSchedule.year = year - 1;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = 1;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = year + 1;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
         } else if (cycle == 3) {
-            schedule = [new Schedule(new Settings(year-2)).createSimpleSchedule(),
-                        new Schedule(new Settings(year-1)).createSimpleSchedule(),
-                        new Schedule(new Settings()).createSimpleSchedule()  
-            ];
+            schedule = [];
+
+            simpleSchedule.year = year - 2;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = year - 1;
+            schedule.push(simpleSchedule.createSimpleSchedule());
+
+            simpleSchedule.year = year;
+            schedule.push(simpleSchedule.createSimpleSchedule());
         }
 
+        console.log(year-1);
+        console.log(year);
+        console.log(year+1);
         if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
-            double = 1;              //Vayakhel-Pekudei
+            thisDouble = doubles[0];              //Vayakhel-Pekudei
         } else if (["Tazria", "Metzora"].includes(this.parsha)) {
-            double = 2;             //Tazria-Metzora
+            thisDouble = doubles[1];             //Tazria-Metzora
         } else if (["Achrei Mot", "Kedoshim"].includes(this.parsha)) {
-            double = 3;             //Achrei Mot-Kedoshim
+            thisDouble = doubles[2];          //Achrei Mot-Kedoshim
         } else if (["Behar", "Bechukotai"].includes(this.parsha)) {
-            double = 4;             //Behar-Bechukotai
+            thisDouble = doubles[3];           //Behar-Bechukotai
         } else if (["Chukat", "Balak"].includes(this.parsha)) {
-            double = 5;             //Chukat-Balak
+            thisDouble = doubles[4];             //Chukat-Balak
         } else if (["Matot", "Masei"].includes(this.parsha)) {
-            double = 6;             //Matot-Masei
+            thisDouble = doubles[5];             //Matot-Masei
         }
         
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
         let current = schedule[0].head;
         while (current) {
-            if (current.value["desc"] == double) {
+            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            if (current.value["desc"] == thisDouble) {
                 year1 = true;
                 break;
             }
@@ -182,7 +216,9 @@ export class Readers {
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
         current = schedule[1].head;
         while(current) {
-            if (current.value["desc"] == double) {
+            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            
+            if (current.value["desc"] == thisDouble) {
                 year2 = true;
                 break;
             }
@@ -193,7 +229,8 @@ export class Readers {
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
         current = schedule[2].head;
         while (current) {
-            if (current.value["desc"] == double) {
+            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            if (current.value["desc"] == thisDouble) {
                 year3 = true;
                 break;
             }
@@ -201,7 +238,7 @@ export class Readers {
             current = current.next;
         }
 
-        if (double == 1) {          //Vayakhel-Pekudei
+        if (thisDouble == doubles[0]) {          //Vayakhel-Pekudei
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -215,7 +252,7 @@ export class Readers {
             } else if (!year1 && year2 && year3) {
                 pattern = "F";
             }
-        } else if (double == 2) {   //Tazria-Metzora
+        } else if (thisDouble == doubles[1]) {   //Tazria-Metzora
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -225,7 +262,7 @@ export class Readers {
             } else if (!year1 && year2 && !year3) {
                 pattern = "D";
             }
-        } else if (double == 3) {    //Achrei Mot-Kedoshim
+        } else if (thisDouble == doubles[2]) {    //Achrei Mot-Kedoshim
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -235,7 +272,7 @@ export class Readers {
             } else if (!year1 && year2 && !year3) {
                 pattern = "D";
             }
-        } else if (double == 4) {   //Behar-Bechukotai
+        } else if (thisDouble == doubles[3]) {   //Behar-Bechukotai
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -245,7 +282,7 @@ export class Readers {
             } else if (!year1 && year2 && !year3) {
                 pattern = "D";
             }
-        } else if (double == 5) {   //Chukat-Balak
+        } else if (thisDouble == doubles[4]) {   //Chukat-Balak
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -261,7 +298,7 @@ export class Readers {
             } else if (!year1 && !year2 && !year3) {
                 pattern = "G";
             }
-        } else if (dobule == 6) {   //Matot-Masei
+        } else if (thisDouble == doubles[5]) {   //Matot-Masei
             if (year1 && year2 && !year3) {
                 pattern = "A";
             } else if (year1 && !year2 && year3) {
@@ -271,22 +308,30 @@ export class Readers {
             }
         }
 
+        console.log(thisDouble + " | Year 1: " + year1 + " | Year 2: " + year2 + " | Year 3: " + year3);
+        console.log("Pattern: " + pattern);
+
         let sheet = fs.readFileSync("./double_triennial.csv", "utf8");
         let rows = sheet.split("\n");
 
         for (let row of rows) {
             let cells = row.split(",");
 
-            if (cells[0] == this.parsha) {
-                if (cells[1] == pattern) {
-                    if (cells[2] == cycle) {
+            if (cells[0].trim() == this.parsha) {
+                // console.log("Matched Parsha");
+                if (cells[1].trim() == pattern) {
+                    // console.log("Matched Pattern");
+                    if (cells[2].trim()?.toString() == cycle.toString()) {
+                        // console.log("Matched Triennial Cycle");
                         console.log(cycle);
-                        return cells[a+2];
+                        return cells[a+2].trim();
                     }
                 }
             }
         }
-
+        // console.log(pattern);
+        // console.log(this.parsha);
+        console.log(cycle);
         return "Verse Finding Failed";
     }
 
