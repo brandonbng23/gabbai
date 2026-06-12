@@ -464,6 +464,9 @@ export class Schedule {
     name, Hebrew date, Gregorian date, and readers for all aliyot, maftir, and
     haftarah */
     printSchedule() {
+        this.settings.getFullTriennial().printTriennial();
+        console.log("\n");
+
         let current = this.createSchedule().head;
         while (current) {
             current.value.printParsha();
