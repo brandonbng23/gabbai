@@ -85,15 +85,15 @@ export class Triennial {
         console.log("Maftir: " + this.getMaftir());
         
         if (this.yitro) {
-            console.log("Yitro: Tri");
+            console.log("Yitro: tri");
         } else if (!this.yitro) {
-            console.log("Ytrio: Traditional");
+            console.log("Ytrio: traditional");
         }
 
         if (this.vaetchanan) {
-            console.log("Vaetchanan: Tri");
+            console.log("Vaetchanan: tri");
         } else if (!this.vaetchanan) {
-            console.log("Vaetchanan: Annual 10 Commandments");
+            console.log("Vaetchanan: annual 10 commandments");
         }
 
     }
