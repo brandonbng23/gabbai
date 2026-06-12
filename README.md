@@ -8,9 +8,7 @@ Gabbai is currently being developed as a proof of concept, that's what you'll fi
 1. Proof of Concept (Current stage)
     > Development of the backend<br/>
     > Preliminary Testing<br/>
-    > Currently in Development: Adding Psukim (verses) to each reading while allowing for differing tradtions <br/>
-    > Next: build a test-based interface by developing a Python script<br/>
-
+    > Currently: Fixing issues relating to the triennial!
 2. Prototype (Alpha)
     > Build frontend with React, some styling
 
