@@ -430,6 +430,10 @@ export class Schedule {
                         desc = desc.replace("IS", "I S");
                     }
 
+                    if (desc.includes("aS")) {
+                        desc = desc.replace("aS", "a S");
+                    }
+
                     let parsha = new Parsha(desc,
                                             this.settings.getHebYear(),
                                             new Readers(desc, this.settings, ""),
