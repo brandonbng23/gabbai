@@ -326,7 +326,6 @@ export class Readers {
                     break;
                 } 
             } else {
-                console.log("trad");
                 return this.tradPsukim(a, false);
             }
         }
@@ -354,10 +353,10 @@ export class Readers {
             this.RO = false;
             let verses = "";
 
-            if (this.settings.getTriennial()) {
-                verses = this.triPsukim(i+1);
-            } else {
+            if (!this.settings.getTriennial()) {
                 verses = this.tradPsukim(i+1, false);
+            } else {
+                verses = this.triPsukim(i+1)
             }
 
             if (i < a) {
