@@ -79,4 +79,22 @@ export class Triennial {
      setVaetchanan(v) {
         this.vaetchanan = v;
     }
+
+    printTriennial() {
+        console.log("Triennial: " + this.triennial);
+        console.log("Maftir: " + this.getMaftir());
+        
+        if (this.yitro) {
+            console.log("Yitro: Tri");
+        } else if (!this.yitro) {
+            console.log("Ytrio: Traditional");
+        }
+
+        if (this.vaetchanan) {
+            console.log("Vaetchanan: Tri");
+        } else if (!this.vaetchanan) {
+            console.log("Vaetchanan: Annual 10 Commandments");
+        }
+
+    }
 }
