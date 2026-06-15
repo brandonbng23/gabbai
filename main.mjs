@@ -4,7 +4,7 @@ import { Shul } from "./shul.mjs"
 
 function main() {
     let settings = new Settings(5787);
-    settings.setTriennial(true);
+    settings.setTriennial(false);
 
     let shul = new Shul("Test Shul", [], [], null, "", "", settings);
     
