@@ -326,7 +326,7 @@ export class Schedule {
     /* Creates a simplifedc schedule of parshiyot for algorithmic use */
     createSimpleSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear (this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
+        let parshaArr = parshaYear(this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
         let parshaIndex = 0; // Only increments for non-Yontif readings
         let simpleSchedule = new LinkedList();
 
@@ -397,13 +397,18 @@ export class Schedule {
                 let reading = parshaArr[parshaIndex];
                 let desc = reading.getDesc().replace("Parashat ", "");
 
-                schedule.append(new Parsha(desc, 
-                this.HebYear, 
-                new Readers(desc, this.settings, this.readingOccassion(reading), this.hebYear),
-                this.settings.getIL(), 
-                this.calculateAliyot(desc),
-                "Shabbat"),
-                this.settings.getFullTriennial());
+                schedule.append(new Parsha(this.settings,
+                                           desc, 
+                                           this.HebYear, 
+                                           new Readers(desc, 
+                                           this.settings, 
+                                           this.readingOccassion(reading), 
+                                           this.hebYear),
+                                this.settings.getIL(), 
+                                this.calculateAliyot(desc),
+                                "Shabbat"),
+                                this.settings.getFullTriennial());
+                                
                 parshaIndex++;
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
@@ -437,9 +442,13 @@ export class Schedule {
                         desc = desc.replace("aS", "a S");
                     }
 
-                    let parsha = new Parsha(desc,
+                    let parsha = new Parsha(this.settings,
+                                            desc,
                                             this.HebYear,
-                                            new Readers(desc, this.settings, "", this.hebYear),
+                                            new Readers(desc, 
+                                                        this.settings, 
+                                                        "", 
+                                                        this.hebYear),
                                             this.settings.getIL(),
                                             this.calculateAliyot(desc),
                                             desc,
@@ -449,9 +458,13 @@ export class Schedule {
                     schedule.append(parsha);
                     
                 } else {
-                    let parsha = new Parsha(desc, 
+                    let parsha = new Parsha(this.settings,
+                                            desc, 
                                             this.HebYear, 
-                                            new Readers(desc, this.settings, "", this.hebYear), 
+                                            new Readers(desc, 
+                                                        this.settings, 
+                                                        "", 
+                                                        this.hebYear), 
                                             this.settings.getIL(), 
                                             this.calculateAliyot(desc), 
                                             desc, 
