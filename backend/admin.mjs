@@ -1,4 +1,4 @@
-import { User } from "./user.mjs"
+import { User } from "./backend/user.mjs"
 
 export class Admin extends User {
     /* Repersents a user who is a shul's administrator who will be granted permissions regarding 

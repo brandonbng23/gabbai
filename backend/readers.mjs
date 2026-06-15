@@ -102,7 +102,7 @@ export class Readers {
      * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a, flag) {
-        let sheet = fs.readFileSync("./psukim.csv", "utf8");
+        let sheet = fs.readFileSync("./backend/psukim.csv", "utf8");
         let rows = sheet.split("\n");
 
         for (let row of rows) {
@@ -280,7 +280,7 @@ export class Readers {
             }
         }
 
-        let sheet = fs.readFileSync("./double_triennial.csv", "utf8");
+        let sheet = fs.readFileSync("./backend/double_triennial.csv", "utf8");
         let rows = sheet.split("\n");
 
         for (let row of rows) {
@@ -299,7 +299,7 @@ export class Readers {
     }
 
     triPsukim(a) {
-        let sheet = fs.readFileSync("./triennial.csv", "utf8");
+        let sheet = fs.readFileSync("./backend/triennial.csv", "utf8");
         let rows = sheet.split("\n");
         let cycle = this.calculateTriennial(5786);
         let verses = "";
