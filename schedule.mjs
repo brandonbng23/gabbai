@@ -327,69 +327,7 @@ export class Schedule {
         }
 
         return "";
-    }
-
-    /* Creates a simplifedc schedule of parshiyot for algorithmic use */
-    createSimpleSchedule() {
-        this.resolveCalendar();
-        let parshaArr = parshaYear(this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
-        let parshaIndex = 0; // Only increments for non-Yontif readings
-        let simpleSchedule = new LinkedList();
-
-        for (let i = 0; i < this.cal.length; i++) {
-            if (this.special[i] == 0) {
-                let reading = parshaArr[parshaIndex];
-                let desc = reading?.getDesc()?.replace("Parashat ", "");
-
-                simpleSchedule.append({desc: desc,
-                                       hebYear: this.hebYear
-                                      })
-                parshaIndex++;
-
-            } else if (this.special[i] == 1) {
-                let ev = this.cal[i];
-                let desc = ev.getDesc()
-                      .replace(this.hebYear, "")
-                      .replace("(CH''M", "Chol HaMoed")
-                      .replace("  ", " ");
-                
-                if (desc.includes("Chol HaMoed")) {
-                    desc = desc.replace("I", "")
-                               .replace("I", "")
-                               .replace("I", "")
-                               .replace("V", "")
-                               .replace("  ", " ")
-                               .replace("  ", " ");
-                }
-
-                desc = desc.trim();
-
-                if (ev.getDate().greg().getDay() == 6) {
-                    desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
-                    if (!desc.includes("Shabbat")) {
-                        desc += "Shabbat";
-                    }
-
-                    if (desc.includes("IS")) {
-                        desc = desc.replace("IS", "I S");
-                    }
-
-                    simpleSchedule.append({desc: desc,
-                                           hebYear: this.hebYear
-                                         });
-                } else {
-                    simpleSchedule.append({desc: desc,
-                                           hebYear: this.hebYear
-                                         });
-                }
-                    
-            }
-        }
-        
-        return simpleSchedule;
-    }
-
-        
+    }        
 
     /* Creates a schedule of parshiyot */
     createSchedule() {
