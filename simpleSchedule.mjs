@@ -28,15 +28,38 @@ export class SimpleSchedule {
         }
     }
 
+    /* Determines if this.hebYear is a leap year or not
+     * @returns boolean repersenting if this.hebYear is a leap year (true) or not (false) */
+    isLeap() {
+        let leapKey = this.hebYear % 19;
+        
+        return (leapKey == 0 ||
+                leapKey == 3 ||
+                leapKey == 6 ||
+                leapKey == 8 ||
+                leapKey == 11 ||
+                leapKey == 14 ||
+                leapKey == 17
+            )
+    }
+
+
     /* Creates raw calendar of parshiyot
      * @returns array of ParshaEvents */
     getRawCalendar() {
-                return HebrewCalendar.calendar({
-               year: this.hebYear,
-               //isHebrewYear: true,
+        let endDate = null;
+
+        if (this.isLeap()) {
+            endDate = new HDate(29, 13, this.hebYear);
+        } else {
+            endDate = new HDate(29, 12, this.hebYear);
+        }
+
+        return HebrewCalendar.calendar({
+               start: new HDate(1, 1, this.hebYear),
+               end: endDate,
                il: this.settings.getIL(),
                sedrot: true,
-               noHolidays: true,
                noSpecialShabbat: true,
                noMinorFast: true,
                noModern: true,
@@ -52,8 +75,8 @@ export class SimpleSchedule {
 
         for (let i = 0; i < rawCal.length; i++) {
             schedule.append({desc: rawCal[i]
-                                   .getDesc()
-                                   .toLowerCase(),
+                                        .getDesc()
+                                        .trim(),
                              hebYear: this.hebYear
                         });
         }
