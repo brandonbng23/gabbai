@@ -254,7 +254,7 @@ export class Settings {
             aliyotCount: this.a,
             hhRespect: this.hhRespect,
             yRespect: this.yRespect,
-            yontifs = this.yontifs,
+            yontifs: this.yontifs,
             triennial: this.triennial,
             specialSeventh: this.specialSeventh
         };
