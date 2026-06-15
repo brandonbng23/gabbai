@@ -425,7 +425,7 @@ export class Schedule {
 
         let current = this.createSchedule().head;
         while (current) {
-            data.append(current.value.getParshaData());
+            data.push(current.value.getParshaData());
             current = current.next;
         }
 
