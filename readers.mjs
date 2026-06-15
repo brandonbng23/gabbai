@@ -150,37 +150,37 @@ export class Readers {
         if (cycle == 1) {
             schedule = [];
 
-            simpleSchedule.year = year;
+            simpleSchedule.hebYear = year;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = year + 1;
+            simpleSchedule.hebYear = year + 1;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = year + 2;
+            simpleSchedule.hebYear = year + 2;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
         } else if (cycle == 2) {
             schedule = [];
 
-            simpleSchedule.year = year - 1;
+            simpleSchedule.hebYear = year - 1;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = 1;
+            simpleSchedule.hebYear = 1;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = year + 1;
+            simpleSchedule.hebYear = year + 1;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
         } else if (cycle == 3) {
             schedule = [];
 
-            simpleSchedule.year = year - 2;
+            simpleSchedule.hebYear = year - 2;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = year - 1;
+            simpleSchedule.hebYear = year - 1;
             schedule.push(simpleSchedule.createSimpleSchedule());
 
-            simpleSchedule.year = year;
+            simpleSchedule.hebYear = year;
             schedule.push(simpleSchedule.createSimpleSchedule());
         }
 
