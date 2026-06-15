@@ -422,10 +422,12 @@ export class Schedule {
      * @returns object retaining all schedule data */
     getScheduleData() {
         let data = [];
+        let counter = 1;
 
         let current = this.createSchedule().head;
         while (current) {
-            data.push(current.value.getParshaData());
+            data.push(current.value.getParshaData(counter));
+            counter++;
             current = current.next;
         }
 

@@ -45,8 +45,9 @@ export class Parsha {
 
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
-    getParshaData() {
+    getParshaData(id) {
         return {
+            id: id,
             name: this.name,
             aliyotCount: this.a,
             occassion: this.occassion,
