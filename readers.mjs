@@ -13,25 +13,29 @@ export class Readers {
      * @field parsha: string repersenting name of parsha associated with reading
      * @field triennial: instance of triennail repersenting schedule triennial settings
      * @field special: string repersenting name of occassion that employs a special reading
-     * @field fields a1-a7: User repersenting reader of each aliyot (aliyot 1-7)
-     * @field m: User repersent maftir reader
-     * @field h: User repersenting haftarh reader 
+     * @field fields a1-a7: Objects repersenting registed user and assigned verses for each aliyot (aliyot 1-7)
+     * @field m: Objects repersenting registed user and assigned verses for maftir
+     * @field h: Objects repersenting registed user and assigned verses for haftarah
      * @default All fields are set null by default. Readers will be assigned
-     * when users register for an honor */
+     * when users register for an honor 
+     * 
+     * @field RO: boolean repersenting if a reading is special (true) or not (false)
+     * @field hebYear: Hebrew Year when reading will take place */
+
     constructor(parsha, settings, special, hebYear) {
         this.settings = settings;
         this.parsha = parsha;
         this.special = special;
-        this.a1 = null; // First aliyah reader
-        this.a2 = null; // Second aliyah reader
-        this.a3 = null; // Third aliyah reader
-        this.a4 = null; // Fourth aliyah reader
-        this.a5 = null; // Fifth aliyah reader
-        this.a6 = null; // Sixth aliyah reader
-        this.a7 = null; // Seventh aliyah reader
-        this.m = null; // Maftir reader
-        this.h = null; // Haftarah reader
-        this.RO = false; // Boolean repersenting if a reading is special or not
+        this.a1 = {user: null, verses: null};       // First aliyah reader
+        this.a2 = {user: null, verses: null};       // Second aliyah reader
+        this.a3 = {user: null, verses: null};       // Third aliyah reader
+        this.a4 = {user: null, verses: null};       // Fourth aliyah reader
+        this.a5 = {user: null, verses: null};       // Fifth aliyah reader
+        this.a6 = {user: null, verses: null};       // Sixth aliyah reader
+        this.a7 = {user: null, verses: null};       // Seventh aliyah reader
+        this.m = {user: null, verses: null};        // Maftir reader
+        this.h = {user: null, verses: null};        // Haftarah reader
+        this.RO = false;                            
         this.hebYear = hebYear;
     }
 
