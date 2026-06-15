@@ -418,10 +418,18 @@ export class Schedule {
         return schedule;
     } 
 
-    /* Returns all schedule data for parshiyot, readers, administrators, and users
+    /* Returns all schedule data for parshiyot schedule
      * @returns object retaining all schedule data */
     getScheduleData() {
-        return;
+        let data = [];
+
+        let current = this.createSchedule().head;
+        while (current) {
+            data.append(current.value.getParshaData());
+            current = current.next;
+        }
+
+        return data;
     }
 
     /* Formats and prints an instance of schedule. Using methods of imported
