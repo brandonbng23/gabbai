@@ -185,7 +185,6 @@ export class Readers {
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
         let current = schedule[0].head;
         while (current) {
-            
             if (current.value["desc"].includes(thisDouble)) {
                 console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year1 = true;
@@ -198,7 +197,6 @@ export class Readers {
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
         current = schedule[1].head;
         while(current) {
-            
             if (current.value["desc"].includes(thisDouble)) {
                 console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year2 = true;
@@ -211,7 +209,6 @@ export class Readers {
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
         current = schedule[2].head;
         while (current) {
-            
             if (current.value["desc"].includes(thisDouble)) {
                 console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year3 = true;
