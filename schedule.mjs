@@ -355,7 +355,7 @@ export class Schedule {
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace(this.HebYear, "")
+                    .replace(this.hebYear, "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
@@ -371,6 +371,7 @@ export class Schedule {
                 desc = desc.trim();
 
                 if (ev.getDate().greg().getDay() == 6) {
+                    desc = desc.replace(this.hebYear, "");
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                     if (!desc.includes("Shabbat")) {
                         desc += "Shabbat";
