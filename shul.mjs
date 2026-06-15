@@ -140,4 +140,10 @@ export class Shul {
         return this.settings;
     }
 
+    /* Accesses all shul data
+     * @returns objeect retaining all shul data */
+    getShulData() {
+        return;
+    }
+
 }
