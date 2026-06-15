@@ -6,8 +6,9 @@ import { HebrewCalendar,
 import { Settings } from "./settings.mjs"
 import { LinkedList } from "./linkedList.mjs"
 
-export class simpleSchedule {
-    /* Builds a very simple schedule to accesses only a Parsha name and year
+export class SimpleSchedule {
+    /* Builds a very simple schedule to accesses only a Parsha name and year. Exists as its own
+     * class to avoid redcursion within the Schedule class.
      *
      * @field settings: instance of Settings to retain administrator's settings,
      * namely diaspara (false) or Israeli (true) settings
@@ -39,7 +40,7 @@ export class simpleSchedule {
                noSpecialShabbat: true,
                noMinorFast: true,
                noModern: true,
-               shabbatMevrachim: false
+               shabbatMevarchim: false
         })
     }
 
