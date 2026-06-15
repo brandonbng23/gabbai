@@ -223,7 +223,7 @@ export class Schedule {
                  "Pesach I",
                  "Pesach II",
                  "Pesach VII",
-                 "Pesach VII",
+                 "Pesach VIII",
                  "Shavuot I",
                  "Shavuot II"].includes(desc)) {
                 if (this.settings.getYRespect()) {
