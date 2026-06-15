@@ -43,38 +43,14 @@ export class SimpleSchedule {
             )
     }
 
-
-    /* Creates raw calendar of parshiyot
-     * @returns array of ParshaEvents */
-    getRawCalendar() {
-        let endDate = null;
-
-        if (this.isLeap()) {
-            endDate = new HDate(29, 13, this.hebYear);
-        } else {
-            endDate = new HDate(29, 12, this.hebYear);
-        }
-
-        return HebrewCalendar.calendar({
-               start: new HDate(1, 1, this.hebYear),
-               end: endDate,
-               il: this.settings.getIL(),
-               sedrot: true,
-               noSpecialShabbat: true,
-               noMinorFast: true,
-               noModern: true,
-               shabbatMevarchim: false
-        })
-    }
-
     /* Creates a simple schedule retaining only parsha name and year 
      * @returns: LinkedList instance of Objects holding parsha name and year */
     createSimpleSchedule() {
-        let rawCal = this.getRawCalendar();
+        let parshaCal = parshaYear(this.hebYear, this.settings.getIL());
         let schedule = new LinkedList();
 
-        for (let i = 0; i < rawCal.length; i++) {
-            schedule.append({desc: rawCal[i]
+        for (let i = 0; i < parshaCal.length; i++) {
+            schedule.append({desc: parshaCal[i]
                                         .getDesc()
                                         .trim(),
                              hebYear: this.hebYear
