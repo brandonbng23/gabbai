@@ -378,7 +378,7 @@ export class Readers {
 
     /* Returns reader for data for all readers of parsha
      * @param a: number repersenting quanitity of aliyot (1-7). Maftir and haftarah readers formulated as adminstrator settings allow
-     * @returns object retaining reader data for all argued readers */
+     * @returns array of object retaining reader data for all argued readers */
     getReadersData(a) {
         let data = [];
         let verses = "";
