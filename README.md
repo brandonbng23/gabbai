@@ -24,8 +24,6 @@ Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com) - This is t
 Gabbai makes use of the HebCal API. Hebrew dates, parshiyot, and occassions (yontifs, special shabbatot) are provided according to the Hebrew calendar by HebCal.
 - Hebcal: https://www.hebcal.com/
 - @hebcal/core: https://github.com/hebcal/hebcal-es6
-<br/>
-Gabbai makes use of CSV-Parser for parsing CSV files containing reader and schedule information. CSV-Parser is distrubuted under the MIT License.
 
 
 ### Use of Artifical Intelligence
