@@ -146,10 +146,6 @@ export class Schedule {
         // For viewing descriptions as provided by HebCal
         for (let ev of rawCal) {
             let desc = ev.getDesc().toLowerCase();
-            
-            /* if (!desc.includes("parashat")) {
-                console.log(desc); 
-            } */
 
             // Adding readings for Shabbatot to calendar
             if (desc.includes("parashat")) {
@@ -398,8 +394,8 @@ export class Schedule {
     /* Creates a schedule of parshiyot */
     createSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear(this.hebYear, this.settings.getIL()); // @returns array of ParshaEvent
-        let parshaIndex = 0; // Only increments for non-Yontif readings
+        let parshaArr = parshaYear(this.hebYear, this.settings.getIL());        // @returns array of ParshaEvent
+        let parshaIndex = 0;        // Only increments for non-Yontif readings
         let schedule = new LinkedList()
 
         for (let i = 0; i < this.cal.length; i++) {
