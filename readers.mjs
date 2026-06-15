@@ -361,28 +361,6 @@ export class Readers {
      * @param a: aliyot (1-9) for which data should be returned
      * @returns: object retaining all reader data */
     getReaderData(a) {
-        let user = null;
-
-        if (a == 1) {
-            user = this.a1["user"];
-        } else if (a == 2) {
-            user = this.a1["user"];
-        } else if (a == 3) {
-            user = this.a3["user"];
-        } else if (a == 4) {
-            user = this.a4["user"];
-        } else if (a == 5) {
-            user = this.a5["user"];
-        } else if (a == 6) {
-            user = this.a6["user"];
-        } else if (a == 7) {
-            user = this.a7["user"];
-        } else if (a == 8) {
-            user = this.m["user"];
-        } else if (a == 9) {
-            user = this.h["user"];
-        }
-
         let verses = "";
 
         if (!this.settings.getTriennial()) {
@@ -392,8 +370,9 @@ export class Readers {
         }
 
         return {
-            user: user,
-            verses: verses
+            user: this.getReader(a)["user"],
+            verses: verses,
+            occassion: this.special
         };
     }
 
@@ -401,7 +380,24 @@ export class Readers {
      * @param a: number repersenting quanitity of aliyot (1-7). Maftir and haftarah readers formulated as adminstrator settings allow
      * @returns object retaining reader data for all argued readers */
     getReadersData(a) {
-        return;
+        let data = [];
+        let verses = "";
+
+        for (let i = 0; i < a+2; i++) {
+            if (!this.settings.getTriennial()) {
+                verses = this.tradPsukim(i+1, false);
+            } else {
+                verses = this.triPsukim(i+1);
+            }
+
+            data.push({
+                user: this.getReader(i+1),
+                verses: verses,
+                special: this.special
+            });
+        }
+
+        return data;
     }
     
     /* Formats and prints an instance of Readers
