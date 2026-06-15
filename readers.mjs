@@ -361,14 +361,14 @@ export class Readers {
      * @param a: aliyot (1-9) for which data should be returned
      * @returns: object retaining all reader data */
     getReaderData(a) {
-        console.log("Placeholder");
+        return;
     }
 
     /* Returns reader for data for all readers of parsha
      * @param a: number repersenting quanitity of aliyot (1-7). Maftir and haftarah readers formulated as adminstrator settings allow
      * @returns object retaining reader data for all argued readers */
     getReadersData(a) {
-        console.log("Placeholder");
+        return;
     }
     
     /* Formats and prints an instance of Readers
