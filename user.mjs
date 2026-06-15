@@ -83,4 +83,15 @@ export class User {
         }
         return null;
     }
+
+    /* Returns user data 
+     * @returns: object retaining all user data */
+    getUserData() {
+        return {
+            firstN: this.firstN,
+            lastN: this.lastN,
+            email: this.email,
+            password: this.password
+        }
+    }
 }
