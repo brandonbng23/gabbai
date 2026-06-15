@@ -332,31 +332,6 @@ export class Readers {
 
                     break;
                 }
-
-            /*if (!this.special?.trim()) {
-                if (this.settings.getMaftir() == "trad" && a == 8) {
-                    return this.tradPsukim(8, false);
-                } else if (a == 9) {
-                    return this.tradPsukim(9, false);
-                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
-                    return this.tradPsukim(a, false);
-                } 
-
-                if (cells[0] == this.parsha) {
-                    if (cycle == 1) {
-                        verses = cells[a];
-                    } else if (cycle == 2) {
-                        verses = cells[a+8];
-                    } else if (cycle == 3) {
-                        verses = cells[a+16];
-                    }
-
-                    break;
-                } 
-            } else {
-                if (verses)
-                verses = this.tradPsukim(a, false);
-            }*/
         }
 
         if (this.special) {
