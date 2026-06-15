@@ -51,15 +51,19 @@ export class Settings {
                         shavuot1: true,                             // Shavuot Day 1
                         shavuot2: true};                            // Shavuot Day 2
 
-        /* Triennial Settings: Subscribe to different traditions regarding a triennial Torah reading pattern. For more
-         * details, refer to the Triennial class */
-        this.triennial = new Triennial(false, // Subscribe to triennial (true) or not (false) @default: false
-                                       false, // Subscribe to triennial maftir (true) or not (false) @default: false
-                                       true, // Subscribe to traditional maftir (true) or not (false) @default: true
-                    // NOTE: should a subscription to the triennial and traditional maftir be false, no maftir will be read
-                                       true, // Subscribe to triennial pattern for Parsha Yitro reading (true) or not (false) @default: true
-                                       true); // Subscribe to triennial pattern for Parsha Vaetchanan or not (false) @default: true
+        /* Triennial Settings: Subscribe to different traditions regarding a triennial Torah reading pattern */
+        this.triennial = {triennial: false,     // Subscribe to triennial (true) or not (false) @default: false
+                          triMaftir: false,     // Subscribe to triennial maftir (true) or not (false) @default: true
+                          tradMaftir: true,     // Subscribe to traditional maftir (true) or not (false) @default: true
+                // NOTE: should a subscription to the triennial and traditional maftir both be false, no maftir reading will be established
+                          yitro: true,          // Subscribe to triennial reading pattern for Parsha Yitro containing the 10 Commanemdnets (true) or not (false) @default: true
+                          vaetchanan: true      // Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 10 Commandments and Shema (true) or not (false) @default: true
+                    };
+        this.correctMaftir();
+
+        /* Because triMaftir @defaults to false and tradMaftir @defaults to true, if both fields are set true, 
         
+
         /* Special Seventh: rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
          * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
          * @default: true */
@@ -139,47 +143,80 @@ export class Settings {
 
     /* Accesses subscription to triennial reading pattern */
     getTriennial() {
-        return this.triennial.getTriennial();
+        return this.triennial["triennial"];
     }
 
     /* Mutates subscription to triennial reading pattern
      * @param t: boolean repersenting state for which to update Yontif */
     setTriennial(t) {
-        this.triennial.setTriennial(t);
+        this.triennial["triennial"] = t;
     }
 
     /* Accesses current Maftir setting
      * @returns: "tri" for triennial maftir reading, "trad" for traditional maftir reading, or "none" */
     getMaftir() {
-        return this.triennial.getMaftir()
+        this.correctMaftir();
+
+        if (this.triennial["triMaftir"] == true) {
+            return "tri";
+        } else if (this.triennial["tradMaftir"] == true) {
+            return "trad";
+        } else {
+            return "none";
+        }
     }
 
-    /* Subscribes to triennial maftir reading */
+    /* Subscribes to triennial maftir reading and unsubscribes from traditional maftir when applicable*/
     setTriMaftir() {
-        this.triennial.setMaftir("tri")
+        this.triennial["triMaftir"] = true;
+        this.triennial["tradMaftir"] = false;
     }
 
-    /* Subscribes to traditional maftir reading */
+    /* Subscribes to traditional maftir reading and unsubscribes from triennial maftir when applicable */
     setTradMaftir() {
-        this.triennial.setMaftir("trad");
+        this.triennial["tradMaftir"] = true;
+        this.triennial["triMaftir"] = false;
     }
 
     /* Disables maftir readings */
-    setNoMaftir() {
-        this.triennial.setMaftir("none");
+    disableMaftir() {
+        this.triennial["triMaftir"] = false;
+        this.triennial["tradMaftir"] = false;
     }
 
     /* Accesses triennial subscription to Parsha Yitro */
     getYitro() {
-        return this.triennial.getYitro();
+        return this.triennial["yitro"];
     }
 
     /* Mutates triennial subscription to Parsha Yitro
-     * @param t: subscibes Parsha Yitro to triennial reading pattern (true) or unsubscribes (false) */
-    setYitro(t) {
-        this.triennial.setYitro(t);
+     * @param y: boolean repersenting new susbcription to Parsha Yitro (true) or not (false) */
+    setYitro(y) {
+        this.triennial["yitro"] = y;
     }
 
+    /* Acesses triennial subscription to Parsha Vaetchanan
+     * @returns: boolean repersenting is Parsha Vaetchanan subscribes to the triennial reading pattern (true) or not (false) */
+    getVaetchanan() {
+        return this.triennial["vaetchanan"];
+    }
+
+    /* Mutates triennial subscription to Parsha Vaetchanan
+     * @param v: boolean repersenting new subsciption to Parsha Vaetchanan (true) or not (false) */
+    setVaetchanan(v) {
+        this.triennial["vaetchanan"] = v;
+    }
+
+    /* Corrects maftir fields to make sure only one is true. Because triMaftir defaults to false and tradMaftir defaults to true, when both are set true and
+     * correctMaftir() is called, triMaftir is set false and tradMaftir is set true */
+    correctMaftir() {
+        if (this.triennial["triMaftir"] && this.triennial["tradMaftir"]) {
+                this.setTradMaftir();
+            }
+    }
+
+    /* Access full triennial state
+     * @returns: object repersenting full triennial state */
     getFullTriennial() {
         return this.triennial;
     }
@@ -193,9 +230,5 @@ export class Settings {
      * @param r: overrides final aliyah with special seventh aliyah when applicable (true) or not (false) */
     setSpecialSeventh(r) {
         this.specialSeventh = r;
-    }
-
-    getVaetchanan() {
-        return this.triennial.setVaetchanan();
     }
 }
