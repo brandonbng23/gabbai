@@ -10,15 +10,15 @@ export class Parsha {
      * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(settings, name, hebYear, readers, il, a, occassion, triennial) {
-        this.name = name;
+    constructor(settings, name, hebYear, readers, a, occassion) {
         this.settings = settings;
+        this.triennial = this.settings.getFullTriennial();
+        this.il = this.settings.getIL();
+        this.name = name;
         this.hebYear = hebYear;
-        this.il = il;
         this.readers = readers;
         this.a = a;
         this.occassion = occassion;
-        this.triennial = this.triennial;
         this.hebDate = null;
         this.gregDate = null;
     }
