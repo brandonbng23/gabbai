@@ -228,8 +228,6 @@ export class Settings {
     }
 
     printTriennial() {
-        console.log("PRINT TIME VALUE:", this.triennial.triennial);
-        console.log("OBJECT ID:", this);
         console.log("Triennial: " + this.getTriennial());
         console.log("Maftir: " + this.getMaftir())
 
