@@ -52,7 +52,7 @@ export class Parsha {
             aliyotCount: this.a,
             occassion: this.occassion,
             hebDate: this.hebDate,
-            gregDate: this.gregDate,
+            // gregDate: new Event(this.hebDate).getDate().greg(),
             readers: this.readers.getReadersData()
         };
     }
