@@ -227,8 +227,6 @@ export class Settings {
         this.specialSeventh = r;
     }
 
- 
-
     printTriennial() {
         console.log("PRINT TIME VALUE:", this.triennial.triennial);
         console.log("OBJECT ID:", this);
