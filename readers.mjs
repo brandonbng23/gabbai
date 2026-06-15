@@ -134,38 +134,40 @@ export class Readers {
 
     doublePsukim(a) {
         let year = this.settings.getHebYear()
-        let cycle = this.calculateTriennial(year);
+        let cycle = this.calculateTriennial();
         let schedule = [];
         let pattern = "no pattern found";
         let thisDouble = "";
-        let doubles = {0: "Vaykhel-Pekudei",
-                       1: "Tazria-Metzora",
-                       2: "Achrei Mot-Kedoshim",
-                       3: "Behar-Bechukotai",
-                       4: "Chukat-Balak",
-                       5: "Matot-Masei"
-            };
+        let doubles = ["Vayakhel-Pekudei",
+                       "Tazria-Metzora",
+                       "Achrei Mot-Kedoshim",
+                       "Behar-Bechukotai",
+                       "Chukat-Balak",
+                       "Matot-Masei"
+                    ];
 
+        console.log("Year: " + year + "  |  Cycle: " + cycle);
         if (cycle == 1) {
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+2).createSimpleSchedule());
+            console.log("Year 1: " + year + ", Year 2: " + (year+1) + ", Year 3: " + (year+2));
 
         } else if (cycle == 2) {
             schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
+            console.log("Year 1: " + (year-1) + ", Year 2: " + year + ", Year 3: " + (year+1));
 
         } else if (cycle == 3) {
             schedule.push(new SimpleSchedule(this.settings, year-2).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
+            console.log("Year 1: " + (year-2)+ ", Year 2: " + (year-1) + ", Year 3: " + year);
 
         }
+        console.log();
 
-        /*console.log(year-1);
-        console.log(year);
-        console.log(year+1);*/
         if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
             thisDouble = doubles[0];              //Vayakhel-Pekudei
         } else if (["Tazria", "Metzora"].includes(this.parsha)) {
@@ -183,8 +185,9 @@ export class Readers {
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
         let current = schedule[0].head;
         while (current) {
-            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
-            if (current.value["desc"] == thisDouble) {
+            
+            if (current.value["desc"].includes(thisDouble)) {
+                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year1 = true;
                 break;
             }
@@ -195,9 +198,9 @@ export class Readers {
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
         current = schedule[1].head;
         while(current) {
-            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
             
-            if (current.value["desc"] == thisDouble) {
+            if (current.value["desc"].includes(thisDouble)) {
+                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year2 = true;
                 break;
             }
@@ -208,8 +211,9 @@ export class Readers {
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
         current = schedule[2].head;
         while (current) {
-            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
-            if (current.value["desc"] == thisDouble) {
+            
+            if (current.value["desc"].includes(thisDouble)) {
+                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year3 = true;
                 break;
             }
