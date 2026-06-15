@@ -5,14 +5,15 @@ An online system that allows a synagogue and its members to coordinate Shabbat T
 Gabbai is currently being developed as a proof of concept, that's what you'll find on this repo. At the latest, the proof of concept should be completed by early June 2026. As the proof of concept grows, it will transition into an alpha stages and include an alpha client. It is an aspiration for completition to happen before Simchat Torah 5787 (or, before October 3, 2026). Check back for updates.
 
 ### Roadmap
-1. Proof of Concept (Current stage)
+1. Proof of Concept (Complete!)
     > Development of the backend<br/>
     > Preliminary Testing<br/>
-    > Currently: Fixing issues relating to the triennial!
-2. Prototype (Alpha)
-    > Build frontend with React, some styling
+2. Prototype (Current Stage)
+    > Prepping the backend to work with a frontend
+    > Build frontend with React and Bootsrap, some styling
+    > "Release" a viable Alpha client
 
-3. Beta
+4. Beta
     > Optimize frontend with CSS
 
 ## Author
