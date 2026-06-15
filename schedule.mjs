@@ -423,10 +423,31 @@ export class Schedule {
     getScheduleData() {
         let data = [];
         let counter = 1;
+        let newEvent = null;
 
         let current = this.createSchedule().head;
         while (current) {
-            data.push(current.value.getParshaData(counter));
+            let event = current.value.getParshaData(counter);
+
+            newEvent = {
+                id: event.id,
+                name: event.name,
+                aliyotCount: event.aliyotCount,
+                occassion: event.occassion,
+                hebDate: event.hebDate
+            }
+
+            let aliyot = [];
+
+            for (let i = 0; i < 7; i++) {
+                if (i < event.aliyotCount) {
+                    aliyot.push(event.readers[i])
+                }
+            }
+
+            newEvent.readers = aliyot;
+
+            data.push(newEvent);
             counter++;
             current = current.next;
         }
