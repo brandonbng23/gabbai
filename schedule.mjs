@@ -489,7 +489,7 @@ export class Schedule {
     haftarah */
     printSchedule() {
         console.log("Hebrew Year: " + this.settings.getHebYear());
-        this.settings.getFullTriennial().printTriennial();
+        this.settings.printTriennial();
         console.log("\n");
 
         let current = this.createSchedule().head;
