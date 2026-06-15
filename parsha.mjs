@@ -10,8 +10,9 @@ export class Parsha {
      * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(name, hebYear, readers, il, a, occassion, triennial) {
+    constructor(settings, name, hebYear, readers, il, a, occassion, triennial) {
         this.name = name;
+        this.settings = settings;
         this.hebYear = hebYear;
         this.il = il;
         this.readers = readers;
@@ -46,6 +47,10 @@ export class Parsha {
      * Parsha name, Hebrew date, Gregorian date, all readers for argued
      * aliyot */
     printParsha() {
+        if (!this.hebYear) {
+            this.hebYear = this.settings.getHebYear();
+        }
+
         if (!this.hebDate) {
             this.hebDate = new Sedra(this.hebYear, this.il).find(this.name);
         }
