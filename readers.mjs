@@ -304,11 +304,15 @@ export class Readers {
         let cycle = this.calculateTriennial(5786);
         let verses = "";
 
-        if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
-            this.parsha = "Vaetchanan T";
-        } else if (this.parsha == "Vaetchanan") {
-            this.parsha = "Vaetchanan F";
-        } 
+        if (a < 8) {
+            if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
+                this.parsha = "Vaetchanan T";
+            } else if (this.parsha == "Vaetchanan") {
+                this.parsha = "Vaetchanan F";
+            } 
+        } else if (this.parsha.toLowerCase().includes("vaetchanan")) {
+            this.parsha = "Vaetchanan";
+        }
 
         for (let row of rows) {
             let cells = row.split(",");
