@@ -46,7 +46,15 @@ export class Parsha {
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
     getParshaData() {
-        return;
+        return {
+            name: this.name,
+            hebYear: this.hebYear,
+            aliyotCount: this.a,
+            occassion: this.occassion,
+            hebDate: this.hebDate,
+            gregDate: this.gregDate,
+            readers: this.readers.getReadersData()
+        };
     }
 
     /* Formats and prints an instance on Parsha
