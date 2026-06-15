@@ -10,10 +10,10 @@ export class Shul {
      * @field schedule: instance of Schedule repersenting a shul's Shabbat and Yontif reading schedule
      * @field url: string repersenting the url of a shul's website
      * @field url: string repersenting the url of a shul's online donation portal */
-    constructor(name, admin, users, schedule, url, donationUrl, settings) {
+    constructor(name, admins, users, schedule, url, donationUrl, settings) {
         this.name = name;
         this.key = Math.floor(Math.random() * 90000000) + 10000000;
-        this.admin = admin;
+        this.admins = admins;
         this.users = users;
         this.schedule = schedule;
         this.url = url;
@@ -34,7 +34,7 @@ export class Shul {
 
     /* Accesses Admin array */
     getAdmin() {
-        return this.admin;
+        return this.admins;
     }
 
     /* Accesses Users array */
@@ -45,7 +45,7 @@ export class Shul {
     /* Adds a admin to Admin array
      * @param admin: instance of Admin to push to Admin array */
     addAdmin(admin) {
-        this.admin.push(admin);
+        this.admins.push(admin);
     }
 
     /* Adds a user to User array
@@ -59,9 +59,9 @@ export class Shul {
     removeAdmin(admin) {
         let temp = [];
 
-        for (let i = 0; i < this.admin.length; i++) {
-            if (admin !== this.admin[i]) {
-                temp.push(this.admin[i]);
+        for (let i = 0; i < this.admins.length; i++) {
+            if (admin !== this.admins[i]) {
+                temp.push(this.admins[i]);
             }
         }
 
@@ -143,7 +143,25 @@ export class Shul {
     /* Accesses all shul data
      * @returns objeect retaining all shul data */
     getShulData() {
-        return;
+        let adminsArr = [];
+        for (let i = 0; i < this.admins; i++) {
+            adminsArr.push(this.admin[i].getAdminData());
+        }
+
+        let usersArr = [];
+        for (let i = 0; i < this.users; i++) {
+            usersArr.push(this.users[i].getUserData());
+        }
+
+        return {
+            name: this.name,
+            key: this.key,
+            admins: adminsArr,
+            users: usersArr,
+            schedule: this.schedule.getScheduleData(),
+            url: this.url,
+            donationUrl: this.donationUrl,
+        }
     }
 
 }
