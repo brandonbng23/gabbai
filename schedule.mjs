@@ -32,7 +32,17 @@ export class Schedule {
      * @field schedule: finalized linked list repersenting all readings */
     constructor(settings, hebYear) {
         this.settings = settings;
-        this.hebYear = hebYear;
+        
+        if (hebYear) {
+            this.hebYear = hebYear;
+        } else {
+            if (settings) {
+                this.hebYear = this.settings.getHebYear();
+            } else {
+                this.hebYear = 1;   // Will formulate for year 1 (marked as such year) and be obviously unintuitive
+            }
+        }
+
         this.special = []; 
         this.cal = []; 
     }
@@ -333,7 +343,7 @@ export class Schedule {
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
                 let reading = parshaArr[parshaIndex];
-                let desc = reading.getDesc().replace("Parashat ", "");
+                let desc = reading?.getDesc()?.replace("Parashat ", "");
 
                 simpleSchedule.append({desc: desc,
                                        hebYear: this.hebYear
@@ -377,11 +387,11 @@ export class Schedule {
                                          });
                 }
                     
-                }
             }
-
-            return simpleSchedule;
         }
+        
+        return simpleSchedule;
+    }
 
         
 
@@ -399,16 +409,14 @@ export class Schedule {
 
                 schedule.append(new Parsha(this.settings,
                                            desc, 
-                                           this.HebYear, 
+                                           this.hebYear, 
                                            new Readers(desc, 
                                            this.settings, 
                                            this.readingOccassion(reading), 
                                            this.hebYear),
-                                this.settings.getIL(), 
                                 this.calculateAliyot(desc),
-                                "Shabbat"),
-                                this.settings.getFullTriennial());
-                                
+                                "Shabbat"));
+
                 parshaIndex++;
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
@@ -444,15 +452,13 @@ export class Schedule {
 
                     let parsha = new Parsha(this.settings,
                                             desc,
-                                            this.HebYear,
+                                            this.hebYear,
                                             new Readers(desc, 
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear),
-                                            this.settings.getIL(),
                                             this.calculateAliyot(desc),
-                                            desc,
-                                            this.settings.getFullTriennial()); 
+                                            desc);
 
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
@@ -460,16 +466,14 @@ export class Schedule {
                 } else {
                     let parsha = new Parsha(this.settings,
                                             desc, 
-                                            this.HebYear, 
+                                            this.hebYear, 
                                             new Readers(desc, 
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear), 
-                                            this.settings.getIL(), 
                                             this.calculateAliyot(desc), 
-                                            desc, 
-                                            this.settings.getFullTriennial());
-                    
+                                            desc);
+
                     parsha.setHebDate(ev.getDate());
                     schedule.append(parsha);
                 }    
@@ -484,6 +488,7 @@ export class Schedule {
     name, Hebrew date, Gregorian date, and readers for all aliyot, maftir, and
     haftarah */
     printSchedule() {
+        console.log("Hebrew Year: " + this.settings.getHebYear());
         this.settings.getFullTriennial().printTriennial();
         console.log("\n");
 
