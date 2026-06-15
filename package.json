@@ -1,13 +1,12 @@
 {
   "dependencies": {
     "@hebcal/core": "^6.3.1",
-    "@hebcal/leyning": "^9.5.4"
+    "@hebcal/leyning": "^9.5.4",
+    "express": "^5.2.1"
   },
-
   "devDependencies": {
     "vite": "^8.0.9"
   },
-
   "scripts": {
     "test": "node main.mjs"
   }
