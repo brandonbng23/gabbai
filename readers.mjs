@@ -146,27 +146,22 @@ export class Readers {
                        "Matot-Masei"
                     ];
 
-        console.log("Year: " + year + "  |  Cycle: " + cycle);
         if (cycle == 1) {
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+2).createSimpleSchedule());
-            console.log("Year 1: " + year + ", Year 2: " + (year+1) + ", Year 3: " + (year+2));
 
         } else if (cycle == 2) {
             schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
-            console.log("Year 1: " + (year-1) + ", Year 2: " + year + ", Year 3: " + (year+1));
 
         } else if (cycle == 3) {
             schedule.push(new SimpleSchedule(this.settings, year-2).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
             schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
-            console.log("Year 1: " + (year-2)+ ", Year 2: " + (year-1) + ", Year 3: " + year);
 
         }
-        console.log();
 
         if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
             thisDouble = doubles[0];              //Vayakhel-Pekudei
@@ -186,7 +181,6 @@ export class Readers {
         let current = schedule[0].head;
         while (current) {
             if (current.value["desc"].includes(thisDouble)) {
-                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year1 = true;
                 break;
             }
@@ -198,7 +192,6 @@ export class Readers {
         current = schedule[1].head;
         while(current) {
             if (current.value["desc"].includes(thisDouble)) {
-                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year2 = true;
                 break;
             }
@@ -210,7 +203,6 @@ export class Readers {
         current = schedule[2].head;
         while (current) {
             if (current.value["desc"].includes(thisDouble)) {
-                console.log(current.value["desc"] + ", " + current.value["hebYear"]);
                 year3 = true;
                 break;
             }
@@ -288,9 +280,6 @@ export class Readers {
             }
         }
 
-        console.log(thisDouble + " | Year 1: " + year1 + " | Year 2: " + year2 + " | Year 3: " + year3);
-        console.log("Pattern: " + pattern);
-
         let sheet = fs.readFileSync("./double_triennial.csv", "utf8");
         let rows = sheet.split("\n");
 
@@ -298,20 +287,14 @@ export class Readers {
             let cells = row.split(",");
 
             if (cells[0].trim() == this.parsha) {
-                // console.log("Matched Parsha");
                 if (cells[1].trim() == pattern) {
-                    // console.log("Matched Pattern");
                     if (cells[2].trim()?.toString() == cycle.toString()) {
-                        // console.log("Matched Triennial Cycle");
-                        console.log(cycle);
                         return cells[a+2].trim();
                     }
                 }
             }
         }
-        // console.log(pattern);
-        // console.log(this.parsha);
-        //console.log(cycle);
+
         return "Verse Finding Failed";
     }
 
@@ -330,7 +313,27 @@ export class Readers {
         for (let row of rows) {
             let cells = row.split(",");
 
-            if (!this.special?.trim()) {
+            if (this.settings.getMaftir() == "trad" && a == 8) {
+                    return this.tradPsukim(8, false);
+                } else if (a == 9) {
+                    return this.tradPsukim(9, false);
+                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
+                    return this.tradPsukim(a, false);
+                } 
+
+                if (cells[0] == this.parsha) {
+                    if (cycle == 1) {
+                        verses = cells[a];
+                    } else if (cycle == 2) {
+                        verses = cells[a+8];
+                    } else if (cycle == 3) {
+                        verses = cells[a+16];
+                    }
+
+                    break;
+                }
+
+            /*if (!this.special?.trim()) {
                 if (this.settings.getMaftir() == "trad" && a == 8) {
                     return this.tradPsukim(8, false);
                 } else if (a == 9) {
@@ -351,17 +354,24 @@ export class Readers {
                     break;
                 } 
             } else {
-                return this.tradPsukim(a, false);
+                if (verses)
+                verses = this.tradPsukim(a, false);
+            }*/
+        }
+
+        if (this.special) {
+            if (verses != "double") {
+                verses = this.tradPsukim(a, false);
             }
         }
 
         if (verses == "trad") {
-            return this.tradPsukim(a, false);
+            verses = this.tradPsukim(a, false);
         } else if (verses == "double") {
-            return this.doublePsukim(a);
-        } else {
-            return verses;
-        }
+            verses = this.doublePsukim(a);
+        } 
+
+        return verses;
     }
     
     /* Formats and prints an instance of Readers
