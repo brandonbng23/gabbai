@@ -418,6 +418,12 @@ export class Schedule {
         return schedule;
     } 
 
+    /* Returns all schedule data for parshiyot, readers, administrators, and users
+     * @returns object retaining all schedule data */
+    getScheduleData() {
+        return;
+    }
+
     /* Formats and prints an instance of schedule. Using methods of imported
     classes, loops through linked list of parshot (schedule) and prints parsha
     name, Hebrew date, Gregorian date, and readers for all aliyot, maftir, and
