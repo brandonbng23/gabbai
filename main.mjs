@@ -1,6 +1,6 @@
-import { Settings } from "./backend/settings.mjs"
-import { Schedule } from "./backend/schedule.mjs"
-import { Shul } from "./backend/shul.mjs"
+import { Settings } from "./settings.mjs"
+import { Schedule } from "./schedule.mjs"
+import { Shul } from "./shul.mjs"
 
 function main() {
     let settings = new Settings(5787);
