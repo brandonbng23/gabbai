@@ -1,5 +1,6 @@
 import { Settings } from "./settings.mjs"
 import { Schedule } from "./schedule.mjs"
+import { SimpleSchedule } from "./simpleSchedule.mjs"
 import fs from "fs"
 
 export class Readers {
@@ -145,48 +146,26 @@ export class Readers {
                        5: "Matot-Masei"
             };
 
-        let simpleSchedule = new Schedule(new Settings(year));
-
         if (cycle == 1) {
-            schedule = [];
-
-            simpleSchedule.hebYear = year;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = year + 1;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = year + 2;
-            schedule.push(simpleSchedule.createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year+2).createSimpleSchedule());
 
         } else if (cycle == 2) {
-            schedule = [];
-
-            simpleSchedule.hebYear = year - 1;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = 1;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = year + 1;
-            schedule.push(simpleSchedule.createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
 
         } else if (cycle == 3) {
-            schedule = [];
+            schedule.push(new SimpleSchedule(this.settings, year-2).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
+            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
 
-            simpleSchedule.hebYear = year - 2;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = year - 1;
-            schedule.push(simpleSchedule.createSimpleSchedule());
-
-            simpleSchedule.hebYear = year;
-            schedule.push(simpleSchedule.createSimpleSchedule());
         }
 
-        console.log(year-1);
+        /*console.log(year-1);
         console.log(year);
-        console.log(year+1);
+        console.log(year+1);*/
         if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
             thisDouble = doubles[0];              //Vayakhel-Pekudei
         } else if (["Tazria", "Metzora"].includes(this.parsha)) {
@@ -204,7 +183,7 @@ export class Readers {
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
         let current = schedule[0].head;
         while (current) {
-            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
             if (current.value["desc"] == thisDouble) {
                 year1 = true;
                 break;
@@ -216,7 +195,7 @@ export class Readers {
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
         current = schedule[1].head;
         while(current) {
-            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
             
             if (current.value["desc"] == thisDouble) {
                 year2 = true;
@@ -229,7 +208,7 @@ export class Readers {
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
         current = schedule[2].head;
         while (current) {
-            console.log(current.value["desc"] + ", " + current.value["hebYear"]);
+            //console.log(current.value["desc"] + ", " + current.value["hebYear"]);
             if (current.value["desc"] == thisDouble) {
                 year3 = true;
                 break;
@@ -331,7 +310,7 @@ export class Readers {
         }
         // console.log(pattern);
         // console.log(this.parsha);
-        console.log(cycle);
+        //console.log(cycle);
         return "Verse Finding Failed";
     }
 
