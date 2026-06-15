@@ -227,6 +227,7 @@ export class Settings {
         this.specialSeventh = r;
     }
 
+    /* Prints triennial data for debugging */
     printTriennial() {
         console.log("Triennial: " + this.getTriennial());
         console.log("Maftir: " + this.getMaftir())
@@ -242,5 +243,20 @@ export class Settings {
         } else {
             console.log("Vaetchanan: annual 10 Commandments");
         }
+    }
+
+    /* Returns settings data
+     * @returns object retaining all settings data */
+    getSettingsData() {
+        return {
+            hebYear: this.hebYear,
+            il: this.il,
+            aliyotCount: this.a,
+            hhRespect: this.hhRespect,
+            yRespect: this.yRespect,
+            yontifs = this.yontifs,
+            triennial: this.triennial,
+            specialSeventh: this.specialSeventh
+        };
     }
 }
