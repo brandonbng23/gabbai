@@ -30,4 +30,18 @@ export class Admin extends User {
             this.shul?.(new User(this.firstN, this.lastN, this.email, this.password));
         }
     }
+
+    /* Returns all administrator data for current administrator
+     * @returns object retaining administrator data */
+    getAdminData() {
+        return {
+            firstN: this.firstN,
+            lastN: this.lastN,
+            email: this.email,
+            password: this.password,
+            title: this.title,
+            shul: this.shul,
+            key: this.key
+        };
+    }
 }
