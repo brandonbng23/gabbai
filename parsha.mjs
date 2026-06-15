@@ -43,6 +43,12 @@ export class Parsha {
         this.hebDate = hebDate;
     }
 
+    /* Returns parsha data for current parsha
+     * @returns object retaining all current parsha data */
+    getParshaData() {
+        return;
+    }
+
     /* Formats and prints an instance on Parsha
      * Parsha name, Hebrew date, Gregorian date, all readers for argued
      * aliyot */
