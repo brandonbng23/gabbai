@@ -228,4 +228,23 @@ export class Settings {
     setSpecialSeventh(r) {
         this.specialSeventh = r;
     }
+
+    /* -- -- -- */
+
+    printTriennial() {
+        console.log("Triennial: " + this.getTriennial());
+        console.log("Maftir: " + this.getMaftir())
+
+        if (this.getYitro()) {
+            console.log("Yitro: tri");
+        } else {
+            console.log("Ytiro: trad");
+        }
+
+        if (this.getVaetchanan()) {
+            console.log("Vaetchanan: tri");
+        } else {
+            console.log("Vaetchanan: annual 10 Commandments");
+        }
+    }
 }
