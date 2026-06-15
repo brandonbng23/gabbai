@@ -84,7 +84,7 @@ export class User {
         return null;
     }
 
-    /* Returns user data 
+    /* Returns user data for current user
      * @returns: object retaining all user data */
     getUserData() {
         return {
