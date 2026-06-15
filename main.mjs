@@ -3,7 +3,8 @@ import { Schedule } from "./schedule.mjs"
 import { Shul } from "./shul.mjs"
 
 function main() {
-    let settings = new Settings(5788);
+    let settings = new Settings(5787);
+    settings.setTriennial(true);
 
     let shul = new Shul("Test Shul", [], [], null, "testshul.org", "testshul.org/contribute", settings);
     
