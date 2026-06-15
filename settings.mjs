@@ -1,5 +1,3 @@
-import { Triennial } from "./triennial.mjs"
-
 export class Settings { 
     /* Streamlined class repersenting all administration settings. Fields
      * are documented in-line. All fields are set to a default value and be
@@ -52,7 +50,7 @@ export class Settings {
                         shavuot2: true};                            // Shavuot Day 2
 
         /* Triennial Settings: Subscribe to different traditions regarding a triennial Torah reading pattern */
-        this.triennial = {triennial: false,     // Subscribe to triennial (true) or not (false) @default: false
+        this.triennial = {tri: false,     // Subscribe to triennial (true) or not (false) @default: false
                           triMaftir: false,     // Subscribe to triennial maftir (true) or not (false) @default: true
                           tradMaftir: true,     // Subscribe to traditional maftir (true) or not (false) @default: true
                 // NOTE: should a subscription to the triennial and traditional maftir both be false, no maftir reading will be established
@@ -140,13 +138,13 @@ export class Settings {
 
     /* Accesses subscription to triennial reading pattern */
     getTriennial() {
-        return this.triennial["triennial"];
+        return this.triennial["tri"];
     }
 
     /* Mutates subscription to triennial reading pattern
      * @param t: boolean repersenting state for which to update Yontif */
     setTriennial(t) {
-        this.triennial["triennial"] = t;
+        this.triennial["tri"] = t;
     }
 
     /* Accesses current Maftir setting
@@ -229,9 +227,11 @@ export class Settings {
         this.specialSeventh = r;
     }
 
-    /* -- -- -- */
+ 
 
     printTriennial() {
+        console.log("PRINT TIME VALUE:", this.triennial.triennial);
+        console.log("OBJECT ID:", this);
         console.log("Triennial: " + this.getTriennial());
         console.log("Maftir: " + this.getMaftir())
 
