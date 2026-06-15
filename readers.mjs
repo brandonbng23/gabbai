@@ -391,6 +391,7 @@ export class Readers {
             }
 
             data.push({
+                aliyah: i+1,
                 user: this.getReader(i+1),
                 verses: verses,
                 special: this.special
