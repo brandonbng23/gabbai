@@ -31,9 +31,9 @@ export class SimpleSchedule {
     /* Creates raw calendar of parshiyot
      * @returns array of ParshaEvents */
     getRawCalendar() {
-        return HebrewCalendar.calendar({
+                return HebrewCalendar.calendar({
                year: this.hebYear,
-               isHebrewYear: true,
+               //isHebrewYear: true,
                il: this.settings.getIL(),
                sedrot: true,
                noHolidays: true,
