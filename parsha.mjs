@@ -48,7 +48,6 @@ export class Parsha {
     getParshaData() {
         return {
             name: this.name,
-            hebYear: this.hebYear,
             aliyotCount: this.a,
             occassion: this.occassion,
             hebDate: this.hebDate,
