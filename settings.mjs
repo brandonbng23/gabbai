@@ -59,10 +59,7 @@ export class Settings {
                           yitro: true,          // Subscribe to triennial reading pattern for Parsha Yitro containing the 10 Commanemdnets (true) or not (false) @default: true
                           vaetchanan: true      // Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 10 Commandments and Shema (true) or not (false) @default: true
                     };
-        this.correctMaftir();
-
-        /* Because triMaftir @defaults to false and tradMaftir @defaults to true, if both fields are set true, 
-        
+        this.correctMaftir();   // Ensures both maftirs are not set true        
 
         /* Special Seventh: rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
          * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
