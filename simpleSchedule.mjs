@@ -28,21 +28,6 @@ export class SimpleSchedule {
         }
     }
 
-    /* Determines if this.hebYear is a leap year or not
-     * @returns boolean repersenting if this.hebYear is a leap year (true) or not (false) */
-    isLeap() {
-        let leapKey = this.hebYear % 19;
-        
-        return (leapKey == 0 ||
-                leapKey == 3 ||
-                leapKey == 6 ||
-                leapKey == 8 ||
-                leapKey == 11 ||
-                leapKey == 14 ||
-                leapKey == 17
-            )
-    }
-
     /* Creates a simple schedule retaining only parsha name and year 
      * @returns: LinkedList instance of Objects holding parsha name and year */
     createSimpleSchedule() {
