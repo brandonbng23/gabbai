@@ -452,7 +452,7 @@ export class Schedule {
                     }
 
                     if (event.readers[i]) {
-                        aliyot.push({aliyah: aliyah, status: "assigned", value: event.readers[i]});
+                        aliyot.push({aliyah: aliyah, status: "locked", value: event.readers[i]});
                     } else {
                         aliyot.push({aliyah: aliyah, status: "available", value: null})
                     }
