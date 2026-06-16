@@ -46,6 +46,18 @@ export class Parsha {
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
     getParshaData(id) {
+        if (!this.hebYear) {
+            this.hebYear = this.settings.getHebYear();
+        }
+
+        if (!this.hebDate) {
+            this.hebDate = new Sedra(this.hebYear, this.il).find(this.name);
+        }
+
+        if (this.hebDate) {
+            this.gregDate = new HebcalEvent(this.hebDate, this.name).greg();
+        }
+
         return {
             id: id,
             name: this.name,
