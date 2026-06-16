@@ -158,10 +158,11 @@ export class Shul {
             key: this.key,
             admins: adminsArr,
             users: usersArr,
-            schedule: this.schedule.getScheduleData(),
             url: this.url,
             donationUrl: this.donationUrl,
-        }
+            schedule: this.schedule.getScheduleData(),
+            settings: this.settings.getSettingsData()
+        };
     }
 
 }
