@@ -5,6 +5,10 @@
     font-style: normal;
 }
 
+body {
+    background-color: #f0f0f5;
+}
+
 .mx-6 {
     margin-left: 5rem;
     margin-right: 5rem;
@@ -13,6 +17,9 @@
 .navbar {
     background-color: #0d0d0d;
     height: 56px;
+    width: 100%;
+    position: fixed;
+    z-index: 10;
 }
 
 .navbar-brand {
@@ -29,12 +36,12 @@
 .nav-link {
     color: white;
     font-family: Inter;
-    font-weight: 300
+    font-weight: 300;
 }
 
 .navbar-nav .nav-link:hover {
     font-family: Inter;
-    color: #c2d1f0;
+    color: #f0f0f5;
 }
 
 .navbar-nav .nav-link.active {
@@ -49,28 +56,45 @@
 }
 
 .sidebar {
+    font-family: Inter;
     color: #d9d9d9;
     background-color: #262626;
     height: 100vh;
-    position: fixed;
-    top: 56px;
+    top: 56;
     left: 0;
     padding: 1rem;
     overflow: hidden;
+    z-index: 1;
+    overflow: hidden;
+    min-width: 0;
+    outline: 10px solid red;
 }
 
 .schedule {
-    margin-left: 250px;
     height: 100vh;
     padding: 1rem;
+    padding-top: 56px;
     overflow-y: auto;
+    overflow: hidden;
+    min-width: 0;
+    outline: 10px solid blue;
 }
 
 .shul {
-    top: 56px;
-    right: 0;
     height: 100vh;
-    position: fixed;
     padding: 1rem;
+    padding-top: 56px;
     overflow: hidden;
+    overflow: hidden;
+    min-width: 0;
+    outline: 10px solid green;
+}
+
+[class*="col"] {
+  min-width: 0;
+  overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
 }
