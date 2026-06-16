@@ -440,12 +440,21 @@ export class Schedule {
 
             let aliyot = [];
 
-            for (let i = 0; i < 7; i++) {
-                if (i < event.aliyotCount) {
+            for (let i = 0; i < 9; i++) {
+                if (i < event.aliyotCount || i > 6) {
+                    let aliyah = "";
+                    if (i < 7) {
+                        aliyah = i+1;
+                    } else if (i == 7) {
+                        aliyah = "M";
+                    } else if (i == 8) {
+                        aliyah = "H";
+                    }
+
                     if (event.readers[i]) {
-                        aliyot.push({status: "assigned", value: event.readers[i]});
+                        aliyot.push({aliyah: aliyah, status: "assigned", value: event.readers[i]});
                     } else {
-                        aliyot.push({status: "available", value: null})
+                        aliyot.push({aliyah: aliyah, status: "available", value: null})
                     }
                 } else {
                     aliyot.push({status: "exempt", value: null});
