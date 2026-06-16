@@ -44,23 +44,23 @@ export class Readers {
      * maftir, 9 => haftarh) */
     getReader(r) {
         if (r == 1) {
-            return this.a1;
+            return this.a1.user;
         } else if (r == 2) {
-            return this.a2;
+            return this.a2.user;
         } else if (r == 3) {
-            return this.a3;
+            return this.a3.user;
         } else if (r == 4) {
-            return this.a4;
+            return this.a4.user;
         } else if (r == 5) {
-            return this.a5;
+            return this.a5.user;
         } else if (r == 6) {
-            return this.a6
+            return this.a6.user;
         } else if (r == 7) {
-            return this.a7
+            return this.a7.user;
         } else if (r == 8) { // maftir
-            return this.m;
+            return this.m.user;
         } else if (r == 9) { // haftara
-            return this.h;
+            return this.h.user;
         } else { // input r did not match possible options
             return;
         }
@@ -72,23 +72,23 @@ export class Readers {
      * @param user: User repersenting reader assigned to a reading */
     setReader(r, user) {
         if (r == 1) {
-            this.a1 = user;
+            this.a1.user = user;
         } else if (r == 2) {
-            this.a2 = user;
+            this.a2.user = user;
         } else if (r == 3) {
-            this.a3 = user;
+            this.a3.user = user;
         } else if (r == 4) {
-            this.a4 = user;
+            this.a4.user = user;
         } else if (r == 5) {
-            this.a5 = user;
+            this.a5.user = user;
         } else if (r == 6) {
-            this.a6 = user;
+            this.a6.user = user;
         } else if (r == 7) {
-            this.a7 = user;
+            this.a7.user = user;
         } else if (r == 8) { // maftir
-            this.m = user;
+            this.m.user = user;
         } else if (r == 9) { // haftarah
-            this.h = user;
+            this.h.user = user;
         } else { // input r did not match possible options
             return;
         }
