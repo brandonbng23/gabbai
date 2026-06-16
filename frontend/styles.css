@@ -12,6 +12,7 @@
 
 .navbar {
     background-color: #0d0d0d;
+    height: 56px;
 }
 
 .navbar-brand {
@@ -28,7 +29,7 @@
 .nav-link {
     color: white;
     font-family: Inter;
-    font-weight: 200
+    font-weight: 300
 }
 
 .navbar-nav .nav-link:hover {
@@ -39,7 +40,7 @@
 .navbar-nav .nav-link.active {
     color: white;  
     font-family: Inter;
-    font-weight: 400;
+    font-weight: 450;
 }
 
 .navbar-nav .nav-link.active:hover {
@@ -47,7 +48,29 @@
     color: white;
 }
 
-.col-2 {
+.sidebar {
     color: #d9d9d9;
     background-color: #262626;
+    height: 100vh;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.schedule {
+    margin-left: 250px;
+    height: 100vh;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.shul {
+    top: 56px;
+    right: 0;
+    height: 100vh;
+    position: fixed;
+    padding: 1rem;
+    overflow: hidden;
 }
