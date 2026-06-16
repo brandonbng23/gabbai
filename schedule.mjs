@@ -434,14 +434,21 @@ export class Schedule {
                 name: event.name,
                 aliyotCount: event.aliyotCount,
                 occassion: event.occassion,
-                hebDate: event.hebDate
+                hebDate: event.hebDate,
+                gregDate: event.gregDate
             }
 
             let aliyot = [];
 
             for (let i = 0; i < 7; i++) {
                 if (i < event.aliyotCount) {
-                    aliyot.push(event.readers[i])
+                    if (event.readers[i]) {
+                        aliyot.push({status: "assigned", value: event.readers[i]});
+                    } else {
+                        aliyot.push({status: "available", value: null})
+                    }
+                } else {
+                    aliyot.push({status: "exempt", value: null});
                 }
             }
 
