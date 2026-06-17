@@ -445,7 +445,7 @@ export class Readers {
                 }
             }
 
-            if (this.getReader(a)["user"]) {
+            if (this.getReader(a)) {
                 text += this.getReader(i+1)["user"].nameToString();
             } else {
                 text += "available";
