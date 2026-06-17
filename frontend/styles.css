@@ -31,8 +31,9 @@ body {
 
 .navbar-brand {
     color: white;
-    font-family: Inter;
-    font-weight: 600;
+    font-family: Fustat;
+    font-weight: 350;
+    font-size: xx-large;
 }
 
 .navbar-brand:hover {
