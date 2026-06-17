@@ -26,19 +26,18 @@ body {
     height: 65px;
     width: 100%;
     position: fixed;
-    z-index: 10;
+    z-index: 1000;
 }
 
-.navbar-brand {
+.navbar-brand,
+.navbar-brand:visited,
+.navbar-brand:hover,
+.navbar-brand:active,
+.navbar-brand:focus {
     color: white;
     font-family: Fustat;
     font-weight: 350;
     font-size: xx-large;
-}
-
-.navbar-brand:hover {
-    color: white;
-    font-family: Inter;
 }
 
 .nav-link {
@@ -47,19 +46,31 @@ body {
     font-weight: 300;
 }
 
-.navbar-nav .nav-link:hover {
+.navbar-nav .nav-link:visited,
+.navbar-nav .nav-link:active,
+.navbar-nav .nav-link:focus {
     font-family: Inter;
-    color: #f0f0f5;
+    color: white;
 }
 
-.navbar-nav .nav-link.active {
-    color: white;  
-    font-family: Inter;
+.navbar-nav .nav-link:hover {
+    color: rgb(102, 177, 242);
+}
+
+.nav-link {
+    color: white;
+}
+
+.nav-link:hover {
+    color: rgb(102, 177, 242);
+}
+
+.nav-link.active {
+    color: white;
     font-weight: 450;
 }
 
-.navbar-nav .nav-link.active:hover {
-    font-family: Inter;
+.nav-link.active:hover {
     color: white;
 }
 
@@ -72,17 +83,27 @@ body {
     left: 0;
     padding: 1rem;
     overflow: hidden;
-    z-index: 1;
+    z-index: 500;
     overflow: hidden;
     min-width: 0;
-    outline: 10px solid red;
     display: flex;
     flex-direction: column;
     padding-top: 2rem;
 }
 
+.siderbar-top {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 15%;
+    justify-content: space-evenly;
+}
+
+.siderbar-bottom {
+    margin-top: auto;
+}
+
 .sidebar-item {
-    margin: clamp(0.5rem, 2vh, 2rem) 0;
+    margin: clamp(0.5rem, 1vh, 2rem) 0;
 }
 
 .schedule {
@@ -93,6 +114,12 @@ body {
     overflow: hidden;
     min-width: 0;
     outline: 10px solid blue;
+}
+
+.divider {
+    border-bottom: .5px solid #676767;
+    width: 75%;
+    margin: .3rem auto;
 }
 
 .shul {
@@ -114,10 +141,30 @@ body {
     box-sizing: border-box;
 }
 
-.icon-link {
+.sidebar-link {
     color: #d9d9d9;
+    fill: #d9d9d9;
     font-family: Inter;
-    font-size: large;
-    font-weight: light;
+    font-size: medium;
+    font-weight: 300;
     text-decoration: none;
+    gap: 1.75rem;
+    width: 100%;
+    height: 108%;
+    padding: 0.75rem .75rem;
+    border-radius: 8px;
+}
+
+.sidebar-link svg {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-link:hover {
+    color: #262626;
+    fill: rgb(75, 158, 231);
+}
+
+.sidebar-link:hover {
+    background: rgb(199, 204, 209);
 }
