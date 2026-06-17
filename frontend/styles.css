@@ -192,3 +192,14 @@ body {
     fill: rgb(75, 158, 231);
 }
 
+.shul-p {
+    font-size: smaller;
+}
+
+
+
+.carousel {
+    width: 75%;
+    height: 75%;
+}
+
