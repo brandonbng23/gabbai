@@ -1,6 +1,6 @@
 @font-face {
     font-family: "Inter";
-    src: url("./Fonts/Inter-VariableFont_opsz\,wght.ttf") format("truetype");
+    src: url("./Fonts/Inter/Inter-VariableFont_opsz\,wght.ttf") format("truetype");
     font-weight: 100 900;
     font-style: normal;
 }
@@ -16,7 +16,7 @@ body {
 
 .navbar {
     background-color: #0d0d0d;
-    height: 56px;
+    height: 65px;
     width: 100%;
     position: fixed;
     z-index: 10;
@@ -60,7 +60,7 @@ body {
     color: #d9d9d9;
     background-color: #262626;
     height: 100vh;
-    top: 56;
+    top: 65;
     left: 0;
     padding: 1rem;
     overflow: hidden;
@@ -80,7 +80,7 @@ body {
 .schedule {
     height: 100vh;
     padding: 1rem;
-    padding-top: 56px;
+    padding-top: 65px;
     overflow-y: auto;
     overflow: hidden;
     min-width: 0;
@@ -90,7 +90,7 @@ body {
 .shul {
     height: 100vh;
     padding: 1rem;
-    padding-top: 56px;
+    padding-top: 65px;
     overflow: hidden;
     overflow: hidden;
     min-width: 0;
