@@ -12,6 +12,8 @@ function main() {
     shul.setSchedule(schedule);
     
     shul.getSchedule().printSchedule();
+
+    schedule.createParshaCards();
 }
 
 main();

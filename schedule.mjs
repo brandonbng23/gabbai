@@ -487,4 +487,23 @@ export class Schedule {
             current = current.next;
         } 
     }
+
+    createParshaCards() {
+        console.log("createParshaCards is running");
+        let data = this.getScheduleData();
+
+        const container = document.querySelector(".schedule");
+
+        for (let i = 0; i < data.length; i++) {
+            container.insertAdjacentHTML( 
+                "beforeend", 
+                `
+                <div class="parsha-card"> <
+                h3>${data.name}</h3> 
+                <p>${data.hebDate}</p> 
+                </div>
+                `
+             );
+        }        
+    }
 }
