@@ -103,6 +103,7 @@ body {
     height: 100vh;
     top: 65;
     left: 0;
+    width: 250px;
     padding: 1rem;
     overflow: hidden;
     z-index: 500;
@@ -110,10 +111,10 @@ body {
     display: flex;
     flex-direction: column;
     padding-top: 2rem;
-
 }
 
 .sidebar-top {
+    top: 65px;
     display: flex;
     flex-direction: column;
     flex: 0 0 15%;
@@ -262,9 +263,32 @@ body {
     }
 }
 
-
-
 .shul-p {
     font-size: smaller;
 }
 
+.footer {
+    bottom: 0;
+    background: #d9d9d9;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    height: 60px;
+}
+
+.footer-text {
+    display: flex;
+    gap: 3rem;
+    align-items: center;
+    color: #676767;
+    font-size: 13px;
+}
+
+.footer-link {
+    color: #676767;
+    font-size: 13px;
+}
+
+.copyright {
+    gap: 0rem;
+}
