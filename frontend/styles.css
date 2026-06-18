@@ -199,11 +199,12 @@ body {
 .sidebar-link.active::before {
     content: "";
     position: absolute;
-    left: -12px;
-    width: 4px;
-    height: 60%;
+    left: 0px;
+    width: 6px;
+    height: 95%;
     background-color: rgb(102, 177, 242);
-    border-radius: 999px;
+    border-top-left-radius: 600px;
+    border-bottom-left-radius: 600px;
 }
 
 .sidebar-link.active {
@@ -239,6 +240,26 @@ body {
 
 .sidebar-bottom-link:hover {
     background: rgb(56, 56, 56);
+}
+
+.sidebar-text {
+    display: inline;
+}
+
+@media (max-width: 1200px) {
+    .sidebar-icon {
+        display: none;
+    }
+}
+
+@media (max-width: 715px) {
+    .sidebar-icon {
+        display: block;
+    }
+
+    .sidebar-text {
+        display: none;
+    }
 }
 
 
