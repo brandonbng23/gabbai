@@ -9,6 +9,6 @@
     "vite": "^8.0.9"
   },
   "scripts": {
-    "test": "node main.mjs"
+    "test": "node ../gabbai/core/main.mjs"
   }
 }
