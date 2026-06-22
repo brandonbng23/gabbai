@@ -45,6 +45,7 @@ export class Schedule {
 
         this.special = []; 
         this.cal = []; 
+        this.schedule = this.createSchedule();
     }
 
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
@@ -425,7 +426,7 @@ export class Schedule {
         let counter = 1;
         let newEvent = null;
 
-        let current = this.createSchedule().head;
+        let current = this.schedule.head;
         while (current) {
             let event = current.value.getParshaData(counter);
 
@@ -480,30 +481,11 @@ export class Schedule {
         this.settings.printTriennial();
         console.log("\n");
 
-        let current = this.createSchedule().head;
+        let current = this.schedule.head;
         while (current) {
             current.value.printParsha();
             console.log ("\n\n");
             current = current.next;
         } 
-    }
-
-    createParshaCards() {
-        console.log("createParshaCards is running");
-        let data = this.getScheduleData();
-
-        const container = document.querySelector(".schedule");
-
-        for (let i = 0; i < data.length; i++) {
-            container.insertAdjacentHTML( 
-                "beforeend", 
-                `
-                <div class="parsha-card"> <
-                h3>${data.name}</h3> 
-                <p>${data.hebDate}</p> 
-                </div>
-                `
-             );
-        }        
     }
 }

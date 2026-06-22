@@ -384,17 +384,21 @@ export class Readers {
         let verses = "";
 
         for (let i = 0; i < a+2; i++) {
+            this.RO = false;
+
             if (!this.settings.getTriennial()) {
                 verses = this.tradPsukim(i+1, false);
             } else {
                 verses = this.triPsukim(i+1);
             }
 
+            let special = this.special;
+
             data.push({
                 aliyah: i+1,
                 user: this.getReader(i+1),
                 verses: verses,
-                special: this.special
+                special: special
             });
         }
 

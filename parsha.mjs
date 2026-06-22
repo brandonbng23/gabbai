@@ -65,7 +65,7 @@ export class Parsha {
             occassion: this.occassion,
             hebDate: this.hebDate,
             gregDate: this.gregDate,
-            readers: this.readers.getReadersData()
+            readers: this.readers.getReadersData(this.a)
         };
     }
 
