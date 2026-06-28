@@ -4,20 +4,22 @@ export class User {
      * @field firstN: string repersenting user's first name
      * @field lastN: string repersenting user's last name
      * @field email: string repersenting user's email address
-     * @field password: password repersenting user's password as a protective measure */
+     * @field password: password repersenting user's password as a protective measure
+     * @field readings: array of ParshaEvent repersenting the readings assigned to User */
     constructor(firstN, lastN, email, password) {
         this.firstN = firstN;
         this.lastN = lastN;
         this.email = email;
         this.password = password;
+        this.readings = [];
     }
 
-    /* Accesses user's first name */
+    /* Accesses User's first name */
     getFirstN() {
         return this.firstN;
     }
 
-    /* Accesses user's last name */
+    /* Accesses User's last name */
     getLastN() {
         return this.lastN;
     }
@@ -27,14 +29,19 @@ export class User {
         return this.firstN + " " + this.lastN;
     }
 
-    /* Accesses user's email address */
+    /* Accesses User's email address */
     getEmail() {
         return this.email;
     }
 
-    /* Accesses user's password */
+    /* Accesses User's password */
     getPassword() {
         return this.password;
+    }
+
+    /* Accesses User's assigned readings */
+    getReadings() {
+        return this.readings;
     }
 
     /* Mutates first name field to match input
@@ -59,6 +66,26 @@ export class User {
     @param p: string repersenting address of password field */
     setPassword(p) {
         this.password = p; // future expansion: return false is string does not match password format
+    }
+
+    /* Adds reading to list of this.readings, list of assigned readings
+     * @param p: ParshaEvent repersenting parsha to be added to this.readings */
+    addReading(p) {
+        this.readings.push(p);
+    }
+
+    /* Removes specified reading from this.readings
+     * @param p: ParshaEvent to remove  from User's assigned reading list */
+    removeReading(p) {
+        let newReadings = [];
+
+        for (let i = 0; i < this.readings.length; i++) {
+            if (this.readings[i] != p) {
+                newReadings.push(this.readings[i]);
+            } 
+        }
+
+        this.readings = newReadings;
     }
 
     /* Converts an exisiting user to an admin. Removes exisiting user from shul's users array and adds an
