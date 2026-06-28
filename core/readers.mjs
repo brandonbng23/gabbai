@@ -1,5 +1,4 @@
-import { Settings } from "./settings.mjs"
-import { Schedule } from "./schedule.mjs"
+import { Sedra } from '@hebcal/core'
 import { SimpleSchedule } from "./simpleSchedule.mjs"
 
 import fs from "fs"
@@ -25,9 +24,9 @@ export class Readers {
      * @field RO: boolean repersenting if a reading is special (true) or not (false)
      * @field hebYear: Hebrew Year when reading will take place */
 
-    constructor(parsha, settings, special, hebYear) {
+    constructor(desc, settings, special, hebYear) {
+        this.desc = desc;
         this.settings = settings;
-        this.parsha = parsha;
         this.special = special;
         this.a1 = {user: null, verses: null};       // First aliyah reader
         this.a2 = {user: null, verses: null};       // Second aliyah reader
@@ -76,22 +75,58 @@ export class Readers {
     setReader(r, user) {
         if (r == 1) {
             this.a1.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a1.verses
+            })
         } else if (r == 2) {
             this.a2.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a2.verses
+            })
         } else if (r == 3) {
             this.a3.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a3.verses
+            })
         } else if (r == 4) {
             this.a4.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a4.verses
+            })
         } else if (r == 5) {
             this.a5.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a5.verses
+            })
         } else if (r == 6) {
             this.a6.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a6.verses
+            })
         } else if (r == 7) {
             this.a7.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a7.verses
+            })
         } else if (r == 8) { // maftir
             this.m.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: r,
+                             verses: this.a8.verses
+            })
         } else if (r == 9) { // haftarah
             this.h.user = user;
+            user.addReading({desc: this.desc,
+                             aliyah: 4,
+                             verses: this.a9.verses
+            })
         } else { // input r did not match possible options
             return;
         }
@@ -174,17 +209,17 @@ export class Readers {
 
         }
 
-        if (["Vayakhel", "Pekudei"].includes(this.parsha)) {
+        if (["Vayakhel", "Pekudei"].includes(this.desc)) {
             thisDouble = doubles[0];              //Vayakhel-Pekudei
-        } else if (["Tazria", "Metzora"].includes(this.parsha)) {
+        } else if (["Tazria", "Metzora"].includes(this.desc)) {
             thisDouble = doubles[1];             //Tazria-Metzora
-        } else if (["Achrei Mot", "Kedoshim"].includes(this.parsha)) {
+        } else if (["Achrei Mot", "Kedoshim"].includes(this.desc)) {
             thisDouble = doubles[2];          //Achrei Mot-Kedoshim
-        } else if (["Behar", "Bechukotai"].includes(this.parsha)) {
+        } else if (["Behar", "Bechukotai"].includes(this.desc)) {
             thisDouble = doubles[3];           //Behar-Bechukotai
-        } else if (["Chukat", "Balak"].includes(this.parsha)) {
+        } else if (["Chukat", "Balak"].includes(this.desc)) {
             thisDouble = doubles[4];             //Chukat-Balak
-        } else if (["Matot", "Masei"].includes(this.parsha)) {
+        } else if (["Matot", "Masei"].includes(this.desc)) {
             thisDouble = doubles[5];             //Matot-Masei
         }
         
@@ -301,7 +336,7 @@ export class Readers {
         for (let row of rows) {
             let cells = row.split(",");
 
-            if (cells[0].trim() == this.parsha) {
+            if (cells[0].trim() == this.desc) {
                 if (cells[1].trim() == pattern) {
                     if (cells[2].trim()?.toString() == cycle.toString()) {
                         return cells[a+2].trim();
@@ -324,13 +359,13 @@ export class Readers {
         let verses = "";
 
         if (a < 8) {
-            if (this.parsha == "Vaetchanan" && this.settings.getVaetchanan()) {
-                this.parsha = "Vaetchanan T";
-            } else if (this.parsha == "Vaetchanan") {
-                this.parsha = "Vaetchanan F";
+            if (this.desc == "Vaetchanan" && this.settings.getVaetchanan()) {
+                this.desc = "Vaetchanan T";
+            } else if (this.desc == "Vaetchanan") {
+                this.desc = "Vaetchanan F";
             } 
-        } else if (this.parsha.toLowerCase().includes("vaetchanan")) {
-            this.parsha = "Vaetchanan";
+        } else if (this.desc.toLowerCase().includes("vaetchanan")) {
+            this.desc = "Vaetchanan";
         }
 
         for (let row of rows) {
@@ -340,11 +375,11 @@ export class Readers {
                     return this.tradPsukim(8, false);
                 } else if (a == 9) {
                     return this.tradPsukim(9, false);
-                } else if (this.settings.getYitro() && this.parsha == "Yitro") {
+                } else if (this.settings.getYitro() && this.dewsc == "Yitro") {
                     return this.tradPsukim(a, false);
                 } 
 
-                if (cells[0] == this.parsha) {
+                if (cells[0] == this.desc) {
                     if (cycle == 1) {
                         verses = cells[a];
                     } else if (cycle == 2) {
