@@ -69,18 +69,24 @@ export class User {
     }
 
     /* Adds reading to list of this.readings, list of assigned readings
-     * @param r: String repersenting parsha name to be added to this.readings */
+     * @param r: Object repersenting parsha name to be added to this.readings 
+            {desc: string repersenting name of reading,
+             aliyah: integer repersenting aliyah number,
+             verses: string repersenting verses} */
     addReading(r) {
         this.readings.push(r);
     }
 
     /* Removes specified reading from this.readings
-     * @param r: String repersenting reading name to be removed from User's assigned reading list */
+     * @param r: Object repersenting reading name to be removed from User's assigned reading list 
+            {desc: string repersenting name of reading,
+             aliyah: integer repersenting aliyah number,
+             verses: string repersenting verses */
     removeReading(r) {
         let newReadings = [];
 
         for (let i = 0; i < this.readings.length; i++) {
-            if (this.readings[i] != r) {
+            if (this.readings[i].desc != r.desc && this.readings[i].aliyah != r.aliyah) {
                 newReadings.push(this.readings[i]);
             } 
         }
