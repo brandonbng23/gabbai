@@ -381,6 +381,106 @@ p {
     }
 }
 
+.page2 {
+    margin-top: 45px;
+    margin-left: 4.5%;
+    margin-right: 4.5%;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    
+    background: white;
+    border-radius: 25px;
+
+}
+
+.feature {
+    margin: 1rem 1rem 1rem 2rem;
+    padding: 1rem;
+}
+
+.feature-header {
+    display: flex;
+    flex: 1;
+    padding: 1rem;
+
+    margin-top: 0rem;
+    height: 75px;
+    align-items: center;
+}
+
+h3 {
+    color: #2d2d2d;
+    font-family: Fustat;
+    font-weight: 650;
+    font-size: 30px;
+
+    margin-top: 4.5%;
+    margin-left: 4%;
+}
+
+.feature .badge {
+    font-family: Fustat;
+    font-size: 10px;
+
+    margin-top: 2.5%;
+    margin-left: 2%;
+}
+
+.feature svg {
+    width: 50px;
+    height: 50px;
+    fill: #66B1F2;
+
+    object-fit: cover;
+    margin-top: 2%;
+}
+
+.feature p {
+    margin-top: 2%;
+    margin-left: 1.5%;
+    color: #2d2d2d;
+    font-weight: 250;
+}
+
+.nav-cards {
+    margin-top: 45px;
+    margin-left: 5%;
+    margin-right: 5%;
+}
+
+.card {
+    display: flex;
+    height: 300px;
+    width: 300px;
+    align-items: center;
+
+    background: #d9d9d9;
+    border: none;
+}
+
+.card-btn-text {
+    font-size: 150%;
+    color: white;
+}
+
+.card .btn {
+    width: 250px;
+    background: #262626;
+    border: none;
+}
+
+.card .btn:hover {
+    background: #66B1F2;
+}
+
+.card img {
+    width: 150px;
+    height: 150px;
+}
+
 .footer-right {
     bottom: 0;
     height: 60px;
@@ -396,10 +496,22 @@ p {
     z-index: 1;
 }
 
+.page-footer {
+    margin-top: 25px;
+    margin-left: 0px;
+    margin-bottom: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .footer {
     bottom: 0;
     height: 60px;
-    margin-top: auto;
+    margin-top: 60px;
+    margin-left: 250px;
+    margin-bottom: 10px;
 
     display: flex;
     align-items: center;
