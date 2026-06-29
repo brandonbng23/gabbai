@@ -3,6 +3,37 @@ Gabbai is an online system that allows a synagogue and its members to coordinate
 Yontif Torah readings in advance.
 
 <---- Body Content ---->
-Gabbai keeps the Torah service moving. Gabbai builds a reading schedule unique to your congregation's
+Gabbai keeps the Torah service moving — Gabbai builds a reading schedule unique to your congregation's
 traditions. A simple dashboard organizes who's reading what, opening registration to your members while
 retaining control and oversight for your shul.
+
+<---- "Intuitive Reading Schedule" ---->
+Gabbai organizes a reading schedule for your synagogue. Members can register themself for any available 
+reading. It's easy to find the reading one's looking for with a user-friendly search feature. With a glance,
+members see which aliyah they've agreed to read and its corresponding chapter and verses.
+
+<---- "Your Traditions" ---->
+Gabbai is developped for every synagogue. Congregations can take actions like subscribing to varying triennial 
+and maftir reading schedule, choose how many aliyot for different types of reading occassions — like Shabbat, 
+Yontifs, and the High Holidays — and select which Yontifs to include on their reading schedule. 
+
+<---- "Administrative Control" ---->
+Gabbai allows your synagogue's designated administrators to have the final say when arranging your Torah service.
+Administrators can register members for readings on their behalf and remove readers from a reading. Administrators
+can also lock readings for special occassions, like B'nei Mitvot or carefully-orchestrated High Holiday services.
+
+<---- "Elevate Engagement" ---->
+Gabbai ties your community together within and beyond the Torah serivce. Members can provide dates of personal
+and family simchas, like the anniversary of their B'nei Mitzvah, to encourage them to again be honored with a
+Torah or Haftarah reading. Upon registering, members can bee respectfully asked to make a voluntary contribution 
+to their synagogue, and the your shul can tastefully promote upcoming events and announcements.
+
+<---- "Clear Communication" ---->
+Gabbai keeps everyone in the know. When members register for a reading, they'll receive a confirmation email and 
+your shul's administrators and service leaders will be notified of the reservation. This information is also
+accessible with a straight-forward calendar.
+
+<---- "No Hassle Upkeep ---->
+Gabbai makes maintaining your schedule painless. An easy to use administrator's control panel gives your shul the 
+control it needs while ensuring the process stays simple. Each year, readings and verses update automatically 
+according to your congregation's set traditions, no handiwork needed.
