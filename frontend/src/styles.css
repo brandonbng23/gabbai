@@ -51,8 +51,6 @@ body {
 
     padding-left: 0;
     padding-right: 2rem;
-
-
 }
 
 .vert-divider {
@@ -510,6 +508,94 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+h4 {
+    color: #2d2d2d;
+    font-family: Fustat;
+    font-weight: 650;
+    font-size: 30px;
+
+    padding-top: 45px;
+    margin-bottom: 1rem;
+    margin-left: 4.5%;
+}
+
+.acknowledgments p {
+    color: #262626;
+
+    margin-top: 1rem;
+    margin-left: 4.5%;
+    margin-right: 10%;
+}
+
+.acknowledgments a {
+    color: #262626;
+    text-decoration: underline;
+}
+
+.about-dev img {
+    height: 75px;
+    width: 75px;
+
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid white;
+
+}
+
+.img-header {
+    margin-left: 4.5%;
+    padding-top: 45px;
+    padding-bottom: 0.75rem;
+
+    display: flex;
+    flex-direction: row;
+    justify-items: center;
+}
+
+.img-header h4 {
+    margin-left: 0;
+    padding-top: 20px;
+    padding-left: 1rem;
+}
+
+.list {
+    margin-left: 9%;
+    border-left: 2px solid #262626;
+}
+
+.list a {
+    text-decoration: none;
+}
+
+.item {
+    color: #262626;
+    font-size: 20px;
+    margin-left: 2%;
+    font-family: Fustat;
+    font-weight: 600;
+    text-decoration: none;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.list a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+}
+
+.list-icon svg {
+    margin-top: 10px;
+    width: 33px;
+    height: 33px;
+}
+
+.list-icon {
+    padding-left: 2%;
+    display: flex;
+    flex-direction: row;
+    justify-items: center;
 }
 
 .footer {
