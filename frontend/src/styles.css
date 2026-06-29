@@ -65,8 +65,8 @@ body {
 
 .nav-link {
     color: white;
-    font-family: Inter;
-    font-weight: 300;
+    font-family: Fustat;
+    font-weight: 400;
 }
 
 .navbar-nav .nav-link:visited,
@@ -90,7 +90,7 @@ body {
 
 .nav-link.active {
     color: white;
-    font-weight: 450;
+    font-weight: 550;
 }
 
 .nav-link.active:hover {
@@ -390,10 +390,16 @@ p {
 .features {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    
+
     background: white;
     border-radius: 25px;
 
+}
+
+@media (max-width: 900px) {
+    .features {
+        grid-template-columns: 1fr;
+    }
 }
 
 .feature {
@@ -409,6 +415,12 @@ p {
     margin-top: 0rem;
     height: 75px;
     align-items: center;
+}
+
+@media (max-width: 900px) {
+    .feature-header {
+        justify-content: center;
+    }
 }
 
 h3 {
@@ -443,42 +455,6 @@ h3 {
     margin-left: 1.5%;
     color: #2d2d2d;
     font-weight: 250;
-}
-
-.nav-cards {
-    margin-top: 45px;
-    margin-left: 5%;
-    margin-right: 5%;
-}
-
-.card {
-    display: flex;
-    height: 300px;
-    width: 300px;
-    align-items: center;
-
-    background: #d9d9d9;
-    border: none;
-}
-
-.card-btn-text {
-    font-size: 150%;
-    color: white;
-}
-
-.card .btn {
-    width: 250px;
-    background: #262626;
-    border: none;
-}
-
-.card .btn:hover {
-    background: #66B1F2;
-}
-
-.card img {
-    width: 150px;
-    height: 150px;
 }
 
 .footer-right {
