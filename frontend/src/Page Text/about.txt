@@ -1,0 +1,8 @@
+<---- Header ---->
+Gabbai is an online system that allows a synagogue and its members to coordinate Shabbat and 
+Yontif Torah readings in advance.
+
+<---- Body Content ---->
+Gabbai keeps the Torah service moving. Gabbai builds a reading schedule unique to your congregation's
+traditions. A simple dashboard organizes who's reading what, opening registration to your members while
+retaining control and oversight for your shul.
