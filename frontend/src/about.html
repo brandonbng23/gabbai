@@ -37,13 +37,37 @@
                             </li>
                         </ul>
                     </div>
-                    <div class="navbar-nav ms-auto">
+                    <div class="navbar-nav ms-auto account-dropdown">
                     <a class="navbar-link account" href="#">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M463 448.2C440.9 409.8 399.4 384 352 384L288 384C240.6 384 199.1 409.8 177 448.2C212.2 487.4 263.2 512 320 512C376.8 512 427.8 487.3 463 448.2zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 336C359.8 336 392 303.8 392 264C392 224.2 359.8 192 320 192C280.2 192 248 224.2 248 264C248 303.8 280.2 336 320 336z"/></svg>
+                        <svg id="account-btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M463 448.2C440.9 409.8 399.4 384 352 384L288 384C240.6 384 199.1 409.8 177 448.2C212.2 487.4 263.2 512 320 512C376.8 512 427.8 487.3 463 448.2zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 336C359.8 336 392 303.8 392 264C392 224.2 359.8 192 320 192C280.2 192 248 224.2 248 264C248 303.8 280.2 336 320 336z"/></svg>
                     </a>
+                    <div class="dropdown-menu" id="account-dropdown">
+                        <div class="dropdown-item">
+                            <a href="./login.html">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"/></svg>
+                                Login
+                            </a>
+                        </div>
+                    </div>
                     </div>
                 </div>
             </nav>
+
+            <script>
+                const accountBtn = document.getElementById("account-btn");
+                const dropdown = document.getElementById("account-dropdown");
+
+                accountBtn.addEventListener("click", () => {
+                    dropdown.style.display =
+                        dropdown.style.display === "block" ? "none" : "block";
+                });
+
+                document.addEventListener("click", (e) => {
+                    if (!e.target.closest(".account-dropdown")) {
+                        dropdown.style.display = "none";
+                    }
+                });
+            </script>
 
             <div class="page">
                 <div class="about-content">

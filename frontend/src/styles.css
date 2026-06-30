@@ -126,6 +126,47 @@ body {
     color: white;
 }
 
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 1%;
+    top: 65px;
+
+    background: white;
+
+    border: none;
+    border-radius: 0 0 10px 10px;
+
+    min-width: 150px;
+    padding: 0.5rem 0;
+}
+
+.dropdown-item a,
+.dropdown-item {
+    display: flex;
+    flex-direction: row;
+
+    font-family: Fustat;
+    font-weight: 600;
+    color: #262626;
+    text-decoration: none;
+
+    justify-content: left;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-item svg {
+    width: 23px;
+    height: 23px;
+}
+
+.dropdown-item a:hover {
+    color: #66B1F2;
+    fill: #66B1F2;
+
+}
+
 .app-layout {
     display: flex;
     min-height: calc(100vh - 65px);
