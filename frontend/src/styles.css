@@ -353,12 +353,14 @@ body {
     
 }
 
-.page {
+.headline {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 65px);
-    padding-top: 65px;
     flex: 1;
+
+    padding-top: 65px;
+    padding-bottom: 3%;
+
     margin-left: 3%;
     margin-right: 3%;
 }
@@ -721,6 +723,23 @@ h4 {
 
 .login-page .btn:hover {
     background: blue;
+}
+
+.register-box {
+    display: flex;
+    flex-direction: column;
+
+    background: white;
+    width: 50%;
+    height: 700px;
+    border-radius: 25px;
+
+    padding: 10%;
+
+    justify-content: center;
+
+    padding-top: 165px;
+    padding-bottom: 165px;
 }
 
 .footer {
