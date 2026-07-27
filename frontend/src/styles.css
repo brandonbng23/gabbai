@@ -725,6 +725,38 @@ h4 {
     background: blue;
 }
 
+.register-page {
+    min-height: 850px;
+}
+
+.register-text {
+    text-align: center;
+}
+
+.register-text h4 {
+    margin-bottom: 0px;
+    font-size: 45px;
+}
+
+.register-text p {
+    color: #525252;
+    font-size: medium;
+
+    margin-top: 0px;
+    margin-bottom: 25px;
+}
+
+.fine-print {
+    color: #525252;
+    font-size: smaller;
+
+    margin-left: 0%;
+    margin-right: 10%;
+
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
 .register-box {
     display: flex;
     flex-direction: column;
@@ -738,8 +770,8 @@ h4 {
 
     justify-content: center;
 
-    padding-top: 165px;
-    padding-bottom: 165px;
+    padding-top: 65px;
+    padding-bottom: 65px;
 }
 
 .footer {
