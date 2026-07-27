@@ -694,13 +694,23 @@ h4 {
 
 .login-support {
     display: flex;
+    align-items: center;
     flex-direction: row;
-    width: 400px;
+    width: 500px;
 
     align-content: left;
     padding-top: 6px;
-    padding-right: 10px;
-    gap: 0.5rem;
+
+}
+
+.login-support p {
+    color: #676767;
+
+    margin-top: 0px;
+    margin-bottom: 0px;
+
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 .login-support a {
