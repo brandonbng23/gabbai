@@ -1,0 +1,29 @@
+function Navbar() {
+    return (
+        <nav className="navbar navbar-expand-lg">
+            <div className="container-fluid">
+                <span>
+                    <a className="navbar-brand" href="#">Gabbai</a>
+                    <span className="vert-divider"></span>
+                    <span class="dashboard-label">Dashboard</span>
+                </span>
+
+                <button type="button" className="alpha-btn">Alpha</button>
+                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-tager="#nabarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-example="false" aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon"></span>
+                </button>
+
+                <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
+                </div>
+
+                <div className="navbar-nav ms-auto">
+                    <a className="navbar-link account" href="#">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M463 448.2C440.9 409.8 399.4 384 352 384L288 384C240.6 384 199.1 409.8 177 448.2C212.2 487.4 263.2 512 320 512C376.8 512 427.8 487.3 463 448.2zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 336C359.8 336 392 303.8 392 264C392 224.2 359.8 192 320 192C280.2 192 248 224.2 248 264C248 303.8 280.2 336 320 336z"/></svg>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    );
+}
+
+export default Navbar;
