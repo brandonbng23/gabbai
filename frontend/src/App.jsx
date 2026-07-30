@@ -5,7 +5,8 @@ function Schedule() {
   return (
   <div>
     <Navbar />
-  </div> );
+    <Aside />
+  </div>);
 }
 
 export default Schedule;
