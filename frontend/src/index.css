@@ -191,10 +191,13 @@ body {
 
 .sidebar-top {
     top: 65px;
+
     display: flex;
     flex-direction: column;
+
     flex: 1;
-    justify-content: space-evenly;
+    justify-content: flex-start;
+
     min-height: 0;
 }
 
