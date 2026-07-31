@@ -27,6 +27,24 @@ export class Aliyah {
         this.settings = settings;
     }
 
+    /* Access parsha or yontif name for which the aliyah belongs to
+     * @returns string repersenting parsha or yontif name */
+    getDesc() {
+        return this.desc;
+    }
+
+    /* Accesses aliyah number
+     * @returns int 1-9 repersenting aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
+    getAliyahNum() {
+        return this.a;
+    }
+
+    /* Access reader registered to aliyah reading
+     * @returns if assigned: instance of user, if unassigned: field default string "available" */
+    getReader() {
+        return this.reader;
+    }
+
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
      * triennial Torah reading cycle)
      * @returns integer repersenting first...third year of triennial cycle */
@@ -321,7 +339,7 @@ export class Aliyah {
     }
 
     /* Helper function to find user data (according to fields)
-     * @returns User object (if field is not NULL) or field default string (placeholder) */
+     * @returns User object (if field is not NULL) or field default string "available" */
     figureReaderData() {
         if (this.reader instanceof user) {
             return this.reader.getUserData();
