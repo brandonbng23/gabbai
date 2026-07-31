@@ -154,13 +154,6 @@ export class Readers {
         }
     }
 
-    /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
-     * triennial Torah reading cycle)
-     * @returns integer repersenting first...third year of triennial cycle */
-    calculateTriennial() {
-        return ((this.settings.getHebYear() + 1) % 3) + 1;
-    }
-
     /* Returns reader data for one reader
      * @param a: aliyot (1-9) for which data should be returned
      * @returns: object retaining all reader data */
