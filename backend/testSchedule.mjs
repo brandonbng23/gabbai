@@ -1,5 +1,6 @@
 import { getSchedule } from "./services/scheduleService.mjs";
+import { Settings } from "../core/settings.mjs"; 
 
-const schedule = getSchedule(5786);
+const schedule = getSchedule(new Settings());
 
 console.log(schedule);
