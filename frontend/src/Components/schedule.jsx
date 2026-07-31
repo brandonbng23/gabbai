@@ -1,7 +1,4 @@
 import Welcome from "./welcome"
-import { Settings } from "../../../core/settings.mjs"
-import { Schedule } from "../../../core/schedule.mjs"
-import { Shul } from "../../../core/shul.mjs"
 
 function ScheduleC() {
     let settings = new Settings(5787);
@@ -21,9 +18,6 @@ function ScheduleC() {
     return (
         <div className="content">
             <Welcome name="Brandon"/>
-            {readings.map(r => (
-                <Parsha key={r.name} hdate={r.hebDate} date={r.gregDate} parsha={r.name} psukim={r.readers.getPsukim(a)}></Parsha>
-            ))}
         </div>
     )
 }
