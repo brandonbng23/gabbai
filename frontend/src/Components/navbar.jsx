@@ -5,11 +5,11 @@ function Navbar() {
                 <span>
                     <a className="navbar-brand" href="#">Gabbai</a>
                     <span className="vert-divider"></span>
-                    <span class="dashboard-label">Dashboard</span>
+                    <span className="dashboard-label">Dashboard</span>
                 </span>
 
                 <button type="button" className="alpha-btn">Alpha</button>
-                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-tager="#nabarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-example="false" aria-label="Toggle navigation">
+                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-tager="#nabarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-label="Toggle navigation">
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
