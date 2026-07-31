@@ -1,4 +1,16 @@
 {
+  "name": "gabbai",
+  "version": "1.0.0",
+  "description": "An online system that allows a synagogue and its members to coordinate Shabbat Torah readings in advance.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./core/main.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
   "dependencies": {
     "@hebcal/core": "^6.6.0",
     "@hebcal/leyning": "^9.5.4",
@@ -18,11 +30,15 @@
     "globals": "^17.6.0",
     "vite": "^8.0.12"
   },
-  "scripts": {
-    "test": "node ../gabbai/core/main.mjs",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint ."
-  }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandonbng23/gabbai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/brandonbng23/gabbai/issues"
+  },
+  "homepage": "https://github.com/brandonbng23/gabbai#readme"
 }
