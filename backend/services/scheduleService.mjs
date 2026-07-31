@@ -1,4 +1,4 @@
-import Schedule from "../core/Schedule.mjs";
+import { Schedule } from "../../core/Schedule.mjs";
 
 export function getSchedule(year) {
     const schedule = new Schedule(year);
