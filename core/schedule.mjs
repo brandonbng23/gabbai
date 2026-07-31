@@ -475,7 +475,7 @@ export class Schedule {
     /* Formats and prints an instance of schedule. Using methods of imported
     classes, loops through linked list of parshot (schedule) and prints parsha
     name, Hebrew date, Gregorian date, and readers for all aliyot, maftir, and
-    haftarah */
+    haftarah. For console debugging. */
     printSchedule() {
         console.log("Hebrew Year: " + this.settings.getHebYear());
         this.settings.printTriennial();
