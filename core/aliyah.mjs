@@ -11,7 +11,7 @@ export class Aliyah {
          * Yontif reading). Manges each aliyah to record its reader and psukim.
          *
          * @field desc: string repersenting name of parsha or Yontif associated with reading
-         * @field a: integer repersenting aliyah number 1-9 of reading (1-7=aliyah 1-7, 8=maftir, 9=haftarah)
+         * @field a: integer repersenting aliyah number 1-9 of reading (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
          * @field psukim: string repersenting chapters and verses associated with reading
          * @field reader: instance of reader repersenting reader registered for reading 
          * @field settings: instance of Settings to access administration settings */
@@ -34,6 +34,10 @@ export class Aliyah {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
+    /* Finds verses read for each aliyah according to schedule settings
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @param flag: boolean indicating control flow when the method is called recusively 
+     * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a, flag) {
             let __filename = fileURLToPath(import.meta.url);
             let __dirname = path.dirname(__filename)
@@ -69,6 +73,9 @@ export class Aliyah {
         }
     }
 
+    /* Helper function finding verses for double parshiyot when subscribing to the triennial
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah, 8: maftir, 9: haftarh)
+     * @returns string repersenting verses to be read for argued aliyah */
     doublePsukim(a) {
         let year = this.settings.getHebYear()
         let cycle = this.calculateTriennial();
@@ -239,6 +246,10 @@ export class Aliyah {
         return "Verse Finding Failed";
     }
 
+    /* Finds verses read for each aliyah according to schedule setting when subscribed to the triennail
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @returns: string repersenting verses to be read for argued aliyah
+     * NOTE: refers to help function doublePsukim() when finding verses for a double parsha */
     triPsukim(a) {
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename)
@@ -297,7 +308,36 @@ export class Aliyah {
 
         return verses;
     }
-    
 
+    /* Helper function to find verses for aliyah (according to fields)
+     * @returns string repersenting verses
+     * NOTE: Uses TradPsukim and TriPsukim for verse-finding */
+    figurePsukim() {
+        if (!this.settings.getTriennial()) {
+            return this.tradPsukim(this.a, false);
+        } else {
+            return this.triPsukim(this.a);
+        }
+    }
 
+    /* Helper function to find user data (according to fields)
+     * @returns User object (if field is not NULL) or field default string (placeholder) */
+    figureReaderData() {
+        if (this.reader instanceof user) {
+            return this.reader.getUserData();
+        } else {
+            return this.reader;
+        }
+    }
+
+    /* @returns aliyah data as an object according to fields and figuration methods
+     * NOTE: Uses figurePsukim and figureReaderData() (figuration methods) to find respective data */
+    getAliyahData() {
+        return {
+            event: this.desc,
+            aliyahNum: this.a,
+            psukim: this.figurePsukim(),
+            reader: this.figureReaderData()
+        }
+    }
 }
