@@ -2,6 +2,8 @@ import { Sedra } from '@hebcal/core'
 import { SimpleSchedule } from "./simpleSchedule.mjs"
 
 import fs from "fs"
+import path from "path";
+import { fileURLToPath } from "url";
 
 export class Readers {
     /* Class repersent the weekly honors associated with the reading
@@ -164,8 +166,11 @@ export class Readers {
      * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a, flag) {
+        let __filename = fileURLToPath(import.meta.url);
+        let __dirname = path.dirname(__filename)
+        let csvPath = path.join(__dirname, "../data", "psukim.csv")
 
-        let sheet = fs.readFileSync("../data/psukim.csv", "utf8");
+        let sheet = fs.readFileSync(csvPath, "utf8");
         let rows = sheet.split("\n");
 
         for (let row of rows) {
@@ -343,7 +348,11 @@ export class Readers {
             }
         }
 
-        let sheet = fs.readFileSync("../data/double_triennial.csv", "utf8");
+        let __filename = fileURLToPath(import.meta.url);
+        let __dirname = path.dirname(__filename)
+        let csvPath = path.join(__dirname, "../data", "double_triennial.csv")
+
+        let sheet = fs.readFileSync(csvPath, "utf8");
         let rows = sheet.split("\n");
 
         for (let row of rows) {
@@ -362,7 +371,11 @@ export class Readers {
     }
 
     triPsukim(a) {
-        let sheet = fs.readFileSync("../data/triennial.csv", "utf8");
+        let __filename = fileURLToPath(import.meta.url);
+        let __dirname = path.dirname(__filename)
+        let csvPath = path.join(__dirname, "../data", "triennial.csv")
+
+        let sheet = fs.readFileSync(csvPath, "utf8");
         let rows = sheet.split("\n");
         let cycle = this.calculateTriennial(5786);
         let verses = "";
