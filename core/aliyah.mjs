@@ -45,6 +45,17 @@ export class Aliyah {
         return this.reader;
     }
 
+    /* Mutates reader field to reset to field default string "available" */
+    removeReader() {
+        this.reader = "available";
+    }
+
+    /* Mutates reader field to set field to argued instance of reader 
+     * @param u: instance of User for which reader field is to be set to */
+    setReader(u) {
+        this.reader = u;
+    }
+
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
      * triennial Torah reading cycle)
      * @returns integer repersenting first...third year of triennial cycle */
