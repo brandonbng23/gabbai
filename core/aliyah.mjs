@@ -275,7 +275,7 @@ export class Aliyah {
 
         let sheet = fs.readFileSync(csvPath, "utf8");
         let rows = sheet.split("\n");
-        let cycle = this.calculateTriennial(5786);
+        let cycle = this.calculateTriennial();
         let verses = "";
 
         if (a < 8) {
