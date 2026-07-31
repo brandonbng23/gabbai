@@ -177,7 +177,7 @@ export class Readers {
             let cells = row.split(",");
 
             if (!this.special?.trim() || flag) {
-                    if (cells[0] == this.parsha) {
+                    if (cells[0] == this.desc) {
                         return cells[a]?.trim();
                     }
                 } else {
