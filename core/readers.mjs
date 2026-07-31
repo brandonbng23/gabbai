@@ -2,8 +2,6 @@ import { Sedra } from '@hebcal/core'
 import { SimpleSchedule } from "./simpleSchedule.mjs"
 
 import fs from "fs"
-import path from "path";
-import { fileURLToPath } from "url";
 
 export class Readers {
     /* Class repersent the weekly honors associated with the reading
