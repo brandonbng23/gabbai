@@ -7,10 +7,24 @@ export class Reading {
      * 
      * @field desc: string repersenting parsha or Yontif name
      * @field settings: instance of settings repersenting administrator settings
-     * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading */
+     * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
+     * @field special: string repersenting name of occassion that requires special reading to occur 
+     * @field hebYear: Hebrew year when reading will occur */
     constructor(desc, settings, special, hebYear) {
         this.desc = desc;
         this.settings = settings;
+        
+        if (special) {
+            this.special = special;
+        } else {
+            this.special = "";
+        }
+
+        if (hebYear) {
+            this.hebYear = hebYear;
+        } else {
+            this.hebYear = this.settings.getHebYear();
+        }
 
         this.aliyot = {1: new Aliyah(this.desc, 1, null, this.settings),        // First aliyah
                        2: new Aliyah(this.desc, 2, null, this.settings),        // Second aliyah
@@ -22,6 +36,8 @@ export class Reading {
                        8: new Aliyah(this.desc, 8, null, this.settings),        // Mafitr
                        9: new Aliyah(this.desc, 9, null, this.settings)         // Haftarah
         }
+
+        this.RO = false;
     }
 
     /* Accesses reader assigned to argued aliyah
