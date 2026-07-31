@@ -68,6 +68,28 @@ export class Readers {
         }
     }
 
+    getPsukim(r) {
+        if (r == 1) {
+            return this.a1.verses;
+        } else if (r == 2) {
+            return this.a2.verses;
+        } else if (r == 3) {
+            return this.a3.verses;
+        } else if (r == 4) {
+            return this.a4.verses;
+        } else if (r == 5) {
+            return this.a5.verses;
+        } else if (r == 6) {
+            return this.a6.verses;
+        } else if (r == 7) {
+            return this.a7.verses;
+        } else if (r == 8) {
+            return this.m.verses;
+        } else if (r == 9) {
+            return this.h.verses;
+        }
+    }
+
     /* Mutates the reader assigned to a reading
      * @param r: int 1-9 repersenting reader (1-7 => aliyot 1-7, 8 =>
      * maftir, 9 => haftarah)
