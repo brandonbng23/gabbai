@@ -3,4 +3,4 @@ import { Settings } from "../core/settings.mjs";
 
 const schedule = getSchedule(new Settings());
 
-console.log(schedule);
+console.dir(schedule, {depth: null});
