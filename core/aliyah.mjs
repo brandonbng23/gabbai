@@ -27,6 +27,7 @@ export class Aliyah {
 
         this.settings = settings;
 
+        this.locked = false;
         this.RO = false;
     }
 
@@ -55,10 +56,28 @@ export class Aliyah {
         return this.reader;
     }
 
+    /* Accesses locked field determining if a user (not an admin or user registered) 
+    for reading can register for a reading
+     * @returns boolean repersenting if aliyah is locked or not */
+    getLock() {
+        return this.locked;
+    }
+
+    /* Mutates locked field to disable most users from registering for this aliyah */
+    lock() {
+        this.locked = true;
+    }
+
+    /* Mutates locked field to enable most users to register for this aliyah */
+    unlock() {
+        this.locked = false;
+    }
+
     /* Mutates reader field to reset to field default string "available" */
     removeReader() {
         this.reader = "available";
         u.removeReading(this.getName());
+        this.unlock();
     }
 
     /* Mutates reader field to set field to argued instance of reader 
@@ -66,6 +85,7 @@ export class Aliyah {
     setReader(u) {
         this.reader = u;
         u.addReading(this);
+        this.lock();
     }
 
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
