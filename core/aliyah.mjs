@@ -35,6 +35,13 @@ export class Aliyah {
         return this.desc;
     }
 
+    /* Access parhsa or yontif description and aliyah number in a single string
+     * @returns string repersenting parsha or yontif name attatched with aliyah number 1-9
+     * (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
+    getName() {
+        return this.desc + this.a;
+    }
+
     /* Accesses aliyah number
      * @returns int 1-9 repersenting aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
     getAliyahNum() {
@@ -50,12 +57,14 @@ export class Aliyah {
     /* Mutates reader field to reset to field default string "available" */
     removeReader() {
         this.reader = "available";
+        u.removeReading(this.getName());
     }
 
     /* Mutates reader field to set field to argued instance of reader 
      * @param u: instance of User for which reader field is to be set to */
     setReader(u) {
         this.reader = u;
+        u.addReading(this);
     }
 
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
