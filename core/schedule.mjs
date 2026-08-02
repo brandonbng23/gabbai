@@ -438,33 +438,9 @@ export class Schedule {
                 aliyotCount: event.aliyotCount,
                 occassion: event.occassion,
                 hebDate: event.hebDate,
-                gregDate: event.gregDate
+                gregDate: event.gregDate,
+                aliyot: event.aliyot.getReadingSetData(this.settings.a)
             }
-
-            let aliyot = [];
-
-            for (let i = 0; i < 9; i++) {
-                if (i < event.aliyotCount || i > 6) {
-                    let aliyah = "";
-                    if (i < 7) {
-                        aliyah = i+1;
-                    } else if (i == 7) {
-                        aliyah = "M";
-                    } else if (i == 8) {
-                        aliyah = "H";
-                    }
-
-                    if (event.readers[i]) {
-                        aliyot.push({aliyah: aliyah, status: "locked", value: event.readers[i]});
-                    } else {
-                        aliyot.push({aliyah: aliyah, status: "available", value: null})
-                    }
-                } else {
-                    aliyot.push({status: "exempt", value: null});
-                }
-            }
-
-            newEvent.readers = aliyot;
 
             data.push(newEvent);
             counter++;
