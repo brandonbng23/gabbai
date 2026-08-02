@@ -1,5 +1,7 @@
 import { Sedra, 
-         Event as HebcalEvent } from '@hebcal/core'
+         Event as HebcalEvent } from '@hebcal/core';
+
+import { ReadingSet } from "./readingSet.mjs";
 
 // Update class to find settings from settings class, not fields
 
@@ -10,13 +12,13 @@ export class Parsha {
      * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(settings, name, hebYear, readers, a, occassion) {
+    constructor(settings, name, hebYear, readingSet, a, occassion) {
         this.settings = settings;
         this.triennial = this.settings.getFullTriennial();
         this.il = this.settings.getIL();
         this.name = name;
         this.hebYear = hebYear;
-        this.readers = readers;
+        this.readingSet = readingSet;
         this.a = a;
         this.occassion = occassion;
         this.hebDate = null;
@@ -65,7 +67,7 @@ export class Parsha {
             occassion: this.occassion,
             hebDate: this.hebDate,
             gregDate: this.gregDate,
-            readers: this.readers.getReadersData(this.a)
+            aliyot: this.readingSet
         };
     }
 
@@ -94,6 +96,6 @@ export class Parsha {
         console.log ("_______________________________________________________________________________________\n");
 
         console.log(this.hebDate + "   " + this.gregDate + "\n");
-        this.readers.printReaders(this.a);
+        this.readers.printReadingSet(this.a);
     }
 }
