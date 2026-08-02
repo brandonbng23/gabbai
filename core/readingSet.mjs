@@ -8,9 +8,11 @@ export class ReadingSet {
      * 
      * @field desc: string repersenting parsha or Yontif name
      * @field settings: instance of settings repersenting administrator settings
-     * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
      * @field special: string repersenting name of occassion that requires special reading to occur 
-     * @field hebYear: Hebrew year when reading will occur */
+     * @field hebYear: Hebrew year when reading will occur 
+     * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
+     * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
+     * can register for an aliyah within this reading set */
     constructor(desc, settings, special, hebYear) {
         this.desc = desc;
         this.settings = settings;
@@ -36,6 +38,24 @@ export class ReadingSet {
                        7: new Aliyah(this.desc, 7, null, this.settings),        // Seventh aliyah
                        8: new Aliyah(this.desc, 8, null, this.settings),        // Mafitr
                        9: new Aliyah(this.desc, 9, null, this.settings)         // Haftarah
+        }
+
+        this.locked = false;
+    }
+
+    lock() {
+        for (let key in this.aliyot) {
+            this.aliyot[key].flag();
+        }
+
+        this.locked = true;
+    }
+
+    unlock() {
+        this.locked = false;
+
+        for (let key in this.aliyot) {
+            this.aliyot[key].unflag();
         }
     }
 

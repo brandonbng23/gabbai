@@ -17,7 +17,10 @@ export class Aliyah {
          * @field reader: instance of reader repersenting reader registered for reading 
          * @field settings: instance of Settings to access administration settings 
          * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
-         * can register for an aliyah for this aliyah */
+         * can register for an aliyah for this aliyah 
+         * @field flagged: boolean repersenting if entire reading set is locked. If true, aliyah acts as if locked
+         * while preserving its own locked status in case reading set is unlocked 
+         * RO: */
         this.desc = desc;
         this.a = a;
 
@@ -30,6 +33,7 @@ export class Aliyah {
         this.settings = settings;
 
         this.locked = false;
+        this.flagged = false;
         this.RO = false;
     }
 
@@ -73,6 +77,17 @@ export class Aliyah {
     /* Mutates locked field to enable most users to register for this aliyah */
     unlock() {
         this.locked = false;
+    }
+
+    /* Mutates flagged field to mark entire reading set as locked */
+    flag() {
+        this.flagged = true;
+    }
+
+    /* Mutates flagged field to mark reading set as unlocked, reverting each aliyah to its own
+     * locked status */
+    unflag() {
+        this.flagged = false;
     }
 
     /* Mutates reader field to reset to field default string "available" */
