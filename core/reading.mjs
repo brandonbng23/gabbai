@@ -36,8 +36,6 @@ export class Reading {
                        8: new Aliyah(this.desc, 8, null, this.settings),        // Mafitr
                        9: new Aliyah(this.desc, 9, null, this.settings)         // Haftarah
         }
-
-        this.RO = false;
     }
 
     /* Accesses reader assigned to argued aliyah
@@ -111,6 +109,44 @@ export class Reading {
             return this.aliyot[8].figurePsukim();
         } else if (a == 9) {
             return this.aliyot[9].figurePsukim();
+        }
+    }
+
+    printReading(a) {
+        let text = "";
+
+        for (let i = 0; i < a+2; i++) {
+            let verses = this.getPsukim(i);
+
+            if (i < a) {
+                test = "   Aliyah " + (i+1) + "        " + verses;
+            } else if (i == a && this.settings.getMaftir() != "none") {
+                text = "   Maftir          " + this.aliyot[8].getPsukim();
+            } else if (i == a+1) {
+                text = "   Haftarah        " + this.aliyot[9].getPsukim();
+            }
+
+            let len = text.length;
+
+            if (text.length > 55) {
+                while (text.length < 80) {
+                    text += " ";
+                }
+            } else {
+                while (text.length < 55) {
+                    text += " ";
+                }
+            }
+
+            text += this.aliyah(i).getReader()?.nameToString();
+            console.log(text);
+
+            console.log("\n");
+            
+        }
+
+        if (this.special) {
+            console.log("                   **" + this.special);
         }
     }
 }
