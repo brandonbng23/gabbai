@@ -1,5 +1,5 @@
-import { Reader } from "./settings.mjs";
-import { Settings } from "./readers.mjs";
+import { Reader } from "./reader.mjs";
+import { Settings } from "./settings.mjs";
 
 import fs from "fs";
 import path from "path";
