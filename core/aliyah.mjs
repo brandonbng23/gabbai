@@ -1,4 +1,4 @@
-import { Reader } from "./reader.mjs";
+import { User } from "./user.mjs";
 import { Settings } from "./settings.mjs";
 
 import fs from "fs";
