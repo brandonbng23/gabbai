@@ -19,10 +19,10 @@ Gabbai is currently being developed as a proof of concept, that's what you'll fi
 ## Gloassary
 
 #### Psukim
-    > Verses. In context of Gabbai, the verses, formated in a range BOOK CHAPTER:VERSE-CHAPTER VERSE, to be read during an aliyah, maftir, or haftarah chanting. 
+Verses. In context of Gabbai, the verses, formated in a range BOOK CHAPTER:VERSE-CHAPTER VERSE, to be read during an aliyah, maftir, or  haftarah chanting. 
 
 #### Yontif
-    > Holiday on Jewish calendar, typically when one refrains from work. In context of Gabbai, a Yontif has a reading occassion outside of Shabbat. Also referred as: chag, (Jewish) holiday, yomtov.
+Holiday on Jewish calendar, typically when one refrains from work. In context of Gabbai, a Yontif has a reading occassion outside of Shabbat. Also referred as: chag, (Jewish) holiday, yomtov.
 
 ## Author
 Brandon N. Goldberg [brandonbng23@gmail.com](brandonbng23@gmail.com) - This is the best email for inquiries regarding this repo!
