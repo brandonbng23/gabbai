@@ -1,5 +1,6 @@
 import { User } from "./user.mjs";
 import { Settings } from "./settings.mjs";
+import { SimpleSchedule } from "./simpleSchedule.mjs";
 
 import fs from "fs";
 import path from "path";
