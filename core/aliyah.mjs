@@ -15,7 +15,9 @@ export class Aliyah {
          * @field a: int repersenting aliyah number 1-9 of reading (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
          * @field psukim: string repersenting chapters and verses associated with reading
          * @field reader: instance of reader repersenting reader registered for reading 
-         * @field settings: instance of Settings to access administration settings */
+         * @field settings: instance of Settings to access administration settings 
+         * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
+         * can register for an aliyah for this aliyah */
         this.desc = desc;
         this.a = a;
 
