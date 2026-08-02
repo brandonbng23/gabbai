@@ -113,6 +113,22 @@ export class ReadingSet {
         }
     }
 
+    /* Collects and organizes data for all aliyot in Reading Set
+     * @param a: int 1-9 repersenting how many aliyot should be read. Maftir is returned according
+     * to administrator settings. Haftarah is always returned.
+     * @returns array of objects organizing aliyot and reader data for argued amount of aliyot, plus maftir
+     * and haftarah */
+    getReadingSetData(a) {
+        let data = [];
+
+        for (let i = 0; i < a+2; i++) {
+            let aliyotObj = [];
+            aliyotObj.push(this.aliyot[i+1]);
+        }
+
+        return data;
+    }
+
     /* Formats and prints and instance of Reading
      * All readers for a reading are printed according to the argued quantity of
      * aliyot (int 1-7). Maftir is printed according to Maftir and Triennial subscriptions.
@@ -129,11 +145,11 @@ export class ReadingSet {
             let verses = this.getPsukim(i);
 
             if (i < a) {
-                test = "   Aliyah " + (i+1) + "        " + verses;
+                text = "   Aliyah " + (i+1) + "        " + verses;
             } else if (i == a && this.settings.getMaftir() != "none") {
-                text = "   Maftir          " + this.aliyot[8].getPsukim();
+                text = "   Maftir          " + this.getPsukim(8);
             } else if (i == a+1) {
-                text = "   Haftarah        " + this.aliyot[9].getPsukim();
+                text = "   Haftarah        " + this.getPsukim(9);
             }
 
             let len = text.length;
@@ -148,7 +164,7 @@ export class ReadingSet {
                 }
             }
 
-            text += this.aliyah(i).getReader()?.nameToString();
+            text += this.getReader(i+1)?.nameToString();
             console.log(text);
 
             console.log("\n");
