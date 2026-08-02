@@ -25,6 +25,8 @@ export class Aliyah {
         }
 
         this.settings = settings;
+
+        this.RO = false;
     }
 
     /* Access parsha or yontif name for which the aliyah belongs to
@@ -306,7 +308,7 @@ export class Aliyah {
                     return this.tradPsukim(8, false);
                 } else if (a == 9) {
                     return this.tradPsukim(9, false);
-                } else if (this.settings.getYitro() && this.dewsc == "Yitro") {
+                } else if (this.settings.getYitro() && this.desc == "Yitro") {
                     return this.tradPsukim(a, false);
                 } 
 
