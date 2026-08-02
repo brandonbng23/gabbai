@@ -41,7 +41,7 @@ export class Reading {
     }
 
     /* Accesses reader assigned to argued aliyah
-     * @param a: int 1-9 repersenting aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @param a: int 1-9 repersenting which aliyah's reader should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah) 
      * @returns instance of user (if field is not null) or field default string "available" */
     getReader(a) {
         if (a == 1) {
@@ -62,6 +62,55 @@ export class Reading {
             return this.aliyot[8].getReader();
         } else if (a == 9) {
             return this.aliyot[9].getReader();
+        }
+    }
+
+    /* Mutates reader assigned to argued aliyah
+     * @param a: int 1-9 repersenting whcih aliyah's reader should be mutated (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
+    setReader(a) {
+        if (a == 1) {
+            this.aliyot[1].setReader(a);
+        } else if (a == 2) {
+            this.aliyot[2].setReader(a);
+        } else if (a == 3) {
+            this.aliyot[3].setReader(a); 
+        } else if (a == 4) {
+            this.aliyot[4].setReader(a);
+        } else if (a == 5) {
+            this.aliyot[5].setReader(a);
+        } else if (a == 6) {
+            this.aliyot[6].setReader(a);
+        } else if (a == 7) {
+            this.aliyot[7].setReader(a);
+        } else if (a == 8) {
+            this.aliyot[8].setReader(a);
+        } else if (a == 9) {
+            this.aliyot[9].setReader(a);
+        }
+    }
+
+    /* Accesses psukim (chapter:verse range) read for argued aliyah
+     * @param a: int 1-9 repersenting which aliyah's psukim should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @returns: string repersenting psukim in a human-ready format */
+    getPsukim(a) {
+        if (a == 1) {
+            return this.aliyot[1].figurePsukim();
+        } else if (a == 2) {
+            return this.aliyot[2].figurePsukim();
+        } else if (a == 3) {
+            return this.aliyot[3].figurePsukim();
+        } else if (a == 4) {
+            return this.aliyot[4].figurePsukim();
+        } else if (a == 5) {
+            return this.aliyot[5].figurePsukim();
+        } else if (a == 6) {
+            return this.aliyot[6].figurePsukim();
+        } else if (a == 7) {
+            return this.aliyot[7].figurePsukim();
+        } else if (a == 8) {
+            return this.aliyot[8].figurePsukim();
+        } else if (a == 9) {
+            return this.aliyot[9].figurePsukim();
         }
     }
 }
