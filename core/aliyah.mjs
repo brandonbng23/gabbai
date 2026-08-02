@@ -401,7 +401,7 @@ export class Aliyah {
     /* Helper function to find user data (according to fields)
      * @returns User object (if field is not null) or field default string "available" */
     figureReaderData() {
-        if (this.reader instanceof user) {
+        if (this.reader instanceof User) {
             return this.reader.getUserData();
         } else {
             return this.reader;
