@@ -4,7 +4,7 @@ import { HebrewCalendar,
          getHolidaysOnDate} from '@hebcal/core'
 
 import { LinkedList } from "./linkedList.mjs";
-import { Readers } from "./readers.mjs"
+import { ReadingSet } from "./readingSet.mjs"
 import { Parsha } from "./parsha.mjs"
 import { Settings } from "./settings.mjs"
 
@@ -345,10 +345,12 @@ export class Schedule {
                 schedule.append(new Parsha(this.settings,
                                            desc, 
                                            this.hebYear, 
-                                           new Readers(desc, 
-                                           this.settings, 
-                                           this.readingOccassion(reading), 
-                                           this.hebYear),
+                                           new ReadingSet(desc,
+                                                          this.settings,
+                                                          this.readingOccassion(reading),
+                                                          this.hebYear
+
+                                           ),
                                 this.calculateAliyot(desc),
                                 "Shabbat"));
 
@@ -389,7 +391,7 @@ export class Schedule {
                     let parsha = new Parsha(this.settings,
                                             desc,
                                             this.hebYear,
-                                            new Readers(desc, 
+                                            new ReadingSet(desc, 
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear),
@@ -403,7 +405,7 @@ export class Schedule {
                     let parsha = new Parsha(this.settings,
                                             desc, 
                                             this.hebYear, 
-                                            new Readers(desc, 
+                                            new ReadingSet(desc, 
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear), 
