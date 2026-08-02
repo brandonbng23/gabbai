@@ -96,6 +96,6 @@ export class Parsha {
         console.log ("_______________________________________________________________________________________\n");
 
         console.log(this.hebDate + "   " + this.gregDate + "\n");
-        this.readers.printReadingSet(this.a);
+        this.readingSet.printReadingSet(this.a);
     }
 }
