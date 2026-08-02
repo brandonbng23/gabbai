@@ -140,10 +140,17 @@ export class ReadingSet {
      * and haftarah */
     getReadingSetData(a) {
         let data = [];
+        let counter = 0;
 
-        for (let i = 0; i < a+2; i++) {
-            let aliyotObj = [];
-            aliyotObj.push(this.aliyot[i+1]);
+        for (let key in this.aliyot) {
+            while (counter < a+2) {
+                let aliyah = this.aliyot[key];
+                
+                if (aliyah instanceof Aliyah) {
+                    data.push(aliyah.getAliyahData());
+                }
+                counter++;
+            }
         }
 
         return data;
