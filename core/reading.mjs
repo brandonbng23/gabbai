@@ -112,6 +112,15 @@ export class Reading {
         }
     }
 
+    /* Formats and prints and instance of Reading
+     * All readers for a reading are printed according to the argued quantity of
+     * aliyot (int 1-7). Maftir is printed according to Maftir and Triennial subscriptions.
+     * Haftarah is always printed. First and last name of user registed to aliyah is printed to
+     * the right of the readin title. If no user is registered, field default string "available"
+     * is printed instead.
+     * @param a: int 1-7 repersenting how many aliyot should be read. Maftir is printed according
+     * to administrator settings. Haftarah is always printed. 
+     * NOTE: Method prints to console instead of a return */
     printReading(a) {
         let text = "";
 
