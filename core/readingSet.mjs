@@ -164,7 +164,12 @@ export class ReadingSet {
                 }
             }
 
-            text += this.getReader(i+1)?.nameToString();
+            if (this.getReader(i+1) instanceof User) {
+                text += this.getReader(i+1).nameToString();
+            } else {
+                text += this.getReader(i+1);
+            }
+
             console.log(text);
 
             console.log("\n");
