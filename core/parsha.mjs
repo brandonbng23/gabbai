@@ -61,7 +61,7 @@ export class Parsha {
         }
 
         return {
-            id: id,
+            id: this.hebYear + "_" + id,
             name: this.name,
             aliyotCount: this.a,
             occassion: this.occassion,
