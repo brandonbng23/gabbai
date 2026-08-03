@@ -143,7 +143,7 @@ export class ReadingSet {
         let counter = 0;
 
         for (let key in this.aliyot) {
-            while (counter < a+2) {
+            if (counter < a+2) {
                 let aliyah = this.aliyot[key];
                 
                 if (aliyah instanceof Aliyah) {
