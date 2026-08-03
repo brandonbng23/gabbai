@@ -226,21 +226,35 @@ export class Schedule {
                  "Pesach VII",
                  "Pesach VIII",
                  "Shavuot I",
-                 "Shavuot II"].includes(desc)) {
+                 "Shavuot II"].includes(desc) && !desc.includes("Shabbat")) {
                 if (this.settings.getYRespect()) {
                     return 5;
                 } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
+                } 
+
+            // 5 Aliyot Yontif Shabbat (excluding Rosh Hashana)
+            } else if (desc.includes("Shabbat") &&
+                !(desc.includes("Rosh Hashana") || desc.includes("Yom Kippur")) || desc.includes("Simchat Torah")) {
+                
+                if (this.settings.getYRespect()) {
+                    return 7;
                 }
             }
             
             // Rosh Hashana (5 Aliyot High Holiday)
-            if (desc.includes("Rosh Hashana")) {
+            if (desc.includes("Rosh Hashana") && !desc.includes("Shabbat")) {
                 if (this.settings.getYRespect() || this.settings.getHhRespect()) {
                     return 5;
                 } else if (this.settings.getAliyotCount() > 5) {
                     return 5;
                 }
+
+            // Rosh Hashana Shabbat
+            } else if (desc.includes("Rosh Hashana") && desc.includes("Shabbat")) {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
+                    return 7;
+                } 
             }
 
             // Yom Kippur (6 Aliyot High Holiday)
@@ -249,6 +263,12 @@ export class Schedule {
                     return 6;
                 } else if (this.settings.getAliyotCount() > 6) {
                     return 6;
+                }
+
+            // Yom Kippur Shabbat
+            } else if (desc == "Yom Kippur Shabbat") {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
+                    return 7;
                 }
             }
             
@@ -346,6 +366,7 @@ export class Schedule {
                                            desc, 
                                            this.hebYear, 
                                            new ReadingSet(desc,
+                                                          this.calculateAliyot(desc),
                                                           this.settings,
                                                           this.readingOccassion(reading),
                                                           this.hebYear
@@ -392,6 +413,7 @@ export class Schedule {
                                             desc,
                                             this.hebYear,
                                             new ReadingSet(desc, 
+                                                        this.calculateAliyot(desc),
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear),
@@ -406,6 +428,7 @@ export class Schedule {
                                             desc, 
                                             this.hebYear, 
                                             new ReadingSet(desc, 
+                                                        this.calculateAliyot(desc),
                                                         this.settings, 
                                                         "", 
                                                         this.hebYear), 
