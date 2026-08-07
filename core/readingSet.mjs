@@ -144,8 +144,6 @@ export class ReadingSet {
         let data = [];
         let counter = 0;
 
-        console.log(this.a);
-
         for (let key in this.aliyot) {
             let aliyah = this.aliyot[key];
 
@@ -153,7 +151,6 @@ export class ReadingSet {
                 if (aliyah instanceof Aliyah) {
                     data.push(aliyah.getAliyahData());
                 }
-                
             }
 
             if (counter == 7 || counter == 8) {
