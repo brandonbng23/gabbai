@@ -67,7 +67,8 @@ export class Parsha {
             occassion: this.occassion,
             hebDate: this.hebDate,
             gregDate: this.gregDate,
-            aliyot: this.readingSet
+            aliyot: this.readingSet,
+            readingSet: this.readingSet
         };
     }
 
