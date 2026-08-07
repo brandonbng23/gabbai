@@ -35,6 +35,15 @@ export class Aliyah {
         this.locked = false;
         this.flagged = false;
         this.RO = false;
+        this.type = "";
+
+        if (this.a == 8) {
+            this.type = "maftir";
+        } else if (this.a == 9) {
+            this.type = "haftarah";
+        } else {
+            this.type = "aliyah";
+        }
     }
 
     /* Access parsha or yontif name for which the aliyah belongs to
@@ -413,6 +422,7 @@ export class Aliyah {
     getAliyahData() {
         return {
             event: this.desc,
+            type: this.type,
             aliyahNum: this.a,
             psukim: this.figurePsukim(),
             reader: this.figureReaderData()
