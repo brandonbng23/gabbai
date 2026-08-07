@@ -215,7 +215,7 @@ export class Schedule {
     /* Calculates how many aliyot will be read according to argued settings pertaining to Shabbat
      * and Yontif readings
      * @param desc: string repersenting name of reading occassion
-     * @returns integer (3-7) repersenting how many aliyot will be read, not including Maftir and Haftarah */
+     * @returns integer (3-7) repersenting how many aliyot will be read, not including maftir and haftarah */
     calculateAliyot(desc) {
             // 5 Aliyot Yontifs
             if (["Sukkot I",
@@ -369,9 +369,7 @@ export class Schedule {
                                                           this.calculateAliyot(desc),
                                                           this.settings,
                                                           this.readingOccassion(reading),
-                                                          this.hebYear
-
-                                           ),
+                                                          this.hebYear),
                                 this.calculateAliyot(desc),
                                 "Shabbat"));
 
@@ -449,23 +447,22 @@ export class Schedule {
     getScheduleData() {
         let data = [];
         let counter = 1;
-        let newEvent = null;
 
         let current = this.schedule.head;
         while (current) {
             let event = current.value.getParshaData(counter);
 
-            newEvent = {
+            data.push({
                 id: event.id,
                 name: event.name,
                 aliyotCount: event.aliyotCount,
                 occassion: event.occassion,
                 hebDate: event.hebDate,
                 gregDate: event.gregDate,
-                aliyot: event.aliyot.getReadingSetData(this.settings.a)
-            }
+                readingSet: event.readingSet.getReadingSetData()
+            });
 
-            data.push(newEvent);
+
             counter++;
             current = current.next;
         }
