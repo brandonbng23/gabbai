@@ -200,10 +200,10 @@ export class ReadingSet {
                 }
             }
 
-            if (this.getReader(i+1) instanceof User) {
+            if (this.getReader(i+1)) {
                 text += this.getReader(i+1).nameToString();
             } else {
-                text += this.getReader(i+1);
+                text += "available";
             }
 
             console.log(text);

@@ -27,7 +27,7 @@ export class Aliyah {
         if (reader) {
             this.reader = reader;
         } else {
-            this.reader = "available";
+            this.reader = null;
         }
 
         this.settings = settings;
@@ -401,10 +401,10 @@ export class Aliyah {
     /* Helper function to find user data (according to fields)
      * @returns User object (if field is not null) or field default string "available" */
     figureReaderData() {
-        if (this.reader instanceof User) {
+        if (this.reader) {
             return this.reader.getUserData();
         } else {
-            return this.reader;
+            return null;
         }
     }
 
