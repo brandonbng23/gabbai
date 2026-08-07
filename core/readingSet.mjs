@@ -7,14 +7,16 @@ export class ReadingSet {
      * less than 7
      * 
      * @field desc: string repersenting parsha or Yontif name
+     * @field a: number of aliyot that should be part of this reading set
      * @field settings: instance of settings repersenting administrator settings
      * @field special: string repersenting name of occassion that requires special reading to occur 
      * @field hebYear: Hebrew year when reading will occur 
      * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
      * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
      * can register for an aliyah within this reading set */
-    constructor(desc, settings, special, hebYear) {
+    constructor(desc, a, settings, special, hebYear) {
         this.desc = desc;
+        this.a = a;
         this.settings = settings;
         
         if (special) {
@@ -138,19 +140,29 @@ export class ReadingSet {
      * to administrator settings. Haftarah is always returned.
      * @returns array of objects organizing aliyot and reader data for argued amount of aliyot, plus maftir
      * and haftarah */
-    getReadingSetData(a) {
+    getReadingSetData() {
         let data = [];
         let counter = 0;
 
+        console.log(this.a);
+
         for (let key in this.aliyot) {
-            if (counter < a+2) {
-                let aliyah = this.aliyot[key];
-                
+            let aliyah = this.aliyot[key];
+
+            if (counter < this.a) {
                 if (aliyah instanceof Aliyah) {
                     data.push(aliyah.getAliyahData());
                 }
-                counter++;
+                
             }
+
+            if (counter == 7 || counter == 8) {
+                if (aliyah instanceof Aliyah) {
+                    data.push(aliyah.getAliyahData());
+                }
+            }
+
+            counter++;
         }
 
         return data;
