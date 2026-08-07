@@ -459,7 +459,7 @@ export class Schedule {
                 occassion: event.occassion,
                 hebDate: event.hebDate,
                 gregDate: event.gregDate,
-                readingSet: event.readingSet.getReadingSetData()
+                readings: event.readingSet.getReadingSetData()
             });
 
 
