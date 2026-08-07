@@ -1,4 +1,4 @@
-import { getSchedule } from "../services/scheduleService.mjs";
+import { getSchedule, getScheduleByID } from "../services/scheduleService.mjs";
 
 export function getScheduleHandler(req, res) {
     try {
@@ -8,6 +8,25 @@ export function getScheduleHandler(req, res) {
         res.json(schedule);
     } catch (err) {
         console.error(err);
+        res.status(500).json({error: "Schedule generation failed."});
+    }
+}
+
+export function getScheduleByIDHandler(req, res) {
+    try {
+        const { id } = req.params;
+        const year = 5787;
+
+        const schedule = getScheduleByID(year, id);
+        
+        if (!schedule) {
+            return res.status(404).json({error: "Schedule not found."});
+        }
+
+        res.json(schedule);
+    } catch (err) {
+        console.error(err);
+
         res.status(500).json({error: "Schedule generation failed."});
     }
 }

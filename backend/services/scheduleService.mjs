@@ -6,3 +6,9 @@ export function getSchedule(year) {
 
     return schedule.getScheduleData();
 }
+
+export function getScheduleByID(year, id) {
+    const schedule = getSchedule(year);
+
+    return schedule.find(item => item.id == id);
+}
