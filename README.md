@@ -2,7 +2,9 @@
 An online system that allows a synagogue and its members to coordinate Shabbat Torah readings in advance.
 
 ## Project Status & Timeline
-Gabbai is currently being developed as a proof of concept, that's what you'll find on this repo. At the latest, the proof of concept should be completed by early June 2026. As the proof of concept grows, it will transition into an alpha stages and include an alpha client. It is an aspiration for completition to happen before Simchat Torah 5787 (or, before October 3, 2026). Check back for updates.
+Gabbai is currently being developed as a proof of concept, that's what you'll find on this repo. As of June 2026, the proof of concept has been completed. This is the scheduling engine. Actively, a frontend interface and backend database are being developed. It was an aspiration for an alpha system to be completed by Simchat Torah 5787 (October 3, 2026). Because of personal delays, _the current roadmap plans for an alpha system to now be completed by January 1, 2027_. Check back for updates.
+
+Actively, the scheduling engine codebase is being converted to TypeScript from JavaScript.
 
 ### Roadmap
 1. Proof of Concept (Complete!)
