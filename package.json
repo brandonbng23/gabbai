@@ -12,7 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@hebcal/core": "^6.6.0",
+    "@hebcal/core": "^6.9.2",
     "@hebcal/leyning": "^9.5.4",
     "bootstrap": "^5.3.8",
     "express": "^5.2.1",
