@@ -2,7 +2,103 @@ export class Settings {
     /* Streamlined class repersenting all administration settings. Fields
      * are documented in-line. All fields are set to a default value and be
      * modified with its corresponding methods */
-    constructor(hebYear) {
+
+    /* @field hebYear: number repersenting active Hebrew Year */
+    hebYear: number;
+
+    /* @field il: boolean repersenting reading rattern. Subscribe to diasparic 
+     * (false) or Israeli (true) reading pattern @default: false (diasparic) */
+    il: boolean = false;
+
+    /* @field a: number repersenting aliyot count (number of aliyot). Range from 
+     * 1-7, not including Maftir and Haftarah. @default: 7 */
+    a: number = 7;
+
+    /* @field hhRespect: boolean repersenting High Holiday aliyot count. Subscribe 
+     * to traditional High Holiday Aliyot count (true) or preset, regular (this.a) 
+     * Aliyot count (false) during High Holidays (Rosh Hashana, Yom Kippur, Simchat Torah)
+     * @default: true (traditional count) */
+    hhRespect: boolean = true;
+
+    /* @field yRespect: boolean repersenting yontif aliyot Count. Subscribe to traditional 
+     * Yontif count (true) for each Yontif or preset, regular (this.a) Aliyot count (false) 
+     * during Yontifs. If true, High Holiday Aliyot Count becomes true. If false, High 
+     * Holiday Aliyot Count does NOT become false @default: true (traditional count) */
+    yRespect: boolean = true;
+
+    /* @field yontifs: Object repersenting observed Yontifs. For each Yontif, indicates if a 
+     * special reading should be added to the reading schedule (true) or not (false) when the 
+     * Yontif is on a weekday. @default (for each Yontif): true */
+    yontifs = { 
+                    /* Rosh Hashana Day 1 */
+                    rh1: true,   
+                    
+                    /* Rosh Hashana Day 2 */
+                    rh2: true,       
+                    
+                    /* Yom Kippur */
+                    yk: true,  
+                    
+                    /* Sukkot Day 1 */
+                    sukkot1: true,  
+                    
+                    /* Sukkot Day 2 */
+                    sukkot2: true,    
+                    
+                    /* Shmini Atzeret */
+                    sukkotSA: true,    
+                    
+                    /* Simchat Torah */
+                    sukkotST: true,                             
+
+                    /* Pesach Day 1 */
+                    pesach1: true,   
+                    
+                    /* Pesach Day 2 */
+                    pesach2: true,    
+                    
+                    /* Pesach Day 7 */
+                    pesach7: true,     
+                    
+                    /* Pesach Day * */
+                    pesach8: true,    
+                    
+                    /* Shavuot Day 1 */
+                    shavuot1: true,  
+                    
+                    /* Shavuot Day 2 */
+                    shavuot2: true 
+    };                           
+
+    /* @field triennial: object repersenting triennial settings: Subscribe to different traditions 
+     * regarding a triennial Torah reading pattern */
+    triennial = { 
+                    /* Subscribe to triennial (true) or not (false) @default: false */
+                    tri: false,
+                  
+                    /* Subscribe to triennial maftir (true) or not (false) @default: true */
+                    triMaftir: false,
+
+                    /* Subscribe to traditional maftir (true) or not (false) @default: true
+                     * NOTE: should a subscription to the triennial and traditional maftir both 
+                     * be false, no maftir reading will be established */
+                    tradMaftir: true, 
+
+                    /* Subscribe to triennial reading pattern for Parsha Yitro containing the 10 
+                     * Commanemdnets (true) or not (false) @default: true */
+                     yitro: true, 
+
+                    /* Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 
+                     * 10 Commandments and Shema (true) or not (false) @default: true */
+                    vaetchanan: true
+    };
+
+    /* @field specialSeventh: boolean repersenting rule of special seventh. Rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
+     * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
+     * @default: true */
+    specialSeventh: boolean = true;
+
+    constructor(hebYear: number) {
 
         /* Hebrew Year: Starting Hebrew Year
          * @default: 5786 */
@@ -12,57 +108,8 @@ export class Settings {
             this.hebYear = 5786;
         }
         
-        /* Reading Pattern: Subscribe to diasparic (false) or Israeli (true) reading pattern
-         * @default: false (diasparic) */
-        this.il = false
-
-        /* Aliyot Count: Number of aliyot. Range from 1-7, not including Maftir and Haftarh
-         * @default: 7 */
-        this.a = 7;
-
-        /* High Holiday Aliyot Count: Subscribe to traditional High Holiday Aliyot count (true) or 
-         * preset, regular (this.a) Aliyot count (false) during High Holidays (Rosh Hashana, Yom Kippur,
-         * Simchat Torah)
-         * @default: true (traditional count) */
-        this.hhRespect = true;
-
-        /* Yontif Aliyot Count: Subscribe to traditional Yontif count (true) for each Yontif or preset, regular
-         * (this.a) Aliyot count (false) during Yontifs. If true, High Holiday Aliyot Count becomes true. If false,
-         * High Holiday Aliyot Count does NOT become false
-         * @default: true (traditional count) */
-        this.yRespect = true;
-
-        /* Observed Yontifs: For each Yontif, indicates if a special reading should be added to the reading schedule
-         * (true) or not (false) when the Yontif is on a weekday.
-         * @default (for each Yontif): true */
-        this.yontifs = {rh1: true,                                  // Rosh Hashana Day 1
-                        rh2: true,                                  // Rosh Hashana Day 2
-                        yk: true,                                   // Yom Kippur
-                        sukkot1: true,                              // Sukkot Day 1
-                        sukkot2: true,                              // Sukkot Day 2
-                        sukkotSA: true,                             // Shmini Atzeret                          
-                        sukkotST: true,                             // Simchat Torah
-                        pesach1: true,                              // Pesach Day 1
-                        pesach2: true,                              // Pesach Day 2
-                        pesach7: true,                              // Pesach Day 7
-                        pesach8: true,                              // Pesach Day 8
-                        shavuot1: true,                             // Shavuot Day 1
-                        shavuot2: true};                            // Shavuot Day 2
-
-        /* Triennial Settings: Subscribe to different traditions regarding a triennial Torah reading pattern */
-        this.triennial = {tri: false,     // Subscribe to triennial (true) or not (false) @default: false
-                          triMaftir: false,     // Subscribe to triennial maftir (true) or not (false) @default: true
-                          tradMaftir: true,     // Subscribe to traditional maftir (true) or not (false) @default: true
-                // NOTE: should a subscription to the triennial and traditional maftir both be false, no maftir reading will be established
-                          yitro: true,          // Subscribe to triennial reading pattern for Parsha Yitro containing the 10 Commanemdnets (true) or not (false) @default: true
-                          vaetchanan: true      // Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 10 Commandments and Shema (true) or not (false) @default: true
-                    };
-        this.correctMaftir();   // Ensures both maftirs are not set true        
-
-        /* Special Seventh: rarely, the traditional seventh aliyah will be overriden by a special Torah reading. Indicates
-         * if, when reading less than seven aliyot, the final aliyah will be overriden by the special seventh aliyah 
-         * @default: true */
-        this.specialSeventh = true;
+        // Ensure both maftirs are not set true       
+        this.correctMaftir();   
     }
 
     /* Accesses set Hebrew year */
