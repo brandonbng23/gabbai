@@ -1,25 +1,26 @@
-import { Dnode } from "./dnode.mjs"
+import { Dnode } from "./dnode.mts"
 
 export class LinkedList {
-    /* Class to connect nodes as a linked list
-     *
-     * @field head: repersents first node of linked list
-     * @field tail: repersents last node of linked list */
+    /* @class repersenting a linked list */
 
+    /* @field head: repersents active node (Dnode) of a linked list */
     head: Dnode | null = null;
+
+    /* @field tail: repersents next node (Dnode) relative to active node of a linked list */
     tail: Dnode | null = null;
 
     constructor() {
 
     }
 
+    /* Returns value, if applicable, held by active node of a linked list */
     access(): Dnode | void {
         if (this.head?.value) {
             return this.head.value;
         }
     }
 
-    /* APPEND: Allows for a new node to be added at the end of the linked list. Corrects
+    /* Allows for a new node to be added at the end of the linked list. Corrects
      * tail to be appended node, and for the previous tail of the list to precede this node.
      * @param: value repersents the data stored at this node */
     append(value: any): void {
