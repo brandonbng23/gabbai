@@ -16,5 +16,5 @@ export interface Triennial {
 
     /* Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 
      * 10 Commandments and Shema (true) or not */
-    vaetchanan: true
+    vaetchanan: boolean
 }
