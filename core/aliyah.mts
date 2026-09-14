@@ -1,28 +1,48 @@
-import { User } from "./user.mjs";
-import { Settings } from "./settings.mjs";
-import { SimpleSchedule } from "./simpleSchedule.mjs";
+import { User } from "./user.mts";
+import { Settings } from "./settings.mts";
+import { SimpleSchedule } from "./simpleSchedule.mts";
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
 export class Aliyah {
-    constructor(desc, a, reader, settings) {
-        /* Class repersents one reading within a weekly group of readings (be it the parsha of the week or a
-         * Yontif reading). Manges each aliyah to record its reader and psukim.
-         *
-         * @field desc: string repersenting name of parsha or Yontif associated with reading
-         * @field a: int repersenting aliyah number 1-9 of reading (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-         * @field psukim: string repersenting chapters and verses associated with reading
-         * @field reader: instance of reader repersenting reader registered for reading 
-         * @field settings: instance of Settings to access administration settings 
-         * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
-         * can register for an aliyah for this aliyah 
-         * @field flagged: boolean repersenting if entire reading set is locked. If true, aliyah acts as if locked
-         * while preserving its own locked status in case reading set is unlocked 
-         * RO: */
+    /* @class repersenting one reading within a weekly group of readings (aliyah, maftir, or haftarah for a weekday or yontif
+     * reading). Manages each aliyah to record its reader and psukim. */
+
+    /* @field desc: string repersenting name of parsha or Yontif associated with reading */
+    desc: string;
+
+    /* @field a: number repersenting aliyah number 1-9 of reading (1-7: aliyah, 8: maftir, 9: haftarah) */
+    a: number;
+
+    /* @field psukim: string repersenting chapter and verse range encompassing reading */
+    psukim: string;
+
+    /* @field reader: instance of User repersenting assigned reader. Set to `null if no User is assigned */
+    reader: User | null;
+
+    /* @field settings: instance of Settings to allow class access to administrator settings */
+    settings: Settings;
+
+    /* @field locked: boolean repersenting if a user (not actively assigned to reading) can register for reading (false) or access
+     * is limited to an an administrator (true) */
+    locked: boolean = false;
+
+    /* @field flagged: boolean repersenting locked status of whole reading set. If true, aliyah acts as if it is locked while preserving
+     * its individual locked state */
+    flagged: boolean = false;
+
+    /* @field type: string reperenting kind of reading: aliyah, maftir, or haftarah */
+    type: string;
+
+    /* RO: boolean repersenting if reading occurs on special reading occassion */
+    RO: boolean = false;
+
+    constructor(desc: string, a: number, psukim: string, reader: User | null, settings: Settings) {
         this.desc = desc;
         this.a = a;
+        this.psukim = psukim;
 
         if (reader) {
             this.reader = reader;
@@ -31,11 +51,6 @@ export class Aliyah {
         }
 
         this.settings = settings;
-
-        this.locked = false;
-        this.flagged = false;
-        this.RO = false;
-        this.type = "";
 
         if (this.a == 8) {
             this.type = "maftir";
@@ -48,61 +63,61 @@ export class Aliyah {
 
     /* Access parsha or yontif name for which the aliyah belongs to
      * @returns string repersenting parsha or yontif name */
-    getDesc() {
+    getDesc(): string {
         return this.desc;
     }
 
     /* Access parhsa or yontif description and aliyah number in a single string
      * @returns string repersenting parsha or yontif name attatched with aliyah number 1-9
      * (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
-    getName() {
+    getName(): string {
         return this.desc + this.a;
     }
 
     /* Accesses aliyah number
      * @returns int 1-9 repersenting aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
-    getAliyahNum() {
+    getAliyahNum(): number {
         return this.a;
     }
 
     /* Access reader registered to aliyah reading
-     * @returns if assigned: instance of user, if unassigned: field default string "available" */
-    getReader() {
+     * @returns if assigned: instance of user, if unassigned: returns `null */
+    getReader(): User | null {
         return this.reader;
     }
 
     /* Accesses locked field determining if a user (not an admin or user registered) 
     for reading can register for a reading
      * @returns boolean repersenting if aliyah is locked or not */
-    getLock() {
+    getLock(): boolean {
         return this.locked;
     }
 
     /* Mutates locked field to disable most users from registering for this aliyah */
-    lock() {
+    lock(): void {
         this.locked = true;
     }
 
     /* Mutates locked field to enable most users to register for this aliyah */
-    unlock() {
+    unlock(): void {
         this.locked = false;
     }
 
     /* Mutates flagged field to mark entire reading set as locked */
-    flag() {
+    flag(): void {
         this.flagged = true;
     }
 
     /* Mutates flagged field to mark reading set as unlocked, reverting each aliyah to its own
      * locked status */
-    unflag() {
+    unflag(): void {
         this.flagged = false;
     }
 
-    /* Mutates reader field to reset to field default string "available" */
-    removeReader() {
+    /* ??? Mutates reader field to reset to field default string "available" */
+    removeReader(): void {
         this.reader = "available";
-        u.removeReading(this.getName());
+        this.removeReading(this.getName());
         this.unlock();
     }
 
