@@ -1,24 +1,28 @@
 import { Dnode } from "./dnode.mjs"
 
 export class LinkedList {
-
     /* Class to connect nodes as a linked list
      *
      * @field head: repersents first node of linked list
      * @field tail: repersents last node of linked list */
+
+    head: Dnode | null = null;
+    tail: Dnode | null = null;
+
     constructor() {
-        this.head = null;
-        this.tail = null;
+
     }
 
-    access() {
-        return this.head.value;
+    access(): Dnode | void {
+        if (this.head?.value) {
+            return this.head.value;
+        }
     }
 
     /* APPEND: Allows for a new node to be added at the end of the linked list. Corrects
      * tail to be appended node, and for the previous tail of the list to precede this node.
      * @param: value repersents the data stored at this node */
-    append(value) {
+    append(value: any): void {
         const newNode = new Dnode(value);
 
         if (!this.head) {
@@ -27,14 +31,17 @@ export class LinkedList {
             return;
         }
 
-        this.tail.next = newNode;
+        if (this.tail?.next) {
+            this.tail.next = newNode;
+        }
+
         newNode.prev = this.tail;
         this.tail = newNode;
     }
 
     /* Returns next node in linked list, if such node exists */
-    next() {
-        let current = this.head;
+    next(): any {
+        let current: any = this.head;
         if (current.next) {
             return current.next;
         }
@@ -42,9 +49,9 @@ export class LinkedList {
     }
 
     /* Returns previous node in linked list, if such node exists */
-    prev() {
+    prev(): any {
         let current = this.head;
-        if (current.prev) {
+        if (current?.prev) {
             return current.prev;
         }
         return null;
