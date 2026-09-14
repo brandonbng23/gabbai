@@ -1,4 +1,5 @@
 import { Yontifs } from "../interfaces/yontifs.mts"
+import { Triennial } from "../interface/triennial.mts"
 
 export class Settings { 
     /* Streamlined class repersenting all administration settings. Fields
@@ -74,7 +75,7 @@ export class Settings {
 
     /* @field triennial: object repersenting triennial settings: Subscribe to different traditions 
      * regarding a triennial Torah reading pattern */
-    triennial = { 
+    triennial: Triennial = { 
                     /* Subscribe to triennial (true) or not (false) @default: false */
                     tri: false,
                   
@@ -87,7 +88,7 @@ export class Settings {
                     tradMaftir: true, 
 
                     /* Subscribe to triennial reading pattern for Parsha Yitro containing the 10 
-                     * Commanemdnets (true) or not (false) @default: true */
+                     * Commandments (true) or not (false) @default: true */
                      yitro: true, 
 
                     /* Subscribe to triennial reading pattern for Parsha Vaetchanan containing the 
