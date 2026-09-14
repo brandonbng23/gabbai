@@ -1,21 +1,23 @@
 import { Aliyah } from "./aliyah.mts"
 import { Shul } from "./shul.mts"
 import { Admin } from "./admin.mts"
-import { UserInfo } from "../interfaces/userInfo.mts"
 
 export class User {
-    /* @class Repersents a user in its most basic form
-     *
-     * @field firstN: string repersenting user's first name
-     * @field lastN: string repersenting user's last name
-     * @field email: string repersenting user's email address
-     * @field password: password repersenting user's password as a protective measure
-     * @field readings: array of ParshaEvent repersenting the readings assigned to User */
+    /* @class Repersents a user in its most basic form */
     
+    /* @field firstN: string repersenting a user's first name */
     firstN: string;
+
+    /* @field lastN: string repersenting a user's last name */
     lastN: string;
+
+    /* @field email: string repersenting a user's email (to be used for login and contact) */
     email: string;
+
+    /* @field password: string repersenting a user's password (for logon) */
     password: string;
+
+    /* @field readings: Array of Aliyah instances repersenting the readings a user has been assigned */
     readings: Aliyah[] = [];
 
     constructor(firstN: string, lastN: string, email: string, password: string) {
