@@ -1,9 +1,10 @@
 import { Aliyah } from "./aliyah.mts"
 import { Shul } from "./shul.mts"
 import { Admin } from "./admin.mts"
+import { UserInfo } from "../interfaces/userInfo.mts"
 
 export class User {
-    /* Repersents a user in its most basic form
+    /* @class Repersents a user in its most basic form
      *
      * @field firstN: string repersenting user's first name
      * @field lastN: string repersenting user's last name
@@ -29,9 +30,21 @@ export class User {
         return this.firstN;
     }
 
+    /* Mutates first name field to match input
+    @param n: string repersenting first name to update field */
+    setFirstN(n: string): void {
+        this.firstN = n;
+    }
+
     /* Accesses User's last name */
     getLastN(): string {
         return this.lastN;
+    }
+
+    /* Mutates last name field to match input
+    @param n: string repersenting last name to update field */
+    setLastN(n: string): void {
+        this.lastN = n;
     }
 
     /* Assembles and formats first and last name fields as string: ex. "BEN COHEN" */
@@ -44,38 +57,26 @@ export class User {
         return this.email;
     }
 
-    /* Accesses User's password */
-    getPassword(): string {
-        return this.password;
-    }
-
-    /* Accesses User's assigned readings */
-    getReadings(): Aliyah[] {
-        return this.readings;
-    }
-
-    /* Mutates first name field to match input
-    @param n: string repersenting first name to update field */
-    setFirstN(n: string): void {
-        this.firstN = n;
-    }
-
-    /* Mutates last name field to match input
-    @param n: string repersenting last name to update field */
-    setLastN(n: string): void {
-        this.lastN = n;
-    }
-
     /* Mutates email field to match input
     @param a: string repersenting address of email to update field */
     setEmail(a: string): void {
         this.email = a; // future expansion: return false if string does not match email format "@", "."-com, etc.
     }
 
+    /* Accesses User's password */
+    getPassword(): string {
+        return this.password;
+    }
+
     /* Mutates password field to match input
     @param p: string repersenting address of password field */
     setPassword(p: string): void {
         this.password = p; // future expansion: return false is string does not match password format
+    }
+
+    /* Accesses User's assigned readings */
+    getReadings(): Aliyah[] {
+        return this.readings;
     }
 
     /* Adds reading to list of this.readings, list of assigned readings
