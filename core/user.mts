@@ -94,7 +94,7 @@ export class User {
         let newReadings = [];
 
         for (let i = 0; i < this.readings.length; i++) {
-            if (this.readings[i].getName() != r) {
+            if (this.readings[i] != r) {
                 newReadings.push(this.readings[i]);
             } 
         }
