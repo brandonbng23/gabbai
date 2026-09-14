@@ -116,14 +116,14 @@ export class Aliyah {
 
     /* ??? Mutates reader field to reset to field default string "available" */
     removeReader(): void {
-        this.reader = "available";
-        this.removeReading(this.getName());
+        this.reader?.removeReading(this);
+        this.reader = null;
         this.unlock();
     }
 
     /* Mutates reader field to set field to argued instance of reader 
      * @param u: instance of User for which reader field is to be set to */
-    setReader(u) {
+    setReader(u: User) {
         this.reader = u;
         u.addReading(this);
         this.lock();
@@ -132,7 +132,7 @@ export class Aliyah {
     /* Returns year of triennail cycle (1, 2, or 3 for the first...third year of a 
      * triennial Torah reading cycle)
      * @returns integer repersenting first...third year of triennial cycle */
-    calculateTriennial() {
+    calculateTriennial(): number {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
@@ -140,7 +140,7 @@ export class Aliyah {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @param flag: boolean indicating control flow when the method is called recusively 
      * @returns: string repersenting verses to be read for argued aliyah */
-    tradPsukim(a, flag) {
+    tradPsukim(a: number, flag: boolean): string | void {
             let __filename = fileURLToPath(import.meta.url);
             let __dirname = path.dirname(__filename)
             let csvPath = path.join(__dirname, "../data", "psukim.csv")
@@ -151,14 +151,14 @@ export class Aliyah {
             for (let row of rows) {
                 let cells = row.split(",");
     
-                if (!this.special?.trim() || flag) {
+                if (!this.desc?.trim() || flag) {
                     if (cells[0] == this.desc) {
                         return cells[a]?.trim();
                     }
                 } else {
-                    if (cells[0].trim() == this.special) {
+                    if (cells[0].trim() == this.desc) {
                         if (a == this.settings.getAliyotCount() && 
-                            this.special == "Chanukah VII Shabbat Rosh Chodesh" &&
+                            this.desc == "Chanukah VII Shabbat Rosh Chodesh" &&
                             this.settings.getSpecialSeventh()) {
                             a = 7;
                         }
@@ -178,7 +178,7 @@ export class Aliyah {
     /* Helper function finding verses for double parshiyot when subscribing to the triennial
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah, 8: maftir, 9: haftarh)
      * @returns string repersenting verses to be read for argued aliyah */
-    doublePsukim(a) {
+    doublePsukim(a: number): string {
         let year = this.settings.getHebYear()
         let cycle = this.calculateTriennial();
         let schedule = [];
@@ -352,7 +352,7 @@ export class Aliyah {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @returns: string repersenting verses to be read for argued aliyah
      * NOTE: refers to help function doublePsukim() when finding verses for a double parsha */
-    triPsukim(a) {
+    triPsukim(a: number): string | void {
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename)
         let csvPath = path.join(__dirname, "../data", "triennial.csv")
@@ -396,14 +396,14 @@ export class Aliyah {
                 }
         }
 
-        if (this.special) {
+        if (this.RO) {
             if (verses != "double") {
-                verses = this.tradPsukim(a, false);
+                verses = this.tradPsukim(a, false) ?? "";
             }
         }
 
         if (verses == "trad") {
-            verses = this.tradPsukim(a, false);
+            verses = this.tradPsukim(a, false) ?? "";
         } else if (verses == "double") {
             verses = this.doublePsukim(a);
         } 
@@ -426,7 +426,7 @@ export class Aliyah {
      * @returns User object (if field is not null) or field default string "available" */
     figureReaderData() {
         if (this.reader) {
-            return this.reader.getUserData();
+            return this.reader;
         } else {
             return null;
         }
