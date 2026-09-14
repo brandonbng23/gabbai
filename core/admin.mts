@@ -1,14 +1,21 @@
 import { User } from "./user.mjs"
+import { Shul } from "./shul.mjs"
 
 export class Admin extends User {
-    /* Repersents a user who is a shul's administrator who will be granted permissions regarding 
-     * their shul's reading schedule
-     *
-     * @field title: string repersenting the title of the position this shul's administrator holds
-     * @field shul: instance of Shul for who which the administrator adminstrates
-     * @field key: string repersenting the key of the shul for which the administrator administrates
-     * - Note that the adminstrator's key is unique to their shul, not to each administrator */
-    constructor(firstN, lastN, email, password, title, shul, key) {
+    /* @class Admin: repersents a user who has been granted administrator access for their associated shul. An administrator
+     * is granted permission to accesses and modify a shul's reading schedule, its settings, and the shul's profile */
+
+    /* @field title: string repersenting an administrator's title for which they hold with their associated shul */
+    title: string;
+
+    /* @field shul: instance of Shul class repersenting the Shul an administrator is associated */
+    shul: Shul;
+
+    /* field key: string repersenting the key belonging to an administor's associated shul. Used for association verfication.
+     * Note that a key is unique to each shul, not each administrator (a shul can have multiple administrators) */ 
+    key: string;
+
+    constructor(firstN: string, lastN: string, email: string, password: string, title: string, shul: Shul, key: string) {
         super(firstN, lastN, email, password);
         this.title = title;
         this.shul = shul;
