@@ -1,5 +1,5 @@
-import { User } from "./user.mjs"
-import { Shul } from "./shul.mjs"
+import { User } from "./user.mts"
+import { Shul } from "./shul.mts"
 
 export class Admin extends User {
     /* @class Admin: repersents a user who has been granted administrator access for their associated shul. An administrator
