@@ -1,3 +1,5 @@
+import { Yontifs } from "../interfaces/yontifs.mts"
+
 export class Settings { 
     /* Streamlined class repersenting all administration settings. Fields
      * are documented in-line. All fields are set to a default value and be
@@ -29,7 +31,7 @@ export class Settings {
     /* @field yontifs: Object repersenting observed Yontifs. For each Yontif, indicates if a 
      * special reading should be added to the reading schedule (true) or not (false) when the 
      * Yontif is on a weekday. @default (for each Yontif): true */
-    yontifs = { 
+    yontifs: Yontifs = { 
                     /* Rosh Hashana Day 1 */
                     rh1: true,   
                     
