@@ -24,31 +24,17 @@ export class Admin extends User {
 
     /* Mutates key field
      * @param key: key for which the key field will mutate to */
-    setKey(key) {
+    setKey(key: string) {
         this.key = key;
     }
 
     /* Revokes an existing Admin's administrator privelages
      * param r: boolean. If r is set true, administrator privelages will be revoked but admin will retain
      * user privelages. If r is set false, administraor and user privelages will be revoked. */
-    revokeAdmin(r) {
-        this.shul.removeAdmin();
+    revokeAdmin(r: boolean): void {
+        this.shul.removeAdmin(this);
         if (r) {
-            this.shul?.(new User(this.firstN, this.lastN, this.email, this.password));
+            this.shul?.addUser(new User(this.firstN, this.lastN, this.email, this.password));
         }
-    }
-
-    /* Returns all administrator data for current administrator
-     * @returns object retaining administrator data */
-    getAdminData() {
-        return {
-            firstN: this.firstN,
-            lastN: this.lastN,
-            email: this.email,
-            password: this.password,
-            title: this.title,
-            shul: this.shul,
-            key: this.key
-        };
     }
 }
