@@ -17,7 +17,7 @@ export class Aliyah {
     a: number;
 
     /* @field psukim: string repersenting chapter and verse range encompassing reading */
-    psukim: string;
+    psukim: string = "";
 
     /* @field reader: instance of User repersenting assigned reader. Set to `null if no User is assigned */
     reader: User | null;
@@ -39,10 +39,9 @@ export class Aliyah {
     /* RO: boolean repersenting if reading occurs on special reading occassion */
     RO: boolean = false;
 
-    constructor(desc: string, a: number, psukim: string, reader: User | null, settings: Settings) {
+    constructor(desc: string, a: number, reader: User | null, settings: Settings) {
         this.desc = desc;
         this.a = a;
-        this.psukim = psukim;
 
         if (reader) {
             this.reader = reader;
@@ -59,6 +58,8 @@ export class Aliyah {
         } else {
             this.type = "aliyah";
         }
+
+        this.psukim = this.figurePsukim();
     }
 
     /* Access parsha or yontif name for which the aliyah belongs to
@@ -352,7 +353,7 @@ export class Aliyah {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @returns: string repersenting verses to be read for argued aliyah
      * NOTE: refers to help function doublePsukim() when finding verses for a double parsha */
-    triPsukim(a: number): string | void {
+    triPsukim(a: number): string {
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename)
         let csvPath = path.join(__dirname, "../data", "triennial.csv")
@@ -376,11 +377,11 @@ export class Aliyah {
             let cells = row.split(",");
 
             if (this.settings.getMaftir() == "trad" && a == 8) {
-                    return this.tradPsukim(8, false);
+                    return this.tradPsukim(8, false) ?? "";
                 } else if (a == 9) {
-                    return this.tradPsukim(9, false);
+                    return this.tradPsukim(9, false) ?? "";
                 } else if (this.settings.getYitro() && this.desc == "Yitro") {
-                    return this.tradPsukim(a, false);
+                    return this.tradPsukim(a, false) ?? "";
                 } 
 
                 if (cells[0] == this.desc) {
@@ -414,11 +415,11 @@ export class Aliyah {
     /* Helper function to find verses for aliyah (according to fields)
      * @returns string repersenting verses
      * NOTE: Uses TradPsukim and TriPsukim for verse-finding */
-    figurePsukim() {
+    figurePsukim(): string {
         if (!this.settings.getTriennial()) {
-            return this.tradPsukim(this.a, false);
+            return this.tradPsukim(this.a, false) ?? "";
         } else {
-            return this.triPsukim(this.a);
+            return this.triPsukim(this.a) ?? "";
         }
     }
 

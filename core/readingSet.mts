@@ -1,5 +1,6 @@
-import { Aliyah } from "./aliyah.mjs";
-import { User } from "./user.mjs";
+import { Settings } from "./settings.mts"
+import { Aliyah } from "./aliyah.mts";
+import { User } from "./user.mts";
 
 export class ReadingSet {
     /* Class repersenting a reading set (collection of 7 aliyot, maftir, and haftarah)
@@ -14,7 +15,15 @@ export class ReadingSet {
      * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
      * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
      * can register for an aliyah within this reading set */
-    constructor(desc, a, settings, special, hebYear) {
+    desc: string;
+    a: number;
+    settings: Settings;
+    special: string;
+    hebYear: number;
+    aliyot: Aliyah[];
+    locked: boolean;
+
+    constructor(desc: string, a: number, settings: Settings, special: string, hebYear: number) {
         this.desc = desc;
         this.a = a;
         this.settings = settings;
@@ -31,108 +40,61 @@ export class ReadingSet {
             this.hebYear = this.settings.getHebYear();
         }
 
-        this.aliyot = {1: new Aliyah(this.desc, 1, null, this.settings),        // First aliyah
-                       2: new Aliyah(this.desc, 2, null, this.settings),        // Second aliyah
-                       3: new Aliyah(this.desc, 3, null, this.settings),        // Third aliyah
-                       4: new Aliyah(this.desc, 4, null, this.settings),        // Fourth aliyah
-                       5: new Aliyah(this.desc, 5, null, this.settings),        // Fifth aliyah
-                       6: new Aliyah(this.desc, 6, null, this.settings),        // Sixth aliyah
-                       7: new Aliyah(this.desc, 7, null, this.settings),        // Seventh aliyah
-                       8: new Aliyah(this.desc, 8, null, this.settings),        // Mafitr
-                       9: new Aliyah(this.desc, 9, null, this.settings)         // Haftarah
-        }
+        this.aliyot = [
+                        new Aliyah(this.desc, 1, null, this.settings),
+                        new Aliyah(this.desc, 2, null, this.settings),
+                        new Aliyah(this.desc, 3, null, this.settings),
+                        new Aliyah(this.desc, 4, null, this.settings),
+                        new Aliyah(this.desc, 5, null, this.settings),
+                        new Aliyah(this.desc, 6, null, this.settings),
+                        new Aliyah(this.desc, 7, null, this.settings),
+                        new Aliyah(this.desc, 8, null, this.settings),
+                        new Aliyah(this.desc, 9, null, this.settings)        
+        ]
 
         this.locked = false;
     }
 
-    lock() {
-        for (let key in this.aliyot) {
-            this.aliyot[key].flag();
+    lock(): void {
+        for (let aliyah of this.aliyot) {
+            aliyah.flag();
         }
 
         this.locked = true;
     }
 
-    unlock() {
-        this.locked = false;
-
-        for (let key in this.aliyot) {
-            this.aliyot[key].unflag();
+    unlock(): void {
+        for (let aliyah of this.aliyot) {
+            aliyah.unflag();
         }
+
+        this.locked = false;
     }
 
     /* Accesses reader assigned to argued aliyah
      * @param a: int 1-9 repersenting which aliyah's reader should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah) 
      * @returns instance of user (if field is not null) or field default string "available" */
-    getReader(a) {
-        if (a == 1) {
-            return this.aliyot[1].getReader();
-        } else if (a == 2) {
-            return this.aliyot[2].getReader();
-        } else if (a == 3) {
-            return this.aliyot[3].getReader();
-        } else if (a == 4) {
-            return this.aliyot[4].getReader();
-        } else if (a == 5) {
-            return this.aliyot[5].getReader();
-        } else if (a == 6) {
-            return this.aliyot[6].getReader();
-        } else if (a == 7) {
-            return this.aliyot[7].getReader();
-        } else if (a == 8) {
-            return this.aliyot[8].getReader();
-        } else if (a == 9) {
-            return this.aliyot[9].getReader();
-        }
+    getReader(a: number): User | null {
+        return this.aliyot[a-1].getReader();
     }
 
-    /* Mutates reader assigned to argued aliyah
-     * @param a: int 1-9 repersenting whcih aliyah's reader should be mutated (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
-    setReader(a) {
-        if (a == 1) {
-            this.aliyot[1].setReader(a);
-        } else if (a == 2) {
-            this.aliyot[2].setReader(a);
-        } else if (a == 3) {
-            this.aliyot[3].setReader(a); 
-        } else if (a == 4) {
-            this.aliyot[4].setReader(a);
-        } else if (a == 5) {
-            this.aliyot[5].setReader(a);
-        } else if (a == 6) {
-            this.aliyot[6].setReader(a);
-        } else if (a == 7) {
-            this.aliyot[7].setReader(a);
-        } else if (a == 8) {
-            this.aliyot[8].setReader(a);
-        } else if (a == 9) {
-            this.aliyot[9].setReader(a);
-        }
+    /* Assigns (mutates) a reader to argued aliyah
+     * @param a: int 1-9 repersenting which aliyah's reader should be mutated (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
+    setReader(a: number, u: User): void {
+        this.aliyot[a-1].setReader(u);
+    }
+
+    /* Removes (mutates) a reader from argued aliyah
+     * @param a: int 1-9 repersenting which aliyah's reader should be removed (1-7: aliyah, 8: maftir, 9: haftarah) */
+    removeReader(a: number): void {
+        this.aliyot[a-1].removeReader();
     }
 
     /* Accesses psukim (chapter:verse range) read for argued aliyah
      * @param a: int 1-9 repersenting which aliyah's psukim should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @returns: string repersenting psukim in a human-ready format */
-    getPsukim(a) {
-        if (a == 1) {
-            return this.aliyot[1].figurePsukim();
-        } else if (a == 2) {
-            return this.aliyot[2].figurePsukim();
-        } else if (a == 3) {
-            return this.aliyot[3].figurePsukim();
-        } else if (a == 4) {
-            return this.aliyot[4].figurePsukim();
-        } else if (a == 5) {
-            return this.aliyot[5].figurePsukim();
-        } else if (a == 6) {
-            return this.aliyot[6].figurePsukim();
-        } else if (a == 7) {
-            return this.aliyot[7].figurePsukim();
-        } else if (a == 8) {
-            return this.aliyot[8].figurePsukim();
-        } else if (a == 9) {
-            return this.aliyot[9].figurePsukim();
-        }
+    getPsukim(a: number): string {
+        return this.aliyot[a-1].figurePsukim();
     }
 
     /* Collects and organizes data for all aliyot in Reading Set
@@ -142,7 +104,7 @@ export class ReadingSet {
      * and haftarah */
     getReadingSetData() {
         let data = [];
-        let counter = 0;
+        let counter: number = 0;
 
         for (let key in this.aliyot) {
             let aliyah = this.aliyot[key];
@@ -174,7 +136,7 @@ export class ReadingSet {
      * @param a: int 1-7 repersenting how many aliyot should be read. Maftir is printed according
      * to administrator settings. Haftarah is always printed. 
      * NOTE: Method prints to console instead of a return */
-    printReadingSet(a) {
+    printReadingSet(a: number): void {
         let text = "";
 
         for (let i = 0; i < a+2; i++) {
@@ -201,7 +163,7 @@ export class ReadingSet {
             }
 
             if (this.getReader(i+1)) {
-                text += this.getReader(i+1).nameToString();
+                text += this.getReader(i+1)?.nameToString() ?? "Available";
             } else {
                 text += "available";
             }
