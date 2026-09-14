@@ -11,10 +11,10 @@ export interface Yontifs {
     yk: boolean,
 
     /* Sukkot Day 1 */
-    sk1: boolean,
+    sukkot1: boolean,
 
     /* Sukkot Day 2 */
-    sk2: boolean,
+    sukkot2: boolean,
 
     /* Shmini Atzeret */
     sukkotSA: boolean,
