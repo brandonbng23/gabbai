@@ -3,24 +3,29 @@ import { Aliyah } from "./aliyah.mts";
 import { User } from "./user.mts";
 
 export class ReadingSet {
-    /* Class repersenting a reading set (collection of 7 aliyot, maftir, and haftarah)
-     * NOTE: This class is still used even when administrator settings constrict number of aliyot to be 
-     * less than 7
-     * 
-     * @field desc: string repersenting parsha or Yontif name
-     * @field a: number of aliyot that should be part of this reading set
-     * @field settings: instance of settings repersenting administrator settings
-     * @field special: string repersenting name of occassion that requires special reading to occur 
-     * @field hebYear: Hebrew year when reading will occur 
-     * @field aliyot: object of Aliyah instances (numbered 1-9) repersenting each aliyah of reading 
-     * @field locked: boolean repersenting if a user who is not already register for an aliyah or an administrator
-     * can register for an aliyah within this reading set */
+    /* @class repersenting a set of readings - a collection of all 7 aliyot, maftir, and haftarah.
+     * THis class will still be used even when less than 7 aliyot will be read */
+
+    /* @field desc: string repersenting parsha or yontif name */
     desc: string;
+
+    /* @field a: number of aliyot that will be read as part of this ReadingSet */
     a: number;
+
+    /* @field settings: instance of Settings repersenting active administrator settings */
     settings: Settings;
+
+    /* @field special: string repersenting name of occassion that requires special reading to occur */
     special: string;
+
+    /* @field hebYear: number repersenting active Hebrew Year */
     hebYear: number;
+
+    /* @field aliyot: array of Aliyah instances repersenting all aliyot to be part of this ReadingSet */
     aliyot: Aliyah[];
+
+    /* @field locked: boolean repersenting if this assignments for aliot within this reading set can be
+     * edited by a (general) user (false) or not (true) */
     locked: boolean;
 
     constructor(desc: string, a: number, settings: Settings, special: string, hebYear: number) {
@@ -55,6 +60,8 @@ export class ReadingSet {
         this.locked = false;
     }
 
+    /* Sets locked status of entire ReadingSet as true. Flags individual readings to 
+     * show as locked while preserving their original status */
     lock(): void {
         for (let aliyah of this.aliyot) {
             aliyah.flag();
@@ -63,6 +70,7 @@ export class ReadingSet {
         this.locked = true;
     }
 
+    /* Sets locked status of entire ReadingSet as false */
     unlock(): void {
         for (let aliyah of this.aliyot) {
             aliyah.unflag();
