@@ -1,7 +1,9 @@
-import { Sedra, 
+import { Settings } from "./settings.mts";
+import { ReadingSet } from "./readingSet.mts";
+import { Triennial } from "../interfaces/triennial.mts"
+import { HDate, 
+         Sedra, 
          Event as HebcalEvent } from '@hebcal/core';
-
-import { ReadingSet } from "./readingSet.mjs";
 
 // Update class to find settings from settings class, not fields
 
@@ -12,17 +14,31 @@ export class Parsha {
      * @field readers: repersents readers of each reading of parsha (aliyot 1-7, maftir,
      * haftarah) 
      * @field occassion: repersents when parsha will be read (shabbat, specific yontif) */
-    constructor(settings, name, hebYear, readingSet, a, occassion) {
+
+    /* @field settings: instance of Settings repersenting settings to apply to Parsha */
+    settings: Settings;
+
+    /* @field desc: string repersenting description (name) of Parsha read. When not Shabbat, this 
+     * may be the reading occassion (occassion) instead */
+    desc: string;
+    hebYear: number;
+    readingSet: ReadingSet;
+    occassion: string;
+    a: number;
+    triennial: Triennial;
+    il: boolean;
+    hebDate: HDate | null = null;
+    gregData: Date | null = null;
+
+    constructor(settings: Settings, desc: string, hebYear: number, readingSet: ReadingSet, a: number, occassion: string) {
         this.settings = settings;
         this.triennial = this.settings.getFullTriennial();
         this.il = this.settings.getIL();
-        this.name = name;
+        this.desc = desc;
         this.hebYear = hebYear;
         this.readingSet = readingSet;
         this.a = a;
         this.occassion = occassion;
-        this.hebDate = null;
-        this.gregDate = null;
     }
 
     getName() {
