@@ -21,9 +21,18 @@ export class Parsha {
     /* @field desc: string repersenting description (name) of Parsha read. When not Shabbat, this 
      * may be the reading occassion (occassion) instead */
     desc: string;
+
+    /* @field hebYear: number repersenting active Hebrew Year */
     hebYear: number;
+
+    /* @field readingSet: instance of ReadingSet repersenting the ReadingSet belonging to this parsha */
     readingSet: ReadingSet;
+
+    /* @field occassion: string repersenting when this parsha will be read (shabbat or specific yotnif, etc.) */
     occassion: string;
+
+    /* @field a: number repersenting amount of aliyot (number of aliyot) to be read. Ranges from 
+     * 1-7, not including Maftir and Haftarah. @default: 7 */
     a: number;
     triennial: Triennial;
     il: boolean;
