@@ -53,6 +53,10 @@ export class Parsha {
         return this.desc;
     }
 
+    getHebDate(): HDate | null {
+        return this.hebDate;
+    }
+
     /* Accesses active Hebrew year 
      * @returns number repersenting a Hebrew Year */
     getHebYear(): number {
