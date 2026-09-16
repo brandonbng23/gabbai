@@ -1,7 +1,9 @@
 import { HebrewCalendar, 
          HDate,
          parshaYear, 
-         getHolidaysOnDate} from '@hebcal/core'
+         getHolidaysOnDate,
+         Event,
+         HolidayEvent } from '@hebcal/core'
 
 import { LinkedList } from "./linkedList.mjs";
 import { ReadingSet } from "./readingSet.mjs"
@@ -9,28 +11,26 @@ import { Parsha } from "./parsha.mjs"
 import { Settings } from "./settings.mjs"
 
 export class Schedule {
-    /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
-     * parshot and Holiday readings.
-     *
-     * @field hebYear: int repersening the year of the Hebrew calendar 
-     * @field a: integer repersenting amount of aliyot (before maftir and haftarah)
-     * @field respect: boolean dictating if Yontifs will follow traditional amount of aliyot (true) or the
-     * argued amount of aliyot (false; If the argued amount of aliyot is greater than the amount of aliyot for 
-     * a Yontif, the traditional quantity will be respectedd)
-     * @field hhRespect: boolean dictating if High Holidays will follow traditional amount of aliyot (true) or the
-     * amount of aliyot argued (false; If the argued amount of aliyot is greater than the amount of aliyot for the 
-     * High Holiday, the traditional quanity will be respected) - !!NOTE: High Holidays only include Rosh Hashana (all days),
-     * Yom Kippur, and Simchat Torah
-     * @field il: boolean repersenting if the schedule should follow the diasporic cycle (false) or 
-     * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
-     * @field cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
-     * @field holidays: records if a reading is a holiday (1) or not (0), indices aligns with cal 
-     * @field yontifs: an object repersenting all special Torah readings. Each override a Shabbat Torah
-     * reading, but when set true, will spawn a seperate reading in the schedule when holiday  
-     * does not align with Shabbat
-     * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
-     * @field schedule: finalized linked list repersenting all readings */
-    constructor(settings, hebYear) {
+    /* @class building a LinkedList (instance) of schedule parshiyot throughout a year
+     * repersenting all 54 regular parshiyot and observed yontifs */
+
+    /* @field settings: instance of Settings repersenting settings to apply to Parsha */
+    settings: Settings;
+
+    /* @field hebYear: number repersenting active Hebrew Year */
+    hebYear: number;
+
+    /* @field special: array of numbers (0 or 1) to track which calendar events are `special` or not. Elements
+     * directly correspond to elements of this.cal array */
+    special: number[] = [];
+
+    /* @field cal: array of Events (HebCal) creating a calendar of all events */
+    cal: Event[] = [];
+
+    /* @field Schedule: instance of LinkedList to create a schedule of all instances of Parsha */
+    schedule: LinkedList;
+
+    constructor(settings: Settings, hebYear: number) {
         this.settings = settings;
         
         if (hebYear) {
@@ -43,14 +43,12 @@ export class Schedule {
             }
         }
 
-        this.special = []; 
-        this.cal = []; 
         this.schedule = this.createSchedule();
     }
 
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
      * Can be used as a helper function (see findYontif) */
-    getYontifs() {
+    getYontifs(): string[] {
         let y = [];
 
         if (this.settings.getYontif("rh1")) {
@@ -111,19 +109,18 @@ export class Schedule {
     /* Finds argued Yontif reading and returns if it set to true 
      * @param y: string repersenting the name of a Yontif reading
      * @returns boolean repersenting if Yontif reading is set to true (true) or not (false) */
-    findYontif(y) {
+    findYontif(y: string): boolean {
         for (let yontif of this.getYontifs()) {
             if (y == yontif) {
                 return true;
             }
-
-            return false;
         }
+        return false;
     }
 
     /* Helper function that fetches Hebrew calendar including weekly Torah readings
      * @returns Event Array accordingly */
-    getRawCalendar() {
+    getRawCalendar(): Event[] {
         let rawCal = HebrewCalendar.calendar({
             year: this.hebYear,
             isHebrewYear: true,
@@ -216,7 +213,7 @@ export class Schedule {
      * and Yontif readings
      * @param desc: string repersenting name of reading occassion
      * @returns integer (3-7) repersenting how many aliyot will be read, not including maftir and haftarah */
-    calculateAliyot(desc) {
+    calculateAliyot(desc: string): number {
             // 5 Aliyot Yontifs
             if (["Sukkot I",
                  "Sukkot II",
@@ -274,7 +271,7 @@ export class Schedule {
             
             // Simchat Torah (7 Aliyot High Holiday)
             if (desc == "Simchat Torah") {
-                if (this.respect || this.hhRespect) {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
                     return 7;
                 } 
             }
@@ -282,8 +279,10 @@ export class Schedule {
         return this.settings.getAliyotCount();
     }
 
-    readingOccassion(parsha) {
-        let occassions = getHolidaysOnDate(parsha.getDate());
+    readingOccassion(parsha: Parsha): string {
+        const tempDate: HDate | null = parsha.getHebDate();
+        const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
+        const occassions: HolidayEvent[] = occassionsUnRefined === undefined ? [] : occassionsUnRefined;
 
         if (occassions) {
             for (let i = 0; i < occassions.length; i++) {
