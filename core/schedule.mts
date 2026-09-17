@@ -284,11 +284,7 @@ export class Schedule {
         const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
         const occassions: HolidayEvent[] = occassionsUnRefined === undefined ? [] : occassionsUnRefined;
 
-        if (occassions) {
-            for (let i = 0; i < occassions.length; i++) {
-                occassions[i] = occassions[i].getDesc().toLowerCase().trim();
-            }
-        }
+        const occassions_asStrings = occassions.map((h: HolidayEvent): string => h.getDesc().toLowerCase().trim());
 
         let ROs = ["Shabbat Shuva",
                    "Shabbat Shekalim",
@@ -299,51 +295,55 @@ export class Schedule {
 
         for (let i = 0; i < ROs.length; i++) {
             for (let j = 0; j < occassions?.length; j++) {
-                if (ROs[i].toLowerCase() == occassions[j]) {
+                if (ROs[i].toLowerCase() === occassions_asStrings[j]) {
                     return ROs[i];
                 }
             }
         } 
 
-        let hasChodesh = occassions?.some(o => o.includes("rosh chodesh"));
-        let hasChanukah = occassions?.some(o => o.includes("chanukah"));
+        const hasChodesh = occassions_asStrings?.some(o => o.includes("rosh chodesh"));
+        const hasChanukah = occassions_asStrings?.some((o: string) => o.includes("chanukah"));
 
         if (hasChodesh && hasChanukah) {
             return "Chanukah VII Shabbat Rosh Chodesh";
         } 
 
         if (hasChanukah) {
-            if (parsha.getDate().greg().getDay() == 6) {
-                if (occassions.some(o => o.includes("1"))) {
+            if (parsha.getHebDate()?.greg().getDay() === 6) {
+                if (occassions_asStrings.some((o: string) => o.includes("1"))) {
                     return "Chanukah I Shabbat";
-                } else if (occassions.some(o => o.includes("2"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("2"))) {
                     return "Chanukah II Shabbat";
-                } else if (occassions.some(o => o.includes("3"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("3"))) {
                     return "Chanukah III Shabbat";
-                } else if (occassions.some(o => o.includes("4"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("4"))) {
                     return "Chanukah IV Shabbat";
-                } else if (occassions.some(o => o.includes("5"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("5"))) {
                     return "Chanukah V Shabbat";
-                } else if (occassions.some(o => o.includes("7"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("7"))) {
                     return "Chanukah VII Shabbat";
-                } else if (occassions.some(o => o.includes("8"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("8"))) {
                     return "Chanukah VIII Shabbat";
                 }
             }
         }
 
-        if (hasChodesh && parsha.getDate().greg().getDay() == 6) {
-            return "Shabbat Rosh Chodesh"
+        if (hasChodesh && parsha.getHebDate()?.greg().getDay() == 6) {
+            return "Shabbat Rosh Chodesh";
         }
 
-        let day = parsha.getDate().greg();
-        let nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
-        let hday = new HDate(nextDay);
-        let nextDayOcassions = getHolidaysOnDate(hday);
-        let hasMacharChodesh = nextDayOcassions?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh"));
+        const day: Date | null = parsha.getHebDate()?.greg() ?? null;
+        let hasMacharChodesh: boolean = false;
+
+        if (day !== null) {
+            const nextDay: Date = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
+            const hday: HDate = new HDate(nextDay);
+            const nextDayOccassion: HolidayEvent[] = getHolidaysOnDate(hday) ?? [];
+            hasMacharChodesh = nextDayOccassion?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh"))
+        }
 
         if (hasMacharChodesh) {
-            return "Shabbat Machar Chodesh"
+            return "Shabbat Machar Chodesh";
         }
 
         return "";
