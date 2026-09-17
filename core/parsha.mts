@@ -57,6 +57,12 @@ export class Parsha {
         return this.hebDate;
     }
 
+    /* Mutates hebDate field
+     * @param hebDate repersents an HDate to set hebDate field */
+    setHebDate(hebDate: HDate): void {
+        this.hebDate = hebDate;
+    }
+
     /* Accesses active Hebrew year 
      * @returns number repersenting a Hebrew Year */
     getHebYear(): number {
@@ -67,13 +73,7 @@ export class Parsha {
     @returns string repersenting occassion when parsha will be read */
     getOccassion(): string {
         return this.occassion;
-    }
-
-    /* Mutates hebDate field
-     * @param hebDate repersents an HDate to set hebDate field */
-    setHebDate(hebDate: HDate): void {
-        this.hebDate = hebDate;
-    }
+    } 
 
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
