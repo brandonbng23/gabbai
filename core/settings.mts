@@ -1,5 +1,5 @@
-import { Yontifs } from "../interfaces/yontifs.mts"
-import { Triennial } from "../interfaces/triennial.mts"
+import type { Yontifs } from "../interfaces/yontifs.mts"
+import type { Triennial } from "../interfaces/triennial.mts"
 
 export class Settings { 
     /* Streamlined class repersenting all administration settings. Fields
