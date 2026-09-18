@@ -281,7 +281,7 @@ export class Schedule {
     }
 
     readingOccassion(parsha: ParshaEvent): string {
-        const tempDate: HDate | null = parsha.getHebDate();
+        const tempDate: HDate | null = parsha.getDate();
         const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
         const occassions: HolidayEvent[] = occassionsUnRefined === undefined ? [] : occassionsUnRefined;
 
@@ -310,7 +310,7 @@ export class Schedule {
         } 
 
         if (hasChanukah) {
-            if (parsha.getHebDate()?.greg().getDay() === 6) {
+            if (parsha.getDate().greg().getDay() === 6) {
                 if (occassions_asStrings.some((o: string) => o.includes("1"))) {
                     return "Chanukah I Shabbat";
                 } else if (occassions_asStrings.some((o: string) => o.includes("2"))) {
@@ -330,22 +330,17 @@ export class Schedule {
         }
 
         // Determines if given Shabbat is occurance of Shabbat Rosh Chodesh
-        if (hasChodesh && parsha.getHebDate()?.greg().getDay() == 6) {
+        if (hasChodesh && parsha.getDate().greg().getDay() == 6) {
             return "Shabbat Rosh Chodesh";
         }
 
         // Determines if given Shabbat is occurance of Shabbat Machar Chodesh
-        const day: Date | null = parsha.getHebDate()?.greg() ?? null;
-        let hasMacharChodesh: boolean = false;
+        const day: Date = parsha.getDate()?.greg() ?? null;
 
-        if (day !== null) {
-            const nextDay: Date = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
-            const hday: HDate = new HDate(nextDay);
-            const nextDayOccassion: HolidayEvent[] = getHolidaysOnDate(hday) ?? [];
-            hasMacharChodesh = nextDayOccassion?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh"))
-        }
-
-        return hasMacharChodesh ? "Shabbat Machar Chodesh" : "";
+        const nextDay: Date = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
+        const hday: HDate = new HDate(nextDay);
+        const nextDayOccassion: HolidayEvent[] = getHolidaysOnDate(hday) ?? [];
+        return nextDayOccassion?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh")) ? "Shabbat Machar Chodesh" : "";
     }        
 
     /* Creates a schedule of parshiyot */
@@ -375,7 +370,7 @@ export class Schedule {
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace(this.hebYear, "")
+                    .replace(this.hebYear.toString(), "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
@@ -391,7 +386,7 @@ export class Schedule {
                 desc = desc.trim();
 
                 if (ev.getDate().greg().getDay() == 6) {
-                    desc = desc.replace(this.hebYear, "");
+                    desc = desc.replace(this.hebYear.toString(), "");
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                     if (!desc.includes("Shabbat")) {
                         desc += "Shabbat";
