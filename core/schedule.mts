@@ -5,11 +5,10 @@ import { HebrewCalendar,
          getHolidaysOnDate,
          Event,
          HolidayEvent } from '@hebcal/core'
-
-import { LinkedList } from "./linkedList.mjs";
-import { ReadingSet } from "./readingSet.mjs"
-import { Parsha } from "./parsha.mjs"
-import { Settings } from "./settings.mjs"
+import { LinkedList } from "./linkedList.mts";
+import { ReadingSet } from "./readingSet.mts"
+import { Parsha } from "./parsha.mts"
+import { Settings } from "./settings.mts"
 
 export class Schedule {
     /* @class building a LinkedList (instance) of schedule parshiyot throughout a year
