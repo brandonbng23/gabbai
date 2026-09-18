@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node ./core/main.mjs",
+    "test": "node ./core/main.mts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
