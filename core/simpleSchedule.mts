@@ -2,19 +2,19 @@ import { HebrewCalendar,
          HDate,
          parshaYear, 
          getHolidaysOnDate} from '@hebcal/core'
-
-import { Settings } from "./settings.mjs"
-import { LinkedList } from "./linkedList.mjs"
+import { Settings } from "./settings.mts"
+import { LinkedList } from "./linkedList.mts"
 
 export class SimpleSchedule {
-    /* Builds a very simple schedule to accesses only a Parsha name and year. Exists as its own
-     * class to avoid redcursion within the Schedule class.
-     *
-     * @field settings: instance of Settings to retain administrator's settings,
-     * namely diaspara (false) or Israeli (true) settings
-     * @field hebYear (optional): number repersenting the Hebrew Year for which to formulate a
-     * schedule upon */
-    constructor(settings, hebYear) {
+    /* @class repersenting a simplified schedule. To be used for internal use cases for efficiencey */
+
+    /* @field settings: instance of Settings repersenting settings to apply to SimpleSchedule */
+    settings: Settings;
+
+    /* @field hebYear: number repersenting active Hebrew Year */
+    hebYear: number;
+
+    constructor(settings: Settings, hebYear: number) {
         this.settings = settings;
 
         if (hebYear) {
