@@ -1,14 +1,16 @@
-import { Settings } from "./settings.mjs"
-import { Schedule } from "./schedule.mjs"
-import { Shul } from "./shul.mjs"
+import { Settings } from "./settings.mts"
+import { Schedule } from "./schedule.mts"
+import { Shul } from "./shul.mts"
 
 function main() {
-    let settings = new Settings(5787);
+    const hebYear = 5787;
+    const settings = new Settings(hebYear);
     settings.setTriennial(true);
 
-    let shul = new Shul("Test Shul", [], [], null, "testshul.org", "testshul.org/contribute", settings);
+    const schedule = new Schedule(settings, hebYear);
+
+    let shul = new Shul("Test Shul", [], [], schedule, "testshul.org", "testshul.org/contribute", settings);
     
-    let schedule = new Schedule(shul.getSettings(), settings.getHebYear());
     shul.setSchedule(schedule);
     
     shul.getSchedule().printSchedule();
