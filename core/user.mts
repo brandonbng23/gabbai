@@ -1,5 +1,4 @@
 import { Aliyah } from "./aliyah.mts"
-import { Shul } from "./shul.mts"
 
 export class User {
     /* @class Repersents a user in its most basic form */

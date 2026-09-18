@@ -1,5 +1,5 @@
-import { Admin } from "./admin.mts";
-import { User } from "./user.mts";
+import type { Admin } from "./admin.mts";
+import type { User } from "./user.mts";
 import { Schedule } from "./schedule.mts";
 import { Settings } from "./settings.mts";
 
