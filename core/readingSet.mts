@@ -102,7 +102,7 @@ export class ReadingSet {
      * @param a: int 1-9 repersenting which aliyah's psukim should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
      * @returns: string repersenting psukim in a human-ready format */
     getPsukim(a: number): string {
-        return this.aliyot[a-1].figurePsukim();
+        return this.aliyot[a-1]?.figurePsukim();
     }
 
     /* Collects and organizes data for all aliyot in Reading Set
