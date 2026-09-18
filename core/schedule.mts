@@ -1,6 +1,7 @@
 import { HebrewCalendar, 
          HDate,
          parshaYear, 
+         ParshaEvent,
          getHolidaysOnDate,
          Event,
          HolidayEvent } from '@hebcal/core'
@@ -121,7 +122,7 @@ export class Schedule {
     /* Helper function that fetches Hebrew calendar including weekly Torah readings
      * @returns Event Array accordingly */
     getRawCalendar(): Event[] {
-        let rawCal = HebrewCalendar.calendar({
+        const rawCal = HebrewCalendar.calendar({
             year: this.hebYear,
             isHebrewYear: true,
             il: this.settings.getIL(),
@@ -139,7 +140,7 @@ export class Schedule {
     /* Filters only Shabbat readings, including Yontif when Yontif aligns with Shabbat,
      * and selected Yontifs to calendar */
     resolveCalendar() {
-        let rawCal = this.getRawCalendar();
+        const rawCal = this.getRawCalendar();
 
         // For viewing descriptions as provided by HebCal
         for (let ev of rawCal) {
@@ -279,14 +280,14 @@ export class Schedule {
         return this.settings.getAliyotCount();
     }
 
-    readingOccassion(parsha: Parsha): string {
+    readingOccassion(parsha: ParshaEvent): string {
         const tempDate: HDate | null = parsha.getHebDate();
         const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
         const occassions: HolidayEvent[] = occassionsUnRefined === undefined ? [] : occassionsUnRefined;
 
         const occassions_asStrings = occassions.map((h: HolidayEvent): string => h.getDesc().toLowerCase().trim());
 
-        let ROs = ["Shabbat Shuva",
+        const ROs = ["Shabbat Shuva",
                    "Shabbat Shekalim",
                    "Shabbat Zachor",
                    "Shabbat Parah",
@@ -328,10 +329,12 @@ export class Schedule {
             }
         }
 
+        // Determines if given Shabbat is occurance of Shabbat Rosh Chodesh
         if (hasChodesh && parsha.getHebDate()?.greg().getDay() == 6) {
             return "Shabbat Rosh Chodesh";
         }
 
+        // Determines if given Shabbat is occurance of Shabbat Machar Chodesh
         const day: Date | null = parsha.getHebDate()?.greg() ?? null;
         let hasMacharChodesh: boolean = false;
 
@@ -342,19 +345,15 @@ export class Schedule {
             hasMacharChodesh = nextDayOccassion?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh"))
         }
 
-        if (hasMacharChodesh) {
-            return "Shabbat Machar Chodesh";
-        }
-
-        return "";
+        return hasMacharChodesh ? "Shabbat Machar Chodesh" : "";
     }        
 
     /* Creates a schedule of parshiyot */
     createSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear(this.hebYear, this.settings.getIL());        // @returns array of ParshaEvent
-        let parshaIndex = 0;        // Only increments for non-Yontif readings
-        let schedule = new LinkedList()
+        const parshaArr = parshaYear(this.hebYear, this.settings.getIL());    // @returns array of ParshaEvent
+        const schedule = new LinkedList();
+        let parshaIndex = 0;                                                  // Only increments for non-Yontif readings
 
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
