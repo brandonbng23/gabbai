@@ -1,4 +1,4 @@
-function Welcome({fName}: {fName: string}) {
+function WelcomeBar({fName}: {fName: string}) {
     let hour = new Date().getHours();
     let greeting = "";
 
@@ -17,4 +17,4 @@ function Welcome({fName}: {fName: string}) {
     )
 }
 
-export default Welcome;
+export default WelcomeBar;
