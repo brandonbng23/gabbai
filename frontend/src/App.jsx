@@ -10,7 +10,6 @@ import Parsha from "./Components/parsha.tsx"
   gregDate: "10 October 2025",
   parsha: "Bereshit",
   psukim: ["Genesis 1:1-2:3", "Genesis 2:4-2:19", "Genesis 2:20-3:21", "Genesis 3:22-4:18", "Genesis 4:19-4:22", "Genesis 4:23-5:24", "Genesis 5:25-6:8", "Genesis 6:5-6:8", "Isaiah 42:5-43:10"],
-  reader: "",
   user: "",
 } */
 
