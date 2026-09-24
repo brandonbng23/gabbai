@@ -17,6 +17,7 @@
     "bootstrap": "^5.3.8",
     "express": "^5.2.1",
     "react": "^19.2.6",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
@@ -43,6 +44,8 @@
   },
   "homepage": "https://github.com/brandonbng23/gabbai#readme",
   "compilerOptions": {
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   }
 }
