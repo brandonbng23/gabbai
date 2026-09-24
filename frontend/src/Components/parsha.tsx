@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Form } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 
-interface Aliyah {
+interface Parsha {
     hDate: string;
     gregDate: string;
     parsha: string;
@@ -10,9 +10,34 @@ interface Aliyah {
     user: string;
 }
 
-function Parsha({hDate, gregDate, parsha, psukim, reader, user}: Aliyah): React.JSX.Element {
-    const [available, setAvailability] = useState<boolean>(true);
+interface Aliyah {
+    a: number;
+    psukim: string;
+    reader: string;
+    available: boolean;
+}
 
+function Aliyah(props: Aliyah): React.JSX.Element {
+    const [available, toggleAvailable] = useState<boolean>(props.available);
+
+    function aliyahText(): string {
+        return props.a < 8 ? `Aliyah ${props.a}` : (props.a === 8 ? "Maftir" : "Haftarah");
+    }
+
+    function buttonText(): string {
+        return available ? ("Register for " + aliyahText()) : (aliyahText() + " Unavailable");
+    }
+
+    return (
+        <span>
+            <button disabled={!available} onClick={() => {toggleAvailable(!available)}}>{buttonText()}</button>
+            <span>{props.a < 8 ? "Aliyah " + props.a : (props.a === 8 ? "Maftir" : "Haftarah")} {props.psukim}</span>
+            <p></p>
+        </span>
+    )
+}
+
+function Parsha({hDate, gregDate, parsha, psukim, reader, user}: Parsha): React.JSX.Element {
     return (
         <div className="aliyah">
             <h3>{parsha}</h3>
@@ -25,7 +50,14 @@ function Parsha({hDate, gregDate, parsha, psukim, reader, user}: Aliyah): React.
 
             <div className="divider"></div>
 
-            <ol>{psukim.map((p: string, index) => <li key={index}>{p}</li>)}</ol>
+            <span>{psukim.map((p: string, index) => <Aliyah 
+                                                        key={index}
+                                                        a={index+1} 
+                                                        psukim={p} 
+                                                        reader={reader} 
+                                                        available={true}>
+                                                        </Aliyah>)}
+            </span>
             
             
         </div>
