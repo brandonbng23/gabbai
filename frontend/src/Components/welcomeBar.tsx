@@ -11,7 +11,7 @@ function WelcomeBar({fName}: {fName: string}) {
     }
 
     return (
-        <div>
+        <div className="welcomeBar">
             <h4>{greeting}, {fName}!</h4>
         </div>
     )
