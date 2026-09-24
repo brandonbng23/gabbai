@@ -791,9 +791,14 @@ h4 {
 }
 
 .content-window {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+
     margin-top: 65px;
     margin-left: 245px;
-    width: 75%;
+    width: 77.5%;
+    padding-top: 1.5%;
 }
 
 @media (max-width: 1200px) {
@@ -806,6 +811,22 @@ h4 {
     .content-window {
         margin-left: 90px;
     }
+}
+
+.welcomeBar {
+    margin-left: 50px;
+    width: 100%;
+    padding: 5px;
+
+    background-color: white;
+    border-radius: 15px;
+}
+
+.welcomeBar h4 {
+    padding: 0px;
+    font-size: 40px;
+    margin: 2%;
+    font-weight: 750;
 }
 
 .aliyot {
@@ -845,7 +866,7 @@ h4 {
 
 .aliyah .divider {
     margin: 2%;
-    width: 95%;
+    width: 85%;
 }
 
 .footer {
