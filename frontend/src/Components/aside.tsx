@@ -1,6 +1,8 @@
-import SidebarItem from "./sidebar-item"
+import SidebarItem from "./sidebar-item";
+import React, { useState } from "react";
+import { Button } from "react-bootstrap";
 
-function Aside() {
+function Aside(): React.JSX.Element {
     const items = [
         {text: "Schedule",
          icon: (
@@ -51,7 +53,7 @@ function Aside() {
                         </div>
                     </>
                 </div>
-            </aside>
+            </aside> 
     )
 }
 
