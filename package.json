@@ -47,5 +47,8 @@
     "types": [
       "node"
     ]
+  },
+  "allowScripts": {
+    "react-bootstrap@2.10.10": true
   }
 }
