@@ -790,6 +790,24 @@ h4 {
     padding-bottom: 65px;
 }
 
+.content-window {
+    margin-top: 65px;
+    margin-left: 245px;
+    width: 75%;
+}
+
+@media (max-width: 1200px) {
+    .content-window {
+        margin-left: 150px;
+    }
+}
+
+@media (max-width: 715px) {
+    .content-window {
+        margin-left: 90px;
+    }
+}
+
 .footer {
     bottom: 0;
     height: 60px;
