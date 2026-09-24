@@ -5,6 +5,7 @@ interface Parsha {
     hDate: string;
     gregDate: string;
     parsha: string;
+    hParsha: string;
     psukim: string[];
     reader: string;
     user: string;
@@ -25,26 +26,31 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     }
 
     function buttonText(): string {
-        return available ? ("Register for " + aliyahText()) : (aliyahText() + " Unavailable");
+        return available ? ("Register for " + aliyahText()) : ("Unavailable");
+    }
+
+    function buttonClass(): string {
+        return available ? "av" : "un"
     }
 
     return (
-        <span>
-            <button disabled={!available} onClick={() => {toggleAvailable(!available)}}>{buttonText()}</button>
-            <span>{props.a < 8 ? "Aliyah " + props.a : (props.a === 8 ? "Maftir" : "Haftarah")} {props.psukim}</span>
-            <p></p>
-        </span>
+        <div className="aliyah">
+            <button className={`parsha-btn-${buttonClass()}`} onClick={() => {toggleAvailable(!available)}}>{buttonText()}</button>
+            <span className="psukim">
+                <span className="psukimText">{props.psukim}</span>
+            </span>
+        </div>
     )
 }
 
-function Parsha({hDate, gregDate, parsha, psukim, reader, user}: Parsha): React.JSX.Element {
+function Parsha({hDate, gregDate, parsha, hParsha, psukim, reader, user}: Parsha): React.JSX.Element {
     return (
-        <div className="aliyah">
+        <div className="parsha">
             <h3>{parsha}</h3>
             <span>
                 <h5>
-                    <span className="gregDate">{gregDate}</span>
-                    <span className="hDate">{hDate}</span>
+                    <span className="engl">{gregDate}</span>
+                    <span className="heb">{hDate}</span>
                 </h5>
             </span>
 
