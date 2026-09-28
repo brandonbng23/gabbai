@@ -17,12 +17,17 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
                 setDateFilter={setDateFilter}>
             </Filter>
             <div className="parshiyot">
-                {nameFilter !== "" || dateFilter !== "" ? 
-                    parshiyot.filter((p: ParshaObj) => p.searchTerms
-                        .some((t: string) => t.toLowerCase().includes(nameFilter.toLowerCase())))
-                            .map((p, index) => <Parsha key={index} {...p}></Parsha>) 
-                : parshiyot.map((p, index) => <Parsha key={index} {...p}></Parsha>)}
-            </div>
+                {(nameFilter !== "" || dateFilter !== "") ?
+                        (nameFilter !== "" ? 
+                            (parshiyot.filter((p: ParshaObj) => p.searchTerms
+                                .some((t: string) => 
+                                    t.toLowerCase()
+                                        .includes(nameFilter.toLowerCase())))
+                                            .map((p, index) => <Parsha key={index} {...p}></Parsha>)) 
+                            : parshiyot.filter((p: ParshaObj) => p.dateString === dateFilter)
+                                .map((p, index) => <Parsha key={index} {...p}></Parsha>))
+                        : (parshiyot.map((p, index) => <Parsha key={index} {...p}></Parsha>))}
+            </div>          
         </div>
     )
 }

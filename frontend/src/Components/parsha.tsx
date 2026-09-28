@@ -9,6 +9,7 @@ export interface ParshaObj {
     reader: string;
     user: string;
     searchTerms: string[];
+    dateString: string;
 }
 
 interface Aliyah {
@@ -43,7 +44,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-function Parsha({hDate, gregDate, parsha, psukim, reader, user, searchTerms}: ParshaObj): React.JSX.Element {
+function Parsha({hDate, gregDate, parsha, psukim, reader}: ParshaObj): React.JSX.Element {
     return (
         <div className="parsha">
             <h3>{parsha}</h3>
