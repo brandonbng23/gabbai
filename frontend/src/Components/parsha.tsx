@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Button } from "react-bootstrap";
 
-interface Parsha {
+export interface ParshaObj {
     hDate: string;
     gregDate: string;
     parsha: string;
@@ -9,6 +8,7 @@ interface Parsha {
     psukim: string[];
     reader: string;
     user: string;
+    searchTerms: string[];
 }
 
 interface Aliyah {
@@ -43,7 +43,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-function Parsha({hDate, gregDate, parsha, hParsha, psukim, reader, user}: Parsha): React.JSX.Element {
+function Parsha({hDate, gregDate, parsha, psukim, reader, user, searchTerms}: ParshaObj): React.JSX.Element {
     return (
         <div className="parsha">
             <h3>{parsha}</h3>
