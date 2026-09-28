@@ -39,6 +39,19 @@ function DateSearch({dateFilter, setDateFilter}: {dateFilter: string, setDateFil
     )
 }
 
+function ClearFilter({setNameFilter, setDateFilter}: {setNameFilter: (name: string) => void, setDateFilter: (date: string) => void}): React.JSX.Element {
+    function clearBothFilters(): void {
+        setNameFilter("");
+        setDateFilter("");
+    }
+    
+    return (
+        <div>
+            <button onClick={clearBothFilters}>Clear Filters</button>
+        </div>
+    )
+}
+
 function Filter({nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterProps): React.JSX.Element {
     return (
         <div className="filterBar">
@@ -46,11 +59,16 @@ function Filter({nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterPr
                 nameFilter = {nameFilter}
                 setNameFilter={setNameFilter}>
             </TermSearch>
-            
+
             <DateSearch
                 dateFilter = {dateFilter}
                 setDateFilter = {setDateFilter}>
             </DateSearch>
+            
+            <ClearFilter
+                setNameFilter = {setNameFilter}
+                setDateFilter = {setDateFilter}>
+            </ClearFilter>
         </div>
     )
 }
