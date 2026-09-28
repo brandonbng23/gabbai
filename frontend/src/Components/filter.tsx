@@ -14,10 +14,10 @@ function TermSearch(
         <div>
             <form>
                 <span className="filter">
-                    <span className="filterLabel">Filter by Name</span>
                     <input 
                         type="text" 
                         name="nameFilter"
+                        placeholder="Search by Parsha"
                         value={nameFilter}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => setNameFilter(event.target.value)}></input>
                 </span>
@@ -34,12 +34,13 @@ function DateSearch(
             <form>
                 <span className="filter">
                     <span className="filterLabel">Filter by Date</span>
-                    <input 
-                        type="date" 
-                        name="dateFilter"
-                        value={dateFilter}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {setDateFilter(event.target.value)}}></input>
-                </span>
+                        <input 
+                            type="date" 
+                            name="dateFilter"
+                            placeholder="Search by Date mm/dd/yyyy"
+                            value={dateFilter}
+                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {setDateFilter(event.target.value)}}></input>
+                    </span>
             </form>
         </div>
     )

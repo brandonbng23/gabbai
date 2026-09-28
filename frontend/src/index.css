@@ -885,6 +885,7 @@ h4 {
 .filter {
     display: flex;
     flex-direction: row;
+    margin-left: 20px
 }
 
 .filterLabel {
@@ -894,6 +895,32 @@ h4 {
 
 .filter input {
     height: 75%;
+}
+
+.filter input[type=text] {
+    width: 250px;
+
+    border: none;
+    border-bottom: 1px solid black;
+
+    background-image: url('./Assets/magnifying-glass-solid-full.svg');
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    padding-left: 30px;
+}
+
+.filter input[type=date] {
+    
+}
+
+.filter input[type=text]::placeholder {
+    font-family: Fustat;
+    font-weight: 500;
+    color: black;
+}
+
+.filter input[type=text]:focus {
+    outline: none;
 }
 
 .parshiyot {
