@@ -877,6 +877,11 @@ h4 {
     color: white;
 }
 
+.filterBar button:hover:disabled {
+    border-color: #ae4f4f;
+    color: #ae4f4f;
+}
+
 .filter {
     display: flex;
     flex-direction: row;
