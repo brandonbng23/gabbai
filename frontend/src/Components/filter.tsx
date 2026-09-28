@@ -7,7 +7,9 @@ interface FilterProps {
     setDateFilter: (date: string) => void;
 }
 
-function TermSearch({nameFilter, setNameFilter}: {nameFilter: string, setNameFilter: (name: string) => void}): React.JSX.Element {
+function TermSearch(
+    {nameFilter, setNameFilter}: {nameFilter: string, setNameFilter: (name: string) => void}
+): React.JSX.Element {
     return (
         <div>
             <form>
@@ -16,14 +18,17 @@ function TermSearch({nameFilter, setNameFilter}: {nameFilter: string, setNameFil
                     <input 
                         type="text" 
                         name="nameFilter"
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {setNameFilter(event.target.value)}}></input>
+                        value={nameFilter}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setNameFilter(event.target.value)}></input>
                 </span>
             </form>
         </div>
     )
 }
 
-function DateSearch({dateFilter, setDateFilter}: {dateFilter: string, setDateFilter: (date: string) => void}): React.JSX.Element {
+function DateSearch(
+    {dateFilter, setDateFilter}: {dateFilter: string, setDateFilter: (date: string) => void}
+): React.JSX.Element {
     return (
         <div>
             <form>
@@ -32,6 +37,7 @@ function DateSearch({dateFilter, setDateFilter}: {dateFilter: string, setDateFil
                     <input 
                         type="date" 
                         name="dateFilter"
+                        value={dateFilter}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {setDateFilter(event.target.value)}}></input>
                 </span>
             </form>
@@ -39,20 +45,22 @@ function DateSearch({dateFilter, setDateFilter}: {dateFilter: string, setDateFil
     )
 }
 
-function ClearFilter({setNameFilter, setDateFilter}: {setNameFilter: (name: string) => void, setDateFilter: (date: string) => void}): React.JSX.Element {
-    function clearBothFilters(): void {
+function ClearButton(
+    {nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterProps): React.JSX.Element {
+    function clearFilters(): void {
         setNameFilter("");
         setDateFilter("");
     }
     
     return (
         <div>
-            <button onClick={clearBothFilters}>Clear Filters</button>
+            <button onClick={clearFilters}>Clear Filters</button>
         </div>
     )
 }
 
-function Filter({nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterProps): React.JSX.Element {
+function Filter(
+    {nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterProps): React.JSX.Element {
     return (
         <div className="filterBar">
             <TermSearch
@@ -65,10 +73,12 @@ function Filter({nameFilter, setNameFilter, dateFilter, setDateFilter}: FilterPr
                 setDateFilter = {setDateFilter}>
             </DateSearch>
             
-            <ClearFilter
+            <ClearButton
+                nameFilter={nameFilter}
                 setNameFilter = {setNameFilter}
+                dateFilter={dateFilter}
                 setDateFilter = {setDateFilter}>
-            </ClearFilter>
+            </ClearButton>
         </div>
     )
 }
