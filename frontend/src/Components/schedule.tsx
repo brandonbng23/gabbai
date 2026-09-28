@@ -7,14 +7,21 @@ import Parsha, { ParshaObj } from "./parsha.tsx";
 function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
     const [nameFilter, setNameFilter] = useState<string>("");
     const [dateFilter, setDateFilter] = useState<string>("");
+    const [startDate, setStartDate] = useState<string>("");
+    const [endDate, setEndDate] = useState<string>("");
+
 
     return (
         <div className="schedule">
             <Filter
-                nameFilter={nameFilter}
-                setNameFilter={setNameFilter}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}>
+                nameFilter = {nameFilter}
+                setNameFilter = {setNameFilter}
+                dateFilter = {dateFilter}
+                setDateFilter = {setDateFilter}
+                startDate = {startDate}
+                setStartDate = {setStartDate}
+                endDate = {endDate}
+                setEndDate = {setEndDate}>
             </Filter>
             <div className="parshiyot">
                 {(nameFilter !== "" || dateFilter !== "") ?
