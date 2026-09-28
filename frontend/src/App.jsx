@@ -24,6 +24,7 @@ const sampleParshiyot = [
     reader: "",
     user: "",
     searchTerms: ["Bereshit", "Bereshith", "Bereishit", "Bereishis", "Bereshis", "Genesis"],
+    dateString: "2026-10-10",
   },
   {
     hDate: "6 Cheshvan 5787",
@@ -33,6 +34,7 @@ const sampleParshiyot = [
     reader: "",
     user: "",
     searchTerms: ["Noach", "Noah", "Noahch", "Noakh"],
+    dateString: "2026-10-17",
   }
 ]
 
