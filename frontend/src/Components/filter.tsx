@@ -54,7 +54,10 @@ function ClearButton(
     
     return (
         <div>
-            <button onClick={clearFilters}>Clear Filters</button>
+            <button 
+                onClick={clearFilters}
+                disabled={nameFilter === "" && dateFilter === ""}>
+                    Clear Filters</button>
         </div>
     )
 }
