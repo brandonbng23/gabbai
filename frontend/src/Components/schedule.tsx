@@ -25,8 +25,8 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
 
     function isDateInRange(date: string, rangeStart: string, rangeEnd: string): boolean {
         const toDate = (date: string): Date => {
-            const [month, day, year] = date.split("-");
-            return new Date(+year, +month - 1, +day);
+            const [year, month, day] = date.split("-");
+            return new Date(+year, (+month)-1, +day);
         }
 
         const target: Date = toDate(date);
@@ -46,7 +46,7 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
         const day = String(date.getDate()).padStart(2, "0");
         const year = String(date.getFullYear() + addYears)
 
-        return `${month}-${day}-${year}`
+        return `${year}-${month}-${day}`
     }
 
     function applyAllFilters(): ParshaObj[] {

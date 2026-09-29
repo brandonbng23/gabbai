@@ -106,13 +106,19 @@ function ClearButton(
 }
 
 function AdvancedFiltersButton(
-    {showAdvanced, setShowAdvanced}: {showAdvanced: boolean, setShowAdvanced: (a: boolean) => void}
+    {showAdvanced, setShowAdvanced, startDate, setStartDate, endDate, setEndDate}: {showAdvanced: boolean, setShowAdvanced: (a: boolean) => void, startDate: string, setStartDate: (date: string) => void, endDate: string, setEndDate: (date: string) => void}
 ): React.JSX.Element {
+    function updateAdvancedFilters() {
+        setShowAdvanced(!showAdvanced);
+        setStartDate("");
+        setEndDate("");
+    }
+
     return (
         <div>
             <span 
                 className="show-advanced-link"
-                onClick={() => {setShowAdvanced(!showAdvanced)}}>{
+                onClick={updateAdvancedFilters}>{
                     !showAdvanced ? "Search By Date Range" : "Hide Search by Date Range"
                 }</span>
         </div>
@@ -150,7 +156,11 @@ function Filter(
                     
                     <AdvancedFiltersButton
                         showAdvanced = {showAdvanced}
-                        setShowAdvanced = {setShowAdvanced}>
+                        setShowAdvanced = {setShowAdvanced}
+                        startDate = {startDate}
+                        setStartDate = {setStartDate}
+                        endDate = {endDate}
+                        setEndDate = {setEndDate}>
                     </AdvancedFiltersButton>
                 </div>
             </div>
