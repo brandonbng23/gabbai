@@ -2,8 +2,6 @@ import React, {useState} from "react";
 import Filter from "./filter.tsx";
 import Parsha, { ParshaObj } from "./parsha.tsx";
 
-
-
 function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
     const [nameFilter, setNameFilter] = useState<string>("");
     const [dateFilter, setDateFilter] = useState<string>("");
