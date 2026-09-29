@@ -68,7 +68,14 @@ function DateRangeSearch(
                 </div>
             </form>
             
-            <span className="advanced-filter-label">through</span>
+            <button 
+                className="swap-fields"
+                onClick={() => {
+                    const ogStart = startDate;
+                    const ogEnd = endDate;
+                    setStartDate(ogEnd);
+                    setEndDate(ogStart)}
+                }></button>
 
             <form>
                 <div className="filter">
