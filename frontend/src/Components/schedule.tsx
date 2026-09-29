@@ -57,7 +57,7 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
         }
 
         if (dateFilter !== "") {
-            parshaArr = filterByName(parshaArr);
+            parshaArr = filterByDate(parshaArr);
         }
 
         if (startDate !== "" && endDate === "") {
