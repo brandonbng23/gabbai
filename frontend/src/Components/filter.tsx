@@ -70,6 +70,7 @@ function DateRangeSearch(
             
             <button 
                 className="swap-fields"
+                disabled={startDate === "" && endDate === ""}
                 onClick={() => {
                     const ogStart = startDate;
                     const ogEnd = endDate;
@@ -172,18 +173,25 @@ function Filter(
                 </div>
             </div>
 
-                    {showAdvanced ? (
-                        <div className="advanced-filters">
-                            <DateRangeSearch
-                                startDate = {startDate}
-                                setStartDate = {setStartDate}
-                                endDate = {endDate}
-                                setEndDate = {setEndDate}>
-                            </DateRangeSearch>
-                        </div>
-                    )
-                    : <span></span>}
+            {showAdvanced ? (
+                <div className="advanced-filters">
+                    <DateRangeSearch
+                        startDate = {startDate}
+                        setStartDate = {setStartDate}
+                        endDate = {endDate}
+                        setEndDate = {setEndDate}>
+                    </DateRangeSearch>
                 </div>
+            )
+            : <span></span>}
+            
+            {(startDate > endDate) ? (
+                <div className="range-error">
+                    <span className="error-message">Range of dates is invalid. End date cannot preceed start date.</span>
+                </div>)
+            : <span></span>}
+         </div>
+
     )
 }
 
