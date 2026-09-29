@@ -185,7 +185,7 @@ function Filter(
             )
             : <span></span>}
             
-            {(startDate > endDate) ? (
+            {(startDate > endDate && (startDate !== "" && endDate !== "")) ? (
                 <div className="range-error">
                     <span className="error-message">Range of dates is invalid. End date cannot preceed start date.</span>
                 </div>)
