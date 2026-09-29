@@ -99,7 +99,7 @@ function ClearButton(
             <button 
                 className="clear-button"
                 onClick={clearFilters}
-                disabled={nameFilter === "" && dateFilter === ""}>
+                disabled={nameFilter === "" && dateFilter === "" && startDate === "" && endDate === ""}>
                     Clear Filters</button>
         </div>
     )

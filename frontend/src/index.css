@@ -874,7 +874,7 @@ h4 {
     align-items: center;
 
     width: 150px;
-    margin-left: 30px;
+    margin-left: 45px;
 }
 
 .clear-button {
@@ -884,6 +884,8 @@ h4 {
     border-color: black;
 
     background-color: black;
+
+    width: 115px;
 
     font-family: Fustat;
     font-weight: 400;
@@ -905,7 +907,6 @@ h4 {
 
 .clear-button:hover:disabled {
     border-color: #ae4f4f;
-    color: #ae4f4f;
 }
 
 .show-advanced-link {
@@ -960,7 +961,7 @@ h4 {
 .advanced-filter-label {
     margin-left: 20px;
     margin-top: 17px;
-    padding-right: 20px;
+    padding-right: 3px;
 
     font-size: 15px;
     font-weight: 600;
@@ -985,6 +986,10 @@ h4 {
 
     border: none;
     border-bottom: 1px solid black;
+}
+
+.filter input[type=date]:focus {
+    outline: none;
 }
 
 .filter input[type=date]::-webkit-calendar-picker-indicator {
