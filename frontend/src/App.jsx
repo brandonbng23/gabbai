@@ -30,7 +30,7 @@ const sampleParshiyot = [
     hDate: "6 Cheshvan 5787",
     gregDate: "17 October 2026",
     parsha: "Noach",
-    psukim: ["Genesis 6:9-6:22", "Genesis 7:1-7:16", "Genesis 7:17-8:14", "Genesis 8:15-9:17", "Genesis 9:18-10:32", "Genesis 11:1-11:32", "Genesis 11:29-11:32", "Isaiah 54:1-55:5"],
+    psukim: ["Genesis 6:9-6:22", "Genesis 7:1-7:16", "Genesis 7:17-8:14", "Genesis 8:15-9:7", "Genesis 9:8-9:17", "Genesis 9:18-10:32", "Genesis 11:1-11:32", "Genesis 11:29-11:32", "Isaiah 54:1-55:5"],
     reader: "",
     user: "",
     searchTerms: ["Noach", "Noah", "Noahch", "Noakh"],
