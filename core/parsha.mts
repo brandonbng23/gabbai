@@ -141,6 +141,7 @@ export class Parsha {
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
+            occassion: this.getOccassion(),
             psukim: [],
             readers: [],
             searchTerms: [],

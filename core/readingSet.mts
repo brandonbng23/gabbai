@@ -16,7 +16,7 @@ export class ReadingSet {
     settings: Settings;
 
     /* @field special: string repersenting name of occassion that requires special reading to occur */
-    special: string;
+    occassion: string;
 
     /* @field hebYear: number repersenting active Hebrew Year */
     hebYear: number;
@@ -28,15 +28,15 @@ export class ReadingSet {
      * edited by a (general) user (false) or not (true) */
     locked: boolean;
 
-    constructor(desc: string, a: number, settings: Settings, special: string, hebYear: number) {
+    constructor(desc: string, a: number, settings: Settings, occassion: string, hebYear: number) {
         this.desc = desc;
         this.a = a;
         this.settings = settings;
         
-        if (special) {
-            this.special = special;
+        if (occassion) {
+            this.occassion = occassion;
         } else {
-            this.special = "";
+            this.occassion = "";
         }
 
         if (hebYear) {
@@ -182,8 +182,8 @@ export class ReadingSet {
             
         }
 
-        if (this.special) {
-            console.log("                   **" + this.special);
+        if (this.occassion) {
+            console.log("                   **" + this.occassion);
         }
     }
 }
