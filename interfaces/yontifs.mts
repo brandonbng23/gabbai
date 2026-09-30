@@ -1,5 +1,5 @@
 export interface Yontifs {
-    /* @interface yontifs: object storing the yontif observances of a shul */
+    /* @interface Yontifs: object storing the yontif observances of a shul */
 
     /* Rosh Hashana Day 1 */
     rh1: boolean,
