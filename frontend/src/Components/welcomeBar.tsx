@@ -4,7 +4,7 @@ function WelcomeBar({fName}: {fName: string}) {
 
     if (hour < 12) {
         greeting = "Boker Tov"
-    } else if (hour < 19) {
+    } else if (hour < 18) {
         greeting = "Tazaharayim Tovim"
     } else {
         greeting = "Erev Tov"
