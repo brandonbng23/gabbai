@@ -94,7 +94,7 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
             <div className="parshiyot">
                 {applyAllFilters().length > 0 ? 
                     applyAllFilters().map((p: ParshaObj, index) => <Parsha key={index} {...p}></Parsha>)
-                : <span className="no-results">No results. Double check you applied your filters as intended.</span>}   
+                : <span className="no-results">No results. Double check filters are applied as intended.</span>}   
             </div>          
         </div>
     )
