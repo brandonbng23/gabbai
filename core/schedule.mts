@@ -28,7 +28,7 @@ export class Schedule {
     cal: Event[] = [];
 
     /* @field Schedule: instance of LinkedList to create a schedule of all instances of Parsha */
-    schedule: LinkedList;
+    schedule: Parsha[];
 
     constructor(settings: Settings, hebYear: number) {
         this.settings = settings;
@@ -346,7 +346,7 @@ export class Schedule {
     createSchedule() {
         this.resolveCalendar();
         const parshaArr = parshaYear(this.hebYear, this.settings.getIL());    // @returns array of ParshaEvent
-        const schedule = new LinkedList();
+        let schedule: Parsha[] = [];
         let parshaIndex = 0;                                                  // Only increments for non-Yontif readings
 
         for (let i = 0; i < this.cal.length; i++) {
@@ -354,7 +354,7 @@ export class Schedule {
                 let reading = parshaArr[parshaIndex];
                 let desc = reading.getDesc().replace("Parashat ", "");
 
-                schedule.append(new Parsha(this.settings,
+                schedule = [...schedule, (new Parsha(this.settings,
                                            desc, 
                                            this.hebYear, 
                                            new ReadingSet(desc,
@@ -363,7 +363,7 @@ export class Schedule {
                                                           this.readingOccassion(reading),
                                                           this.hebYear),
                                 this.calculateAliyot(desc),
-                                "Shabbat"));
+                                "Shabbat"))];
 
                 parshaIndex++;
             } else if (this.special[i] == 1) {
@@ -411,7 +411,7 @@ export class Schedule {
                                             desc);
 
                     parsha.setHebDate(ev.getDate());
-                    schedule.append(parsha);
+                    schedule = [...schedule, parsha];
                     
                 } else {
                     let parsha = new Parsha(this.settings,
@@ -426,7 +426,7 @@ export class Schedule {
                                             desc);
 
                     parsha.setHebDate(ev.getDate());
-                    schedule.append(parsha);
+                    schedule = [...schedule, parsha];
                 }    
             } 
         }
@@ -437,26 +437,11 @@ export class Schedule {
     /* Returns all schedule data for parshiyot schedule
      * @returns object retaining all schedule data */
     getScheduleData() {
-        let data = [];
+        let data: any = [];
         let counter = 1;
 
-        let current = this.schedule.head;
-        while (current) {
-            let event = current.value.getParshaData(counter);
-
-            data.push({
-                id: event.id,
-                name: event.name,
-                aliyotCount: event.aliyotCount,
-                occassion: event.occassion,
-                hebDate: event.hebDate,
-                gregDate: event.gregDate,
-                readings: event.readingSet.getReadingSetData()
-            });
-
-
-            counter++;
-            current = current.next;
+        for (let i = 0; i < this.schedule.length; i++) {
+            data = [...data, this.schedule[i].getParshaData(i+1)]
         }
 
         return data;
@@ -471,11 +456,9 @@ export class Schedule {
         this.settings.printTriennial();
         console.log("\n");
 
-        let current = this.schedule.head;
-        while (current) {
-            current.value.printParsha();
-            console.log ("\n\n");
-            current = current.next;
-        } 
+        for (let i = 0; i < this.schedule.length; i++) {
+            this.schedule[i].printParsha();
+            console.log("\n\n");
+        }
     }
 }
