@@ -5,7 +5,6 @@ import { HebrewCalendar,
          getHolidaysOnDate,
          Event,
          HolidayEvent } from '@hebcal/core'
-import { LinkedList } from "./linkedList.mts";
 import { ReadingSet } from "./readingSet.mts"
 import { Parsha } from "./parsha.mts"
 import { Settings } from "./settings.mts"
