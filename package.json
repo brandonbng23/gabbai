@@ -5,22 +5,24 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node ./core/main.mjs",
+    "test": "node ./core/main.mts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@hebcal/core": "^6.6.0",
+    "@hebcal/core": "^6.9.2",
     "@hebcal/leyning": "^9.5.4",
     "bootstrap": "^5.3.8",
     "express": "^5.2.1",
     "react": "^19.2.6",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
@@ -40,5 +42,13 @@
   "bugs": {
     "url": "https://github.com/brandonbng23/gabbai/issues"
   },
-  "homepage": "https://github.com/brandonbng23/gabbai#readme"
+  "homepage": "https://github.com/brandonbng23/gabbai#readme",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ]
+  },
+  "allowScripts": {
+    "react-bootstrap@2.10.10": true
+  }
 }

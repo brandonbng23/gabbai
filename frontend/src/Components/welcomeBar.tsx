@@ -1,5 +1,4 @@
-function Welcome({ name }) {
-
+function WelcomeBar({fName}: {fName: string}) {
     let hour = new Date().getHours();
     let greeting = "";
 
@@ -12,8 +11,10 @@ function Welcome({ name }) {
     }
 
     return (
-        <h4>{greeting}, {name}!</h4>
+        <div className="welcomeBar">
+            <h4>{greeting}, {fName}!</h4>
+        </div>
     )
 }
 
-export default Welcome;
+export default WelcomeBar;

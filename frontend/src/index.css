@@ -790,6 +790,354 @@ h4 {
     padding-bottom: 65px;
 }
 
+.content-window {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; 
+
+    margin-top: 65px;
+    margin-left: 245px;
+    width: 77.5%;
+    padding-top: 1.5%;
+}
+
+@media (max-width: 1200px) {
+    .content-window {
+        margin-left: 150px;
+    }
+}
+
+@media (max-width: 715px) {
+    .content-window {
+        margin-left: 90px;
+    }
+}
+
+.welcomeBar {
+    margin-left: 50px;
+    width: 100%;
+    padding: 5px;
+
+    background-color: white;
+    border-radius: 15px;
+}
+
+.welcomeBar h4 {
+    padding: 0px;
+    font-size: 40px;
+    margin: 2%;
+    font-weight: 750;
+}
+
+.schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.filterBar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    justify-content: left;
+    align-content: center;
+
+    margin-left: 50px;
+    min-height: 75px;
+    width: 60%;
+
+    background-color: white;
+    border-radius: 15px;
+}
+
+.default-filters {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+
+    margin-top: 15px;
+}
+
+.advanced-filters {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-content: center;
+
+    height: 60px;
+}
+
+.filterButtons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    width: 150px;
+    margin-left: 45px;
+}
+
+.clear-button {
+    border-radius: 7.5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+
+    background-color: black;
+
+    width: 115px;
+
+    font-family: Fustat;
+    font-weight: 400;
+    text-align: center;
+    color: white;
+}
+
+.clear-button:disabled {
+    border-color: grey;
+    background-color: white;
+    color: grey;
+}
+
+.clear-button:hover:not(:disabled) {
+    border-color: #66B1F2;
+    background-color: #66B1F2;
+    color: white;
+}
+
+.clear-button:hover:disabled {
+    border-color: #fe6767;
+}
+
+.show-advanced-link {
+    height: 3px;
+
+    border: none;
+
+    background-color: white;
+
+    font-family: Fustat;
+    font-size: 12px;
+    color: black;
+}
+
+.show-advanced-link:hover {
+    text-decoration: underline;
+}
+
+.filter {
+    display: flex;
+    flex-direction: row;
+    margin-left: 20px
+}
+
+.filter input {
+     height: 20px;
+
+}
+
+.filter input[type=text] {
+    width: 275px;
+
+    border: none;
+    border-bottom: 1px solid black;
+
+    background-image: url('./Assets/magnifying-glass-solid-full.svg');
+    background-position: right 2px center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+}
+
+.filter {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-size: 12px;
+    padding-bottom: 4px;
+}
+
+.advanced-filter-label {
+    margin-left: 20px;
+    margin-top: 17px;
+    padding-right: 3px;
+
+    font-size: 15px;
+    font-weight: 600;
+    font-family: Fustat;
+}
+
+.filter input[type=text]::placeholder {
+    font-family: Fustat;
+    font-weight: 400;
+    color: grey;
+}
+
+.filter input[type=text]:focus {
+    outline: none;
+}
+
+.filter input[type=date] {
+    background-image: url('./Assets/calendar-day-solid-full.svg');
+    background-position: right 2px center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+
+    border: none;
+    border-bottom: 1px solid black;
+}
+
+.filter input[type=date]:focus {
+    outline: none;
+}
+
+.filter input[type=date]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+}
+
+.filter input[type=date]::-webkit-datetime-edit {
+    font-family: Fustat;
+}
+
+.date-range-filter {
+    display: flex;
+    flex-direction: row;
+}
+.swap-fields {
+    border: none;
+    margin-left: 30px;
+    margin-right: 8px;
+    width: 35px;
+
+    background-image: url('./Assets/arrows-left-right-solid-full.svg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 35px 35px;
+
+    background-color: white;
+}
+
+.range-error {
+    background-color: #fe6767;
+    height: 35px;
+
+    border-radius: 0px 0px 15px 15px;
+
+    padding-top: 5px;
+    padding-left: 20px;
+    padding-bottom: 5px;
+
+    
+}
+
+.error-message {
+    color: white;
+    font-family: Fustat;
+    font-weight: 700;
+
+    background-image: url('./Assets/triangle-exclamation-solid-full.svg');
+    background-position: left 2px center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    padding-left: 40px;
+}
+
+.parshiyot {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.parsha {
+    margin-left: 50px;
+    width: 60%;
+    padding: 15px;
+
+    background-color: white;
+    border-radius: 15px;
+}
+
+.parsha h3 {
+    margin-top: 1%;
+    margin-left: 2%;
+    font-weight: 700;
+}
+
+.psukim {
+    padding-left: 15px;
+
+    font-family: Fustat;
+    font-weight: 500;
+}
+
+.parsha-btn-av, .parsha-btn-un {
+    margin-left: 4%;
+    width: 180px;
+    height: 40px;
+    padding-left: 1.5%;
+
+    border-radius: 7.5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+
+    background-color: white;
+
+    font-family: Fustat;
+    font-weight: 400;
+    text-align: left;
+}
+
+.parsha-btn-av:hover {
+    background-color: black;
+    color: white;
+}
+
+.parsha-btn-un {
+    background-color: #ae4f4f;
+    border-color: #ae4f4f;
+    color: white;
+
+}
+
+.psukimText {
+    font-weight: 350;
+    font-size: 16.5px;
+    font-family: Inter;
+
+    margin-left: 2%;
+
+}
+
+.parsha-btn-un:hover {
+    background-color: #700909;
+    border-color: #700909;
+}
+
+.engl {
+    font-weight: 600;
+}
+
+.heb {
+    padding: 15px;
+    font-weight: 300;
+}
+
+.parsha h5 {
+    font-family: Fustat;
+    margin-left: 2%
+}
+
+.parsha .divider {
+    margin: 2%;
+    width: 85%;
+}
+
+.aliyah {
+    margin-bottom: 7.5px;
+}
+
 .footer {
     bottom: 0;
     height: 60px;

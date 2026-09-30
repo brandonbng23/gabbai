@@ -1,36 +1,35 @@
 import { HebrewCalendar, 
          HDate,
          parshaYear, 
-         getHolidaysOnDate} from '@hebcal/core'
-
-import { LinkedList } from "./linkedList.mjs";
-import { ReadingSet } from "./readingSet.mjs"
-import { Parsha } from "./parsha.mjs"
-import { Settings } from "./settings.mjs"
+         ParshaEvent,
+         getHolidaysOnDate,
+         Event,
+         HolidayEvent } from '@hebcal/core'
+import { ReadingSet } from "./readingSet.mts"
+import { Parsha } from "./parsha.mts"
+import { Settings } from "./settings.mts"
 
 export class Schedule {
-    /* Builds link list or parshot scheduled throughout the Parsha Year. All 54 
-     * parshot and Holiday readings.
-     *
-     * @field hebYear: int repersening the year of the Hebrew calendar 
-     * @field a: integer repersenting amount of aliyot (before maftir and haftarah)
-     * @field respect: boolean dictating if Yontifs will follow traditional amount of aliyot (true) or the
-     * argued amount of aliyot (false; If the argued amount of aliyot is greater than the amount of aliyot for 
-     * a Yontif, the traditional quantity will be respectedd)
-     * @field hhRespect: boolean dictating if High Holidays will follow traditional amount of aliyot (true) or the
-     * amount of aliyot argued (false; If the argued amount of aliyot is greater than the amount of aliyot for the 
-     * High Holiday, the traditional quanity will be respected) - !!NOTE: High Holidays only include Rosh Hashana (all days),
-     * Yom Kippur, and Simchat Torah
-     * @field il: boolean repersenting if the schedule should follow the diasporic cycle (false) or 
-     * the Israeli cycle (true), matching HebCal's logic ** @default: FALSE
-     * @field cal: a placeholder where a calendar of all Shabbatot and Yontifs will be stored 
-     * @field holidays: records if a reading is a holiday (1) or not (0), indices aligns with cal 
-     * @field yontifs: an object repersenting all special Torah readings. Each override a Shabbat Torah
-     * reading, but when set true, will spawn a seperate reading in the schedule when holiday  
-     * does not align with Shabbat
-     * @field tiennial: object repersenting triennail settings (see documentation below field initialization)
-     * @field schedule: finalized linked list repersenting all readings */
-    constructor(settings, hebYear) {
+    /* @class building a LinkedList (instance) of schedule parshiyot throughout a year
+     * repersenting all 54 regular parshiyot and observed yontifs */
+
+    /* @field settings: instance of Settings repersenting settings to apply to Parsha */
+    settings: Settings;
+
+    /* @field hebYear: number repersenting active Hebrew Year */
+    hebYear: number;
+
+    /* @field special: array of numbers (0 or 1) to track which calendar events are `special` or not. Elements
+     * directly correspond to elements of this.cal array */
+    special: number[] = [];
+
+    /* @field cal: array of Events (HebCal) creating a calendar of all events */
+    cal: Event[] = [];
+
+    /* @field Schedule: instance of LinkedList to create a schedule of all instances of Parsha */
+    schedule: Parsha[];
+
+    constructor(settings: Settings, hebYear: number) {
         this.settings = settings;
         
         if (hebYear) {
@@ -43,14 +42,12 @@ export class Schedule {
             }
         }
 
-        this.special = []; 
-        this.cal = []; 
         this.schedule = this.createSchedule();
     }
 
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
      * Can be used as a helper function (see findYontif) */
-    getYontifs() {
+    getYontifs(): string[] {
         let y = [];
 
         if (this.settings.getYontif("rh1")) {
@@ -111,20 +108,19 @@ export class Schedule {
     /* Finds argued Yontif reading and returns if it set to true 
      * @param y: string repersenting the name of a Yontif reading
      * @returns boolean repersenting if Yontif reading is set to true (true) or not (false) */
-    findYontif(y) {
+    findYontif(y: string): boolean {
         for (let yontif of this.getYontifs()) {
             if (y == yontif) {
                 return true;
             }
-
-            return false;
         }
+        return false;
     }
 
     /* Helper function that fetches Hebrew calendar including weekly Torah readings
      * @returns Event Array accordingly */
-    getRawCalendar() {
-        let rawCal = HebrewCalendar.calendar({
+    getRawCalendar(): Event[] {
+        const rawCal = HebrewCalendar.calendar({
             year: this.hebYear,
             isHebrewYear: true,
             il: this.settings.getIL(),
@@ -142,7 +138,7 @@ export class Schedule {
     /* Filters only Shabbat readings, including Yontif when Yontif aligns with Shabbat,
      * and selected Yontifs to calendar */
     resolveCalendar() {
-        let rawCal = this.getRawCalendar();
+        const rawCal = this.getRawCalendar();
 
         // For viewing descriptions as provided by HebCal
         for (let ev of rawCal) {
@@ -216,7 +212,7 @@ export class Schedule {
      * and Yontif readings
      * @param desc: string repersenting name of reading occassion
      * @returns integer (3-7) repersenting how many aliyot will be read, not including maftir and haftarah */
-    calculateAliyot(desc) {
+    calculateAliyot(desc: string): number {
             // 5 Aliyot Yontifs
             if (["Sukkot I",
                  "Sukkot II",
@@ -274,7 +270,7 @@ export class Schedule {
             
             // Simchat Torah (7 Aliyot High Holiday)
             if (desc == "Simchat Torah") {
-                if (this.respect || this.hhRespect) {
+                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
                     return 7;
                 } 
             }
@@ -282,16 +278,14 @@ export class Schedule {
         return this.settings.getAliyotCount();
     }
 
-    readingOccassion(parsha) {
-        let occassions = getHolidaysOnDate(parsha.getDate());
+    readingOccassion(parsha: ParshaEvent): string {
+        const tempDate: HDate | null = parsha.getDate();
+        const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
+        const occassions: HolidayEvent[] = occassionsUnRefined === undefined ? [] : occassionsUnRefined;
 
-        if (occassions) {
-            for (let i = 0; i < occassions.length; i++) {
-                occassions[i] = occassions[i].getDesc().toLowerCase().trim();
-            }
-        }
+        const occassions_asStrings = occassions.map((h: HolidayEvent): string => h.getDesc().toLowerCase().trim());
 
-        let ROs = ["Shabbat Shuva",
+        const ROs = ["Shabbat Shuva",
                    "Shabbat Shekalim",
                    "Shabbat Zachor",
                    "Shabbat Parah",
@@ -300,69 +294,66 @@ export class Schedule {
 
         for (let i = 0; i < ROs.length; i++) {
             for (let j = 0; j < occassions?.length; j++) {
-                if (ROs[i].toLowerCase() == occassions[j]) {
+                if (ROs[i].toLowerCase() === occassions_asStrings[j]) {
                     return ROs[i];
                 }
             }
         } 
 
-        let hasChodesh = occassions?.some(o => o.includes("rosh chodesh"));
-        let hasChanukah = occassions?.some(o => o.includes("chanukah"));
+        const hasChodesh = occassions_asStrings?.some(o => o.includes("rosh chodesh"));
+        const hasChanukah = occassions_asStrings?.some((o: string) => o.includes("chanukah"));
 
         if (hasChodesh && hasChanukah) {
             return "Chanukah VII Shabbat Rosh Chodesh";
         } 
 
         if (hasChanukah) {
-            if (parsha.getDate().greg().getDay() == 6) {
-                if (occassions.some(o => o.includes("1"))) {
+            if (parsha.getDate().greg().getDay() === 6) {
+                if (occassions_asStrings.some((o: string) => o.includes("1"))) {
                     return "Chanukah I Shabbat";
-                } else if (occassions.some(o => o.includes("2"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("2"))) {
                     return "Chanukah II Shabbat";
-                } else if (occassions.some(o => o.includes("3"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("3"))) {
                     return "Chanukah III Shabbat";
-                } else if (occassions.some(o => o.includes("4"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("4"))) {
                     return "Chanukah IV Shabbat";
-                } else if (occassions.some(o => o.includes("5"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("5"))) {
                     return "Chanukah V Shabbat";
-                } else if (occassions.some(o => o.includes("7"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("7"))) {
                     return "Chanukah VII Shabbat";
-                } else if (occassions.some(o => o.includes("8"))) {
+                } else if (occassions_asStrings.some((o: string) => o.includes("8"))) {
                     return "Chanukah VIII Shabbat";
                 }
             }
         }
 
+        // Determines if given Shabbat is occurance of Shabbat Rosh Chodesh
         if (hasChodesh && parsha.getDate().greg().getDay() == 6) {
-            return "Shabbat Rosh Chodesh"
+            return "Shabbat Rosh Chodesh";
         }
 
-        let day = parsha.getDate().greg();
-        let nextDay = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
-        let hday = new HDate(nextDay);
-        let nextDayOcassions = getHolidaysOnDate(hday);
-        let hasMacharChodesh = nextDayOcassions?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh"));
+        // Determines if given Shabbat is occurance of Shabbat Machar Chodesh
+        const day: Date = parsha.getDate()?.greg() ?? null;
 
-        if (hasMacharChodesh) {
-            return "Shabbat Machar Chodesh"
-        }
-
-        return "";
+        const nextDay: Date = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
+        const hday: HDate = new HDate(nextDay);
+        const nextDayOccassion: HolidayEvent[] = getHolidaysOnDate(hday) ?? [];
+        return nextDayOccassion?.some(o => o?.getDesc().toLowerCase().trim().includes("rosh chodesh")) ? "Shabbat Machar Chodesh" : "";
     }        
 
     /* Creates a schedule of parshiyot */
     createSchedule() {
         this.resolveCalendar();
-        let parshaArr = parshaYear(this.hebYear, this.settings.getIL());        // @returns array of ParshaEvent
-        let parshaIndex = 0;        // Only increments for non-Yontif readings
-        let schedule = new LinkedList()
+        const parshaArr = parshaYear(this.hebYear, this.settings.getIL());    // @returns array of ParshaEvent
+        let schedule: Parsha[] = [];
+        let parshaIndex = 0;                                                  // Only increments for non-Yontif readings
 
         for (let i = 0; i < this.cal.length; i++) {
             if (this.special[i] == 0) {
                 let reading = parshaArr[parshaIndex];
                 let desc = reading.getDesc().replace("Parashat ", "");
 
-                schedule.append(new Parsha(this.settings,
+                schedule = [...schedule, (new Parsha(this.settings,
                                            desc, 
                                            this.hebYear, 
                                            new ReadingSet(desc,
@@ -371,13 +362,13 @@ export class Schedule {
                                                           this.readingOccassion(reading),
                                                           this.hebYear),
                                 this.calculateAliyot(desc),
-                                "Shabbat"));
+                                "Shabbat"))];
 
                 parshaIndex++;
             } else if (this.special[i] == 1) {
                 let ev = this.cal[i];
                 let desc = ev.getDesc()
-                    .replace(this.hebYear, "")
+                    .replace(this.hebYear.toString(), "")
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
@@ -393,7 +384,7 @@ export class Schedule {
                 desc = desc.trim();
 
                 if (ev.getDate().greg().getDay() == 6) {
-                    desc = desc.replace(this.hebYear, "");
+                    desc = desc.replace(this.hebYear.toString(), "");
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                     if (!desc.includes("Shabbat")) {
                         desc += "Shabbat";
@@ -419,7 +410,7 @@ export class Schedule {
                                             desc);
 
                     parsha.setHebDate(ev.getDate());
-                    schedule.append(parsha);
+                    schedule = [...schedule, parsha];
                     
                 } else {
                     let parsha = new Parsha(this.settings,
@@ -434,7 +425,7 @@ export class Schedule {
                                             desc);
 
                     parsha.setHebDate(ev.getDate());
-                    schedule.append(parsha);
+                    schedule = [...schedule, parsha];
                 }    
             } 
         }
@@ -445,26 +436,11 @@ export class Schedule {
     /* Returns all schedule data for parshiyot schedule
      * @returns object retaining all schedule data */
     getScheduleData() {
-        let data = [];
+        let data: any = [];
         let counter = 1;
 
-        let current = this.schedule.head;
-        while (current) {
-            let event = current.value.getParshaData(counter);
-
-            data.push({
-                id: event.id,
-                name: event.name,
-                aliyotCount: event.aliyotCount,
-                occassion: event.occassion,
-                hebDate: event.hebDate,
-                gregDate: event.gregDate,
-                readings: event.readingSet.getReadingSetData()
-            });
-
-
-            counter++;
-            current = current.next;
+        for (let i = 0; i < this.schedule.length; i++) {
+            data = [...data, this.schedule[i].getParshaData(i+1)]
         }
 
         return data;
@@ -479,11 +455,9 @@ export class Schedule {
         this.settings.printTriennial();
         console.log("\n");
 
-        let current = this.schedule.head;
-        while (current) {
-            current.value.printParsha();
-            console.log ("\n\n");
-            current = current.next;
-        } 
+        for (let i = 0; i < this.schedule.length; i++) {
+            this.schedule[i].printParsha();
+            console.log("\n\n");
+        }
     }
 }
