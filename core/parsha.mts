@@ -1,5 +1,6 @@
 import { Settings } from "./settings.mts";
 import { ReadingSet } from "./readingSet.mts";
+import type { ParshaData } from "../interfaces/parshaData.mts"
 import { HDate, 
          Sedra, 
          Event as HebcalEvent } from '@hebcal/core';
@@ -75,9 +76,54 @@ export class Parsha {
         return this.occassion;
     } 
 
+    formatGregDateString(date: Date): string {
+        const month = String(date.getMonth()+1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const year = String(date.getFullYear());
+
+        return `${year}-${month}-${day}`
+    }
+
+    formatGregDateViewString(date: Date): string {
+        const month = String(date.getMonth()+1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const year = String(date.getFullYear());
+
+        return `${
+            +month === 0 ? "January" :
+            (+month === 1 ? "February" :
+                (+month === 2 ? "March" :
+                    (+month === 3 ? "April" :
+                        (+month === 4 ? "May" :
+                            (+month === 5 ? "June" :
+                                (+month === 6 ? "July" :
+                                    (+month === 7 ? "August" :
+                                        (+month === 8 ? "September" :
+                                            (+month === 9 ? "October" :
+                                                (+month === 10 ? "November" : "December")
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        } ${day}, ${year}`
+    }
+
+    formatHebDateViewString(date: HDate): string {
+        const day = String(date.getDate());
+        const month = String(date.getMonthName());
+        const year = String(date.getFullYear());
+
+        return `${day} ${month} ${year}`
+    }
+
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
-    getParshaData(id: number) {
+    getParshaData(id: number): ParshaData {
         if (!this.hebYear) {
             this.hebYear = this.settings.getHebYear();
         }
@@ -91,14 +137,14 @@ export class Parsha {
         }
 
         return {
-            id: this.hebYear + "_" + id,
-            name: this.desc,
-            aliyotCount: this.a,
-            occassion: this.occassion,
-            hebDate: this.hebDate,
-            gregDate: this.gregDate,
-            aliyot: this.readingSet,
-            readingSet: this.readingSet
+            id: id,
+            hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
+            gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
+            desc: this.desc,
+            psukim: [],
+            readers: [],
+            searchTerms: [],
+            dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
     }
 
