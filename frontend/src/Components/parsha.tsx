@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 
 export interface ParshaObj {
+    id: number;
     hDate: string;
     gregDate: string;
-    parsha: string;
-    hParsha: string;
+    desc: string;
     psukim: string[];
-    reader: string;
-    user: string;
+    readers: string[];
     searchTerms: string[];
     dateString: string;
 }
