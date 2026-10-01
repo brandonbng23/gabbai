@@ -142,7 +142,7 @@ export class Parsha {
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
             occassion: this.getOccassion(),
-            psukim: [],
+            psukim: this.readingSet.getPsukimArr(),
             readers: [],
             searchTerms: [],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
