@@ -168,6 +168,7 @@ export class Parsha {
             desc: this.desc,
             occassion: this.getOccassion(),
             psukim: this.readingSet.getPsukimArr(),
+            book: this.readingSet.getBook(),
             parshaLockStatus: this.readingSet.getLockStatus(),
             aliyotLockStatus: this.readingSet.getLockStatusArr(),
             readers: this.readingSet.getReaderArr(),
