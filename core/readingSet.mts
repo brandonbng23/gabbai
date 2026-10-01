@@ -96,6 +96,11 @@ export class ReadingSet {
         return this.aliyot[a-1].getReader();
     }
 
+    /* Returns array of each aliyah's reader as a string */
+    getReaderArr(): string[] {
+        return this.aliyot.map((a: Aliyah): string => a.getReader()?.nameToString() ?? "");
+    }
+
     /* Assigns (mutates) a reader to argued aliyah
      * @param a: int 1-9 repersenting which aliyah's reader should be mutated (1-7: aliyah 1-7, 8: maftir, 9: haftarah) */
     setReader(a: number, u: User): void {

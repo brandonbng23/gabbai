@@ -145,7 +145,7 @@ export class Parsha {
             psukim: this.readingSet.getPsukimArr(),
             parshaLockStatus: this.readingSet.getLockStatus(),
             aliyotLockStatus: this.readingSet.getLockStatusArr(),
-            readers: [],
+            readers: this.readingSet.getReaderArr(),
             searchTerms: [],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
