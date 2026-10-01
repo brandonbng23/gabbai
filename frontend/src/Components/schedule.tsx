@@ -19,7 +19,12 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
 
     function filterByDate(parshaArr: ParshaObj[]): ParshaObj[] {
         return parshaArr.filter((p: ParshaObj) =>
-            p.dateString === dateFilter)
+            p.dateString === dateFilter);
+    }
+
+    function filterByBook(parshaArr: ParshaObj[]): ParshaObj[] {
+        return bookFilter.length > 0 ? parshaArr.filter((p: ParshaObj) =>
+            bookFilter.includes(p.book)) : parshaArr;
     }
 
     function isDateInRange(date: string, rangeStart: string, rangeEnd: string): boolean {
@@ -76,6 +81,8 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
         if (startDate !== "" && endDate !== "") {
             parshaArr = filterByDateRange(parshaArr, startDate, endDate);
         }
+
+        parshaArr = filterByBook(parshaArr);
 
         return parshaArr;
     }
