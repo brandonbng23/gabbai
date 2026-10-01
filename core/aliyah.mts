@@ -1,6 +1,7 @@
 import { User } from "./user.mts";
 import { Settings } from "./settings.mts";
 import { SimpleSchedule } from "./simpleSchedule.mts";
+import type { SimpleScheduleData } from "./simpleSchedule.mts"
 
 import fs from "fs";
 import path from "path";
@@ -182,7 +183,7 @@ export class Aliyah {
     doublePsukim(a: number): string {
         let year = this.settings.getHebYear()
         let cycle = this.calculateTriennial();
-        let schedule = [];
+        let schedule: SimpleScheduleData[] = [];
         let pattern = "no pattern found";
         let thisDouble = "";
         let doubles = ["Vayakhel-Pekudei",
@@ -194,20 +195,20 @@ export class Aliyah {
                     ];
 
         if (cycle == 1) {
-            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year+2).createSimpleSchedule());
-
+            schedule = [...schedule, 
+                        new SimpleSchedule(this.settings, year).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year + 1).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year + 2).createSimpleSchedule()];
         } else if (cycle == 2) {
-            schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year+1).createSimpleSchedule());
-
+            schedule = [...schedule,
+                        new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year + 1).createSimpleSchedule()];
         } else if (cycle == 3) {
-            schedule.push(new SimpleSchedule(this.settings, year-2).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year-1).createSimpleSchedule());
-            schedule.push(new SimpleSchedule(this.settings, year).createSimpleSchedule());
-
+            schedule = [...schedule,
+                        new SimpleSchedule(this.settings, year - 2).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
+                        new SimpleSchedule(this.settings, year).createSimpleSchedule()];
         }
 
         if (["Vayakhel", "Pekudei"].includes(this.desc)) {
@@ -231,6 +232,13 @@ export class Aliyah {
                 year1 = true;
                 break;
             }
+
+        for (let i = 0; i < schedule.length; i++) {
+            if (schedule[i]["desc"].includes(thisDouble) {
+                year1 = true;
+                break;
+            })
+        }
 
             current = current.next;            
         }
