@@ -2,7 +2,7 @@ import { ParshaEvent,
          parshaYear } from '@hebcal/core'
 import { Settings } from "./settings.mts"
 
-interface simpleScheduleData {
+interface SimpleScheduleData {
     desc: string;
     hebYear: number;
 }
@@ -32,9 +32,9 @@ export class SimpleSchedule {
 
     /* Creates a simple schedule retaining only parsha name and year 
      * @returns: LinkedList instance of Objects holding parsha name and year */
-    createSimpleSchedule() {
+    createSimpleSchedule(): SimpleScheduleData[] {
         let parshaCal: ParshaEvent[] = parshaYear(this.hebYear, this.settings.getIL());
-        let schedule: simpleScheduleData[] = [];
+        let schedule: SimpleScheduleData[] = [];
 
         for (let i = 0; i < parshaCal.length; i++) {
             schedule = [...schedule, {desc: parshaCal[i].getDesc().trim(), hebYear: this.hebYear}] 
