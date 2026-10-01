@@ -158,12 +158,13 @@ function ClearButton(
 }
 
 function AdvancedFiltersButton(
-    {showAdvanced, setShowAdvanced, startDate, setStartDate, endDate, setEndDate}: {showAdvanced: boolean, setShowAdvanced: (a: boolean) => void, startDate: string, setStartDate: (date: string) => void, endDate: string, setEndDate: (date: string) => void}
+    {showAdvanced, setShowAdvanced, bookFilter, setBookFilter, startDate, setStartDate, endDate, setEndDate}: {showAdvanced: boolean, setShowAdvanced: (a: boolean) => void, bookFilter: string[], setBookFilter: (book: string[]) => void, startDate: string, setStartDate: (date: string) => void, endDate: string, setEndDate: (date: string) => void}
 ): React.JSX.Element {
     function updateAdvancedFilters() {
         setShowAdvanced(!showAdvanced);
         setStartDate("");
         setEndDate("");
+        setBookFilter([]);
     }
 
     return (
@@ -211,6 +212,8 @@ function Filter(
                     <AdvancedFiltersButton
                         showAdvanced = {showAdvanced}
                         setShowAdvanced = {setShowAdvanced}
+                        bookFilter = {bookFilter}
+                        setBookFilter = {setBookFilter}
                         startDate = {startDate}
                         setStartDate = {setStartDate}
                         endDate = {endDate}

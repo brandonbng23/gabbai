@@ -140,42 +140,12 @@ export class ReadingSet {
         for (let i = 0; i < this.getPsukimArr().length - 1; i++) {
             if (!this.getPsukimArr()[i].includes(firstBook)) {
                 if (!this.occassion.toLowerCase().includes("chanukah")) {
-                    return "yontif"
+                    return "Yontifs"
                 }
             }
         }
 
-        return firstBook.toLowerCase();
-    }
-
-    /* Collects and organizes data for all aliyot in Reading Set
-     * @param a: int 1-9 repersenting how many aliyot should be read. Maftir is returned according
-     * to administrator settings. Haftarah is always returned.
-     * @returns array of objects organizing aliyot and reader data for argued amount of aliyot, plus maftir
-     * and haftarah */
-    getReadingSetData() {
-        let data = [];
-        let counter: number = 0;
-
-        for (let key in this.aliyot) {
-            let aliyah = this.aliyot[key];
-
-            if (counter < this.a) {
-                if (aliyah instanceof Aliyah) {
-                    data.push(aliyah.getAliyahData());
-                }
-            }
-
-            if (counter == 7 || counter == 8) {
-                if (aliyah instanceof Aliyah) {
-                    data.push(aliyah.getAliyahData());
-                }
-            }
-
-            counter++;
-        }
-
-        return data;
+        return firstBook;
     }
 
     /* Formats and prints and instance of Reading
