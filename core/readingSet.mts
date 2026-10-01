@@ -100,9 +100,15 @@ export class ReadingSet {
 
     /* Accesses psukim (chapter:verse range) read for argued aliyah
      * @param a: int 1-9 repersenting which aliyah's psukim should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-     * @returns: string repersenting psukim in a human-ready format */
+     * @returns: string repersenting psukim in a human-readable format */
     getPsukim(a: number): string {
         return this.aliyot[a-1]?.figurePsukim();
+    }
+
+    /* Maps and returns array of psukim (chapter:verse range) for all aliyot in reading set
+     * @returns: array of strings repersenting psukim each in a human-readable format */
+    getPsukimArr(): string[] {
+        return this.aliyot.map((a: Aliyah): string => a.figurePsukim());
     }
 
     /* Collects and organizes data for all aliyot in Reading Set
