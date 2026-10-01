@@ -1,7 +1,7 @@
 import { User } from "./user.mts";
 import { Settings } from "./settings.mts";
 import { SimpleSchedule } from "./simpleSchedule.mts";
-import type { SimpleScheduleData } from "./simpleSchedule.mts"
+import type { SimpleScheduleData } from "./simpleSchedule.mts";
 
 import fs from "fs";
 import path from "path";
@@ -181,12 +181,11 @@ export class Aliyah {
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah, 8: maftir, 9: haftarh)
      * @returns string repersenting verses to be read for argued aliyah */
     doublePsukim(a: number): string {
-        let year = this.settings.getHebYear()
-        let cycle = this.calculateTriennial();
-        let schedule: SimpleScheduleData[] = [];
+        const year = this.settings.getHebYear()
+        const cycle = this.calculateTriennial();
         let pattern = "no pattern found";
         let thisDouble = "";
-        let doubles = ["Vayakhel-Pekudei",
+        const doubles = ["Vayakhel-Pekudei",
                         "Tazria-Metzora",
                         "Achrei Mot-Kedoshim",
                         "Behar-Bechukotai",
@@ -194,22 +193,19 @@ export class Aliyah {
                         "Matot-Masei"
                     ];
 
-        if (cycle == 1) {
-            schedule = [...schedule, 
-                        new SimpleSchedule(this.settings, year).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year + 1).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year + 2).createSimpleSchedule()];
-        } else if (cycle == 2) {
-            schedule = [...schedule,
-                        new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year + 1).createSimpleSchedule()];
-        } else if (cycle == 3) {
-            schedule = [...schedule,
-                        new SimpleSchedule(this.settings, year - 2).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
-                        new SimpleSchedule(this.settings, year).createSimpleSchedule()];
-        }
+        const schedule: SimpleScheduleData[][] = (
+            cycle === 1 ? ([new SimpleSchedule(this.settings, year).createSimpleSchedule(),
+                            new SimpleSchedule(this.settings, year + 1).createSimpleSchedule(),
+                            new SimpleSchedule(this.settings, year + 2).createSimpleSchedule()])
+
+            : (cycle === 2 ? ([new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
+                               new SimpleSchedule(this.settings, year).createSimpleSchedule(),
+                               new SimpleSchedule(this.settings, year + 1).createSimpleSchedule()])
+
+            : [new SimpleSchedule(this.settings, year - 2).createSimpleSchedule(),
+               new SimpleSchedule(this.settings, year - 1).createSimpleSchedule(),
+               new SimpleSchedule(this.settings, year).createSimpleSchedule()])
+        )
 
         if (["Vayakhel", "Pekudei"].includes(this.desc)) {
             thisDouble = doubles[0];              //Vayakhel-Pekudei
@@ -226,43 +222,27 @@ export class Aliyah {
         }
         
         let year1 = false;          // Year 1 has doubled parsha (true) or split (false)
-        let current = schedule[0].head;
-        while (current) {
-            if (current.value["desc"].includes(thisDouble)) {
+        for (let i = 0; i < schedule[0].length; i++) {
+            if (schedule[0][i]["desc"].includes(thisDouble)) {
                 year1 = true;
                 break;
             }
-
-        for (let i = 0; i < schedule.length; i++) {
-            if (schedule[i]["desc"].includes(thisDouble) {
-                year1 = true;
-                break;
-            })
-        }
-
-            current = current.next;            
         }
 
         let year2 = false;          // Year 2 has doubled parsha (true) or split (false)
-        current = schedule[1].head;
-        while(current) {
-            if (current.value["desc"].includes(thisDouble)) {
+        for (let i = 0; i < schedule[1].length; i++) {
+            if (schedule[1][i]["desc"].includes(thisDouble)) {
                 year2 = true;
                 break;
             }
-
-            current = current.next;
         }
 
         let year3 = false;          // Year 3 had doubled parsha (true) or split (false)
-        current = schedule[2].head;
-        while (current) {
-            if (current.value["desc"].includes(thisDouble)) {
+        for (let i = 0; i < schedule[2].length; i++) {
+            if (schedule[2][i]["desc"].includes(thisDouble)) {
                 year3 = true;
                 break;
             }
-
-            current = current.next;
         }
 
         if (thisDouble == doubles[0]) {          //Vayakhel-Pekudei
