@@ -890,20 +890,20 @@ h4 {
     border-width: 1px;
     border-color: black;
 
-    background-color: black;
+    background-color: white;
 
     width: 115px;
 
     font-family: Fustat;
     font-weight: 400;
     text-align: center;
-    color: white;
+    color: black;
 }
 
 .clear-button:disabled {
-    border-color: grey;
+    border-color: #d5d5d5;
     background-color: white;
-    color: grey;
+    color: #d5d5d5;
 }
 
 .clear-button:hover:not(:disabled) {
@@ -913,7 +913,8 @@ h4 {
 }
 
 .clear-button:hover:disabled {
-    border-color: #fe6767;
+    color: #f7afaf;
+    border-color: #f7afaf;
 }
 
 .show-advanced-link {
