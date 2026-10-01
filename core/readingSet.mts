@@ -126,21 +126,26 @@ export class ReadingSet {
         return this.aliyot.map((a: Aliyah): string => a.figurePsukim());
     }
 
-    /* Returns string repersenting a book of Torah reading set belongs to according to book
-     * of first verse. If reading occassion is Simchat Torah, book will be set to Simchat 
-     * Torah */
+    /* Returns book of Torah of parsha. If reading set contains aliyot from multiple books of Torah
+     * and occassion is not Shabbat, 'Yontif' is returned instead */
     getBook(): string {
         const firstVerse: string = this.getPsukim(1);
 
-        if (this.occassion === "Simchat Torah") {
-            return "Simchat Torah";
-        }
-
-        return firstVerse.includes("Genesis") ? "Genesis"
+        const firstBook: string = firstVerse.includes("Genesis") ? "Genesis"
         : (firstVerse.includes("Exodus") ? "Exodus"
             : (firstVerse.includes("Leviticus") ? "Leviticus"
                 : (firstVerse.includes("Numbers") ? "Numbers"
-                    : "Deuteronomy")))
+                    : "Deuteronomy")));
+
+        for (let i = 0; i < this.getPsukimArr().length - 1; i++) {
+            if (!this.getPsukimArr()[i].includes(firstBook)) {
+                if (!this.occassion.toLowerCase().includes("chanukah")) {
+                    return "yontif"
+                }
+            }
+        }
+
+        return firstBook.toLowerCase();
     }
 
     /* Collects and organizes data for all aliyot in Reading Set
