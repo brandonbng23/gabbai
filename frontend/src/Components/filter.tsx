@@ -55,15 +55,13 @@ function DateSearch(
 function BookFilterButtons(
     {book, bookFilter, setBookFilter}: {book: string, bookFilter: string[], setBookFilter: (books: string[]) => void}
 ): React.JSX.Element {
-    const [clicked, setClicked] = useState<boolean>(false);
+    const clicked: boolean = bookFilter.some((b: string) => b === book)
 
     function updateBookFilter() {
         if (clicked) {
             setBookFilter(bookFilter.filter((b: string) => b !== book));
-            setClicked(false)
         } else {
             setBookFilter([...bookFilter, book]);
-            setClicked(true)
         }
     }
 
