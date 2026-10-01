@@ -15,6 +15,7 @@
     "@hebcal/core": "^6.9.2",
     "@hebcal/leyning": "^9.5.4",
     "bootstrap": "^5.3.8",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "react": "^19.2.6",
     "react-bootstrap": "^2.10.10",
@@ -49,6 +50,7 @@
     ]
   },
   "allowScripts": {
-    "react-bootstrap@2.10.10": true
+    "react-bootstrap@2.10.10": true,
+    "cors@2.8.6": true
   }
 }

@@ -1,6 +1,6 @@
-import Navbar from "./Components/navbar.jsx"
+import Navbar from "./Components/navbar.tsx"
 import Aside from "./Components/aside.tsx"
-import Footer from "./Components/footer.jsx"
+import Footer from "./Components/footer.tsx"
 import WelcomeBar from "./Components/welcomeBar.tsx"
 import Schedule from "./Components/schedule.tsx"
 import type { ParshaObj } from "./Components/parsha.tsx"
