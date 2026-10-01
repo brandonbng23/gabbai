@@ -1027,8 +1027,6 @@ h4 {
     padding-top: 5px;
     padding-left: 20px;
     padding-bottom: 5px;
-
-    
 }
 
 .error-message {
@@ -1043,6 +1041,17 @@ h4 {
     padding-left: 40px;
 }
 
+.no-results {
+    width: 60%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-top: 25px;
+    margin-left: 50px;
+}
+
 .parshiyot {
     display: flex;
     flex-direction: column;
@@ -1051,15 +1060,32 @@ h4 {
 
 .parsha {
     margin-left: 50px;
+    padding-bottom: 1.25%;
     width: 60%;
-    padding: 15px;
 
     background-color: white;
     border-radius: 15px;
 }
 
+.occassion {
+    background-color: #66B1F2;
+    height: 35px;
+    width: 100%;
+
+    padding-top: 5px;
+    padding-left: 2%;
+    padding-bottom: 5px;
+
+    border-radius: 15px 15px 0px 0px;
+
+    color: white;
+    font-family: Fustat;
+    font-size : 20px;
+    font-weight: 700;
+}
+
 .parsha h3 {
-    margin-top: 1%;
+    margin-top: 2%;
     margin-left: 2%;
     font-weight: 700;
 }

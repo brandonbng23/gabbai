@@ -5,6 +5,7 @@ export interface ParshaObj {
     hDate: string;
     gregDate: string;
     desc: string;
+    occassion: string;
     psukim: string[];
     readers: string[];
     searchTerms: string[];
@@ -42,9 +43,13 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-function Parsha({hDate, gregDate, desc, psukim}: ParshaObj): React.JSX.Element {
+function Parsha({hDate, gregDate, occassion, desc, psukim}: ParshaObj): React.JSX.Element {
     return (
         <div className="parsha">
+            <div className="occassion">
+                <span>{occassion}</span>
+            </div>
+main
             <h3>{desc}</h3>
             <span>
                 <h5>

@@ -1,4 +1,7 @@
-function Footer() {
+import React from "react";
+
+
+function Footer(): React.JSX.Element {
     return (
         <footer className="footer"> 
             <div className="footer-text">
