@@ -79,6 +79,11 @@ export class ReadingSet {
         this.locked = false;
     }
 
+    /* Returns if reading set is locked (true) or not (false) */
+    getLockStatus(): boolean {
+        return this.locked;
+    }
+
     /* Accesses reader assigned to argued aliyah
      * @param a: int 1-9 repersenting which aliyah's reader should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah) 
      * @returns instance of user (if field is not null) or field default string "available" */
