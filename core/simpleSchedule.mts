@@ -1,9 +1,11 @@
-import { HebrewCalendar, 
-         HDate,
-         parshaYear, 
-         getHolidaysOnDate} from '@hebcal/core'
+import { ParshaEvent, 
+         parshaYear } from '@hebcal/core'
 import { Settings } from "./settings.mts"
-import { LinkedList } from "./linkedList.mts"
+
+export interface SimpleScheduleData {
+    desc: string;
+    hebYear: number;
+}
 
 export class SimpleSchedule {
     /* @class repersenting a simplified schedule. To be used for internal use cases for efficiencey */
@@ -30,16 +32,12 @@ export class SimpleSchedule {
 
     /* Creates a simple schedule retaining only parsha name and year 
      * @returns: LinkedList instance of Objects holding parsha name and year */
-    createSimpleSchedule() {
-        let parshaCal = parshaYear(this.hebYear, this.settings.getIL());
-        let schedule = new LinkedList();
+    createSimpleSchedule(): SimpleScheduleData[] {
+        let parshaCal: ParshaEvent[] = parshaYear(this.hebYear, this.settings.getIL());
+        let schedule: SimpleScheduleData[] = [];
 
         for (let i = 0; i < parshaCal.length; i++) {
-            schedule.append({desc: parshaCal[i]
-                                        .getDesc()
-                                        .trim(),
-                             hebYear: this.hebYear
-                        });
+            schedule = [...schedule, {desc: parshaCal[i].getDesc().trim(), hebYear: this.hebYear}] 
         }
 
         return schedule;

@@ -16,7 +16,7 @@ export class ReadingSet {
     settings: Settings;
 
     /* @field special: string repersenting name of occassion that requires special reading to occur */
-    special: string;
+    occassion: string;
 
     /* @field hebYear: number repersenting active Hebrew Year */
     hebYear: number;
@@ -28,15 +28,15 @@ export class ReadingSet {
      * edited by a (general) user (false) or not (true) */
     locked: boolean;
 
-    constructor(desc: string, a: number, settings: Settings, special: string, hebYear: number) {
+    constructor(desc: string, a: number, settings: Settings, occassion: string, hebYear: number) {
         this.desc = desc;
         this.a = a;
         this.settings = settings;
         
-        if (special) {
-            this.special = special;
+        if (occassion) {
+            this.occassion = occassion;
         } else {
-            this.special = "";
+            this.occassion = "";
         }
 
         if (hebYear) {
@@ -79,11 +79,26 @@ export class ReadingSet {
         this.locked = false;
     }
 
+    /* Returns boolean repersenting if reading set is locked (true) or not (false) */
+    getLockStatus(): boolean {
+        return this.locked;
+    }
+
+    /* Returns array of booleans repersenting if each aliyah is locked (true) or not (false) */
+    getLockStatusArr(): boolean[] {
+        return this.aliyot.map((a: Aliyah): boolean => a.getLockStatus());
+    }
+
     /* Accesses reader assigned to argued aliyah
      * @param a: int 1-9 repersenting which aliyah's reader should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah) 
      * @returns instance of user (if field is not null) or field default string "available" */
     getReader(a: number): User | null {
         return this.aliyot[a-1].getReader();
+    }
+
+    /* Returns array of each aliyah's reader as a string */
+    getReaderArr(): string[] {
+        return this.aliyot.map((a: Aliyah): string => a.getReader()?.nameToString() ?? "");
     }
 
     /* Assigns (mutates) a reader to argued aliyah
@@ -100,9 +115,15 @@ export class ReadingSet {
 
     /* Accesses psukim (chapter:verse range) read for argued aliyah
      * @param a: int 1-9 repersenting which aliyah's psukim should be accessed (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-     * @returns: string repersenting psukim in a human-ready format */
+     * @returns: string repersenting psukim in a human-readable format */
     getPsukim(a: number): string {
         return this.aliyot[a-1]?.figurePsukim();
+    }
+
+    /* Maps and returns array of psukim (chapter:verse range) for all aliyot in reading set
+     * @returns: array of strings repersenting psukim each in a human-readable format */
+    getPsukimArr(): string[] {
+        return this.aliyot.map((a: Aliyah): string => a.figurePsukim());
     }
 
     /* Collects and organizes data for all aliyot in Reading Set
@@ -182,8 +203,8 @@ export class ReadingSet {
             
         }
 
-        if (this.special) {
-            console.log("                   **" + this.special);
+        if (this.occassion) {
+            console.log("                   **" + this.occassion);
         }
     }
 }

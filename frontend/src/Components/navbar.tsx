@@ -1,4 +1,6 @@
-function Navbar() {
+import React from "react";
+
+function Navbar(): React.JSX.Element {
     return (
         <nav className="navbar navbar-expand-lg">
             <div className="container-fluid">

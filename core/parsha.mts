@@ -1,9 +1,14 @@
 import { Settings } from "./settings.mts";
 import { ReadingSet } from "./readingSet.mts";
 import type { ParshaData } from "../interfaces/parshaData.mts"
+
 import { HDate, 
          Sedra, 
          Event as HebcalEvent } from '@hebcal/core';
+
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 export class Parsha {
     /* @class repersents a parsha (or other reading) organizing in a schedule as a linked list */
@@ -121,6 +126,26 @@ export class Parsha {
         return `${day} ${month} ${year}`
     }
 
+    getSearchTerms(): string[] | void {
+        let __filename = fileURLToPath(import.meta.url);
+        let __dirname = path.dirname(__filename)
+        let csvPath = path.join(__dirname, "../data", "search_terms.csv")
+
+        let sheet = fs.readFileSync(csvPath, "utf8");
+        let rows = sheet.split("\n");
+
+        for (let row in rows) {
+            let cells: string[] = row.split(", ");
+            let result: string[] = [];
+
+            if (cells[0] === this.desc) {
+                for (let cell in cells) {
+                    result = [...result, cell];
+                }
+            }
+        }
+    }
+
     /* Returns parsha data for current parsha
      * @returns object retaining all current parsha data */
     getParshaData(id: number): ParshaData {
@@ -141,9 +166,12 @@ export class Parsha {
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
-            psukim: [],
-            readers: [],
-            searchTerms: [],
+            occassion: this.getOccassion(),
+            psukim: this.readingSet.getPsukimArr(),
+            parshaLockStatus: this.readingSet.getLockStatus(),
+            aliyotLockStatus: this.readingSet.getLockStatusArr(),
+            readers: this.readingSet.getReaderArr(),
+            searchTerms: this.getSearchTerms() ?? [this.desc],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
     }
