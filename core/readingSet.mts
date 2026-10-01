@@ -126,34 +126,27 @@ export class ReadingSet {
         return this.aliyot.map((a: Aliyah): string => a.figurePsukim());
     }
 
-    /* Collects and organizes data for all aliyot in Reading Set
-     * @param a: int 1-9 repersenting how many aliyot should be read. Maftir is returned according
-     * to administrator settings. Haftarah is always returned.
-     * @returns array of objects organizing aliyot and reader data for argued amount of aliyot, plus maftir
-     * and haftarah */
-    getReadingSetData() {
-        let data = [];
-        let counter: number = 0;
+    /* Returns book of Torah of parsha. If reading set contains aliyot from multiple books of Torah
+     * and occassion is not Shabbat, 'Yontif' is returned instead */
+    getBook(): string {
+        const firstVerse: string = this.getPsukim(1);
+        const psukim: string[] = this.getPsukimArr();
 
-        for (let key in this.aliyot) {
-            let aliyah = this.aliyot[key];
+        const firstBook: string = firstVerse.includes("Genesis") ? "Genesis"
+        : (firstVerse.includes("Exodus") ? "Exodus"
+            : (firstVerse.includes("Leviticus") ? "Leviticus"
+                : (firstVerse.includes("Numbers") ? "Numbers"
+                    : "Deuteronomy")));
 
-            if (counter < this.a) {
-                if (aliyah instanceof Aliyah) {
-                    data.push(aliyah.getAliyahData());
+        for (let i = 0; i < psukim.length - 1; i++) {
+            if (!psukim[i].includes(firstBook)) {
+                if (!this.occassion.toLowerCase().includes("chanukah")) {
+                    return "Yontifs"
                 }
             }
-
-            if (counter == 7 || counter == 8) {
-                if (aliyah instanceof Aliyah) {
-                    data.push(aliyah.getAliyahData());
-                }
-            }
-
-            counter++;
         }
 
-        return data;
+        return firstBook;
     }
 
     /* Formats and prints and instance of Reading

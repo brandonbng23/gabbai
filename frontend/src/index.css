@@ -861,11 +861,18 @@ h4 {
 
 .advanced-filters {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: left;
     align-content: center;
 
-    height: 60px;
+    height: 100px;
+}
+
+.advanced-filters .divider {
+    margin-top: 20px;
+    width: 95%;
+
+    border-color: grey;
 }
 
 .filterButtons {
@@ -883,20 +890,20 @@ h4 {
     border-width: 1px;
     border-color: black;
 
-    background-color: black;
+    background-color: white;
 
     width: 115px;
 
     font-family: Fustat;
     font-weight: 400;
     text-align: center;
-    color: white;
+    color: black;
 }
 
 .clear-button:disabled {
-    border-color: grey;
+    border-color: #d5d5d5;
     background-color: white;
-    color: grey;
+    color: #d5d5d5;
 }
 
 .clear-button:hover:not(:disabled) {
@@ -906,7 +913,8 @@ h4 {
 }
 
 .clear-button:hover:disabled {
-    border-color: #fe6767;
+    color: #f7afaf;
+    border-color: #f7afaf;
 }
 
 .show-advanced-link {
@@ -998,6 +1006,51 @@ h4 {
 
 .filter input[type=date]::-webkit-datetime-edit {
     font-family: Fustat;
+}
+
+.book-filter {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: center;
+
+    margin-top: 10px;
+}
+
+.book-filter-btn-off {
+    border: 1px solid black;
+    border-radius: 7.5px;
+
+    background-color: white;
+
+    padding: 3px 15px 3px 15px;
+
+    font-family: Fustat;
+    font-weight: 400;
+    font-size: 15px;
+    text-align: center;
+}
+
+.book-filter-btn-active {
+    border: 1px solid black;
+    border-radius: 7.5px;
+
+    background-color: black;
+
+    padding: 3px 15px 3px 15px;
+
+    color: white;
+    font-family: Fustat;
+    font-weight: 400;
+    font-size: 15px;
+    text-align: center;
+}
+
+.book-filter-btn-off:hover,
+.book-filter-btn-active:hover {
+    border-color: #66B1F2;
+    background-color: #66B1F2;
+    color: white;
 }
 
 .date-range-filter {
@@ -1157,7 +1210,9 @@ h4 {
 
 .parsha .divider {
     margin: 2%;
-    width: 85%;
+    width: 95%;
+
+    border-color: grey;
 }
 
 .aliyah {

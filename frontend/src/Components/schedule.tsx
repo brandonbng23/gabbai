@@ -5,6 +5,7 @@ import Parsha, { ParshaObj } from "./parsha.tsx";
 function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
     const [nameFilter, setNameFilter] = useState<string>("");
     const [dateFilter, setDateFilter] = useState<string>("");
+    const [bookFilter, setBookFilter] = useState<string[]>([]);
     const [startDate, setStartDate] = useState<string>("");
     const [endDate, setEndDate] = useState<string>("");
 
@@ -18,7 +19,12 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
 
     function filterByDate(parshaArr: ParshaObj[]): ParshaObj[] {
         return parshaArr.filter((p: ParshaObj) =>
-            p.dateString === dateFilter)
+            p.dateString === dateFilter);
+    }
+
+    function filterByBook(parshaArr: ParshaObj[]): ParshaObj[] {
+        return bookFilter.length > 0 ? parshaArr.filter((p: ParshaObj) =>
+        bookFilter.includes(p.book)) : parshaArr;
     }
 
     function isDateInRange(date: string, rangeStart: string, rangeEnd: string): boolean {
@@ -76,6 +82,8 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
             parshaArr = filterByDateRange(parshaArr, startDate, endDate);
         }
 
+        parshaArr = filterByBook(parshaArr);
+
         return parshaArr;
     }
 
@@ -86,6 +94,8 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
                 setNameFilter={setNameFilter}
                 dateFilter={dateFilter}
                 setDateFilter={setDateFilter}
+                bookFilter={bookFilter}
+                setBookFilter={setBookFilter}
                 startDate={startDate}
                 setStartDate={setStartDate}
                 endDate={endDate}

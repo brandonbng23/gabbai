@@ -17,6 +17,9 @@ export interface ParshaData {
      * set occassion as "". */
     occassion: string;
 
+    /* String repersenting book of Torah aliyah is read from */
+    book: string;
+
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
 

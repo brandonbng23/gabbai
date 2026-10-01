@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+/* Identifcal to ParshaData interface (gabbai/interfaces/parshaData.mts) */
 export interface ParshaObj {
     id: number;
     hDate: string;
@@ -7,6 +8,7 @@ export interface ParshaObj {
     desc: string;
     occassion: string;
     psukim: string[];
+    book: string;
     readers: string[];
     searchTerms: string[];
     dateString: string;
@@ -59,12 +61,13 @@ function Parsha({hDate, gregDate, occassion, desc, psukim}: ParshaObj): React.JS
 
             <div className="divider"></div>
 
-            <span>{psukim.map((p: string, index) => <Aliyah 
-                                                        key={index}
-                                                        a={index+1} 
-                                                        psukim={p} 
-                                                        available={true}>
-                                                        </Aliyah>)}
+            <span>{psukim.map((p: string, index) => p !== "null" ? 
+                <Aliyah 
+                    key={index}
+                    a={index+1} 
+                    psukim={p} 
+                    available={true}>
+                </Aliyah> : "")} 
             </span>
             
             
