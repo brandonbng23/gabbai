@@ -61,12 +61,12 @@ function Parsha({hDate, gregDate, occassion, desc, psukim}: ParshaObj): React.JS
 
             <div className="divider"></div>
 
-            <span>{psukim.map((p: string, index) => <Aliyah 
+            <span>{psukim.map((p: string, index) => p !== "null" ? <Aliyah 
                                                         key={index}
                                                         a={index+1} 
                                                         psukim={p} 
                                                         available={true}>
-                                                        </Aliyah>)}
+                                                        </Aliyah> : "")} 
             </span>
             
             
