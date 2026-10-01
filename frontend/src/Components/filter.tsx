@@ -5,8 +5,8 @@ interface FilterProps {
     setNameFilter: (name: string) => void;
     dateFilter: string;
     setDateFilter: (date: string) => void;
-    bookFilter: string;
-    setBookFilter: (book: string) => void;
+    bookFilter: string[];
+    setBookFilter: (book: string[]) => void;
     startDate: string;
     setStartDate: (date: string) => void;
     endDate: string;
@@ -52,17 +52,45 @@ function DateSearch(
     )
 }
 
-function BookSearch(
-    {setBookFilter}: {setBookFilter: (book: string) => void}
+function BookFilterButtons(
+    {book, bookFilter, setBookFilter}: {book: string, bookFilter: string[], setBookFilter: (books: string[]) => void}
 ): React.JSX.Element {
+    const [clicked, setClicked] = useState<boolean>(false);
+
+    function updateBookFilter() {
+        clicked ? (() => {
+            setBookFilter(bookFilter.filter((b: string) => b !== book));
+            setClicked(false)
+        })() : (() => { 
+            setBookFilter([...bookFilter, book]);
+            setClicked(true)
+        })()
+    }
+
+    return (
+        <div>
+            <button onClick={updateBookFilter}>{book}</button>
+        </div>
+    )
+}
+
+function BookSearch(
+    {bookFilter, setBookFilter}: {bookFilter: string[], setBookFilter: (books: string[]) => void}
+): React.JSX.Element {
+    function updateBookFilter(book: string) {
+
+    }
+
+    const books: string[] = ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Yontifs"];
+
     return (
         <div className="book-filter">
-            <button onClick={() => {setBookFilter("Genesis")}}>Genesis</button>
-            <button onClick={() => {setBookFilter("Exodus")}}>Exodus</button>
-            <button onClick={() => {setBookFilter("Leviticus")}}>Leviticus</button>
-            <button onClick={() => {setBookFilter("Numbers")}}>Numbers</button>
-            <button onClick={() => {setBookFilter("Deuteronomy")}}>Deuteronomy</button>
-            <button onClick={() => {setBookFilter("Yontif")}}>Yontif</button>
+            {books.map((b: string) => 
+                <BookFilterButtons
+                    book={b}
+                    bookFilter={bookFilter}
+                    setBookFilter={setBookFilter}>
+                </BookFilterButtons>)}
         </div>
     )
 }
@@ -117,7 +145,7 @@ function ClearButton(
         setDateFilter("");
         setStartDate("");
         setEndDate("");
-        setBookFilter("");
+        setBookFilter([]);
     }
     
     return (
@@ -205,6 +233,7 @@ function Filter(
                     <div className="divider"></div>
 
                     <BookSearch
+                        bookFilter={bookFilter}
                         setBookFilter={setBookFilter}>
                     </BookSearch>
                 </div>
