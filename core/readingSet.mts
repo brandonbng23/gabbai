@@ -130,6 +130,7 @@ export class ReadingSet {
      * and occassion is not Shabbat, 'Yontif' is returned instead */
     getBook(): string {
         const firstVerse: string = this.getPsukim(1);
+        const psukim: string[] = this.getPsukimArr();
 
         const firstBook: string = firstVerse.includes("Genesis") ? "Genesis"
         : (firstVerse.includes("Exodus") ? "Exodus"
@@ -137,8 +138,8 @@ export class ReadingSet {
                 : (firstVerse.includes("Numbers") ? "Numbers"
                     : "Deuteronomy")));
 
-        for (let i = 0; i < this.getPsukimArr().length - 1; i++) {
-            if (!this.getPsukimArr()[i].includes(firstBook)) {
+        for (let i = 0; i < psukim.length - 1; i++) {
+            if (!psukim[i].includes(firstBook)) {
                 if (!this.occassion.toLowerCase().includes("chanukah")) {
                     return "Yontifs"
                 }

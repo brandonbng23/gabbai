@@ -83,8 +83,9 @@ function BookSearch(
 
     return (
         <div className="book-filter">
-            {books.map((b: string) => 
+            {books.map((b: string, index) => 
                 <BookFilterButtons
+                    key={index}
                     book={b}
                     bookFilter={bookFilter}
                     setBookFilter={setBookFilter}>
