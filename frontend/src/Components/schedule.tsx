@@ -92,7 +92,12 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
                 setEndDate={setEndDate}
             />
             <div className="parshiyot">
-                {applyAllFilters().map((p: ParshaObj, index) => <Parsha key={index} {...p}></Parsha>)}   
+                {applyAllFilters().length > 0 ? 
+                    applyAllFilters().map((p: ParshaObj, index) => <Parsha key={index} {...p}></Parsha>)
+                : <span className="no-results">
+                    <h3>Oy Gevalt!</h3>
+                    No results. Double check filters are applied as intended.
+                </span>}   
             </div>          
         </div>
     )
