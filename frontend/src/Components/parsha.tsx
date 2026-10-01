@@ -49,6 +49,7 @@ function Parsha({hDate, gregDate, occassion, desc, psukim}: ParshaObj): React.JS
             <div className="occassion">
                 <span>{occassion}</span>
             </div>
+main
             <h3>{desc}</h3>
             <span>
                 <h5>

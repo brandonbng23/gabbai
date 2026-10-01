@@ -13,8 +13,18 @@ export interface ParshaData {
     /* String repersenting parsha name */
     desc: string;
 
+    /* String repersenting the name of a reading occassion that may alter psukim. If no occassion,
+     * set occassion as "". */
+    occassion: string;
+
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
+
+    /* Boolean repersenting if reading set of parsha is locked */
+    parshaLockStatus: boolean;
+
+    /* Array of booleans repersenting if each individual aliyah is locked or not */
+    aliyotLockStatus: boolean[];
 
     /* Array of strings repersenting reads for each aliyah of parsha */
     readers: string[];
