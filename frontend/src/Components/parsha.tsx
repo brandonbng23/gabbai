@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+/* Identifcal to ParshaData interface (gabbai/interfaces/parshaData.mts) */
 export interface ParshaObj {
     id: number;
     hDate: string;
@@ -7,6 +8,7 @@ export interface ParshaObj {
     desc: string;
     occassion: string;
     psukim: string[];
+    book: string;
     readers: string[];
     searchTerms: string[];
     dateString: string;
