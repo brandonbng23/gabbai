@@ -143,6 +143,8 @@ export class Parsha {
             desc: this.desc,
             occassion: this.getOccassion(),
             psukim: this.readingSet.getPsukimArr(),
+            parshaLockStatus: this.readingSet.getLockStatus(),
+            aliyotLockStatus: this.readingSet.getLockStatusArr(),
             readers: [],
             searchTerms: [],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())

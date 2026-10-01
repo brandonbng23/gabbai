@@ -91,7 +91,7 @@ export class Aliyah {
     /* Accesses locked field determining if a user (not an admin or user registered) 
     for reading can register for a reading
      * @returns boolean repersenting if aliyah is locked or not */
-    getLock(): boolean {
+    getLockStatus(): boolean {
         return this.locked;
     }
 

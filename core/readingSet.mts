@@ -79,9 +79,14 @@ export class ReadingSet {
         this.locked = false;
     }
 
-    /* Returns if reading set is locked (true) or not (false) */
+    /* Returns boolean repersenting if reading set is locked (true) or not (false) */
     getLockStatus(): boolean {
         return this.locked;
+    }
+
+    /* Returns array of booleans repersenting if each aliyah is locked (true) or not (false) */
+    getLockStatusArr(): boolean[] {
+        return this.aliyot.map((a: Aliyah): boolean => a.getLockStatus());
     }
 
     /* Accesses reader assigned to argued aliyah

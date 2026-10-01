@@ -20,6 +20,12 @@ export interface ParshaData {
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
 
+    /* Boolean repersenting if reading set of parsha is locked */
+    parshaLockStatus: boolean;
+
+    /* Array of booleans repersenting if each individual aliyah is locked or not */
+    aliyotLockStatus: boolean[];
+
     /* Array of strings repersenting reads for each aliyah of parsha */
     readers: string[];
 
