@@ -2,7 +2,7 @@ import { ParshaEvent,
          parshaYear } from '@hebcal/core'
 import { Settings } from "./settings.mts"
 
-interface SimpleScheduleData {
+export interface SimpleScheduleData {
     desc: string;
     hebYear: number;
 }
