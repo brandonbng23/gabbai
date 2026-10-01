@@ -5,6 +5,7 @@ import Parsha, { ParshaObj } from "./parsha.tsx";
 function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
     const [nameFilter, setNameFilter] = useState<string>("");
     const [dateFilter, setDateFilter] = useState<string>("");
+    const [bookFilter, setBookFilter] = useState<string>("");
     const [startDate, setStartDate] = useState<string>("");
     const [endDate, setEndDate] = useState<string>("");
 
@@ -86,6 +87,8 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
                 setNameFilter={setNameFilter}
                 dateFilter={dateFilter}
                 setDateFilter={setDateFilter}
+                bookFilter={bookFilter}
+                setBookFilter={setBookFilter}
                 startDate={startDate}
                 setStartDate={setStartDate}
                 endDate={endDate}

@@ -5,6 +5,8 @@ interface FilterProps {
     setNameFilter: (name: string) => void;
     dateFilter: string;
     setDateFilter: (date: string) => void;
+    bookFilter: string;
+    setBookFilter: (book: string) => void;
     startDate: string;
     setStartDate: (date: string) => void;
     endDate: string;
@@ -46,6 +48,20 @@ function DateSearch(
                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {setDateFilter(event.target.value)}}></input>
                     </div>
             </form>
+        </div>
+    )
+}
+
+function BookSearch(
+    {setBookFilter}: {setBookFilter: (book: string) => void}
+): React.JSX.Element {
+    return (
+        <div className="book-filter">
+            <button onClick={() => {setBookFilter("Genesis")}}>Genesis</button>
+            <button onClick={() => {setBookFilter("Exodus")}}>Exodus</button>
+            <button onClick={() => {setBookFilter("Leviticus")}}>Leviticus</button>
+            <button onClick={() => {setBookFilter("Numbers")}}>Numbers</button>
+            <button onClick={() => {setBookFilter("Deuteronomy")}}>Deuteronomy</button>
         </div>
     )
 }
@@ -94,12 +110,13 @@ function DateRangeSearch(
 }
 
 function ClearButton(
-    {nameFilter, setNameFilter, dateFilter, setDateFilter, startDate, setStartDate, endDate, setEndDate}: FilterProps): React.JSX.Element {
+    {nameFilter, setNameFilter, dateFilter, setDateFilter, bookFilter, setBookFilter, startDate, setStartDate, endDate, setEndDate}: FilterProps): React.JSX.Element {
     function clearFilters(): void {
         setNameFilter("");
         setDateFilter("");
         setStartDate("");
         setEndDate("");
+        setBookFilter("");
     }
     
     return (
@@ -134,7 +151,7 @@ function AdvancedFiltersButton(
 }
 
 function Filter(
-    {nameFilter, setNameFilter, dateFilter, setDateFilter, startDate, endDate, setStartDate, setEndDate}: FilterProps): React.JSX.Element {
+    {nameFilter, setNameFilter, dateFilter, setDateFilter, bookFilter, setBookFilter, startDate, endDate, setStartDate, setEndDate}: FilterProps): React.JSX.Element {
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
     return (
@@ -156,6 +173,8 @@ function Filter(
                         setNameFilter = {setNameFilter}
                         dateFilter={dateFilter}
                         setDateFilter = {setDateFilter}
+                        bookFilter = {bookFilter}
+                        setBookFilter = {setBookFilter}
                         startDate = {startDate}
                         setStartDate = {setStartDate}
                         endDate = {endDate}
@@ -172,6 +191,10 @@ function Filter(
                     </AdvancedFiltersButton>
                 </div>
             </div>
+
+            <BookSearch
+                    setBookFilter={setBookFilter}>
+            </BookSearch>
 
             {showAdvanced ? (
                 <div className="advanced-filters">
