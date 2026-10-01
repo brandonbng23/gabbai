@@ -62,6 +62,7 @@ function BookSearch(
             <button onClick={() => {setBookFilter("Leviticus")}}>Leviticus</button>
             <button onClick={() => {setBookFilter("Numbers")}}>Numbers</button>
             <button onClick={() => {setBookFilter("Deuteronomy")}}>Deuteronomy</button>
+            <button onClick={() => {setBookFilter("Yontif")}}>Yontif</button>
         </div>
     )
 }
@@ -144,7 +145,7 @@ function AdvancedFiltersButton(
             <span 
                 className="show-advanced-link"
                 onClick={updateAdvancedFilters}>{
-                    !showAdvanced ? "Search By Date Range" : "Hide Search by Date Range"
+                    !showAdvanced ? "Search Advanced Filters" : "Hide Advanced Filters"
                 }</span>
         </div>
     )
@@ -192,10 +193,6 @@ function Filter(
                 </div>
             </div>
 
-            <BookSearch
-                    setBookFilter={setBookFilter}>
-            </BookSearch>
-
             {showAdvanced ? (
                 <div className="advanced-filters">
                     <DateRangeSearch
@@ -204,6 +201,12 @@ function Filter(
                         endDate = {endDate}
                         setEndDate = {setEndDate}>
                     </DateRangeSearch>
+
+                    <div className="divider"></div>
+
+                    <BookSearch
+                        setBookFilter={setBookFilter}>
+                    </BookSearch>
                 </div>
             )
             : <span></span>}
