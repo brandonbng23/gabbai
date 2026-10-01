@@ -58,18 +58,20 @@ function BookFilterButtons(
     const [clicked, setClicked] = useState<boolean>(false);
 
     function updateBookFilter() {
-        clicked ? (() => {
+        if (clicked) {
             setBookFilter(bookFilter.filter((b: string) => b !== book));
             setClicked(false)
-        })() : (() => { 
+        } else {
             setBookFilter([...bookFilter, book]);
             setClicked(true)
-        })()
+        }
     }
 
     return (
         <div>
-            <button onClick={updateBookFilter}>{book}</button>
+            <button 
+                onClick={updateBookFilter}
+                className={`book-filter-btn-${clicked ? "active" : "off"}`}>{book}</button>
         </div>
     )
 }
@@ -77,10 +79,6 @@ function BookFilterButtons(
 function BookSearch(
     {bookFilter, setBookFilter}: {bookFilter: string[], setBookFilter: (books: string[]) => void}
 ): React.JSX.Element {
-    function updateBookFilter(book: string) {
-
-    }
-
     const books: string[] = ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Yontifs"];
 
     return (

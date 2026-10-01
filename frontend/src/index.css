@@ -1016,7 +1016,7 @@ h4 {
     margin-top: 10px;
 }
 
-.book-filter button {
+.book-filter-btn-off {
     border: 1px solid black;
     border-radius: 7.5px;
 
@@ -1024,6 +1024,21 @@ h4 {
 
     padding: 3px 15px 3px 15px;
 
+    font-family: Fustat;
+    font-weight: 400;
+    font-size: 15px;
+    text-align: center;
+}
+
+.book-filter-btn-active {
+    border: 1px solid black;
+    border-radius: 7.5px;
+
+    background-color: black;
+
+    padding: 3px 15px 3px 15px;
+
+    color: white;
     font-family: Fustat;
     font-weight: 400;
     font-size: 15px;
