@@ -48,58 +48,62 @@ export class Schedule {
     /* @returns an array repersenting all Yontifs set true in the Yontifs object.
      * Can be used as a helper function (see findYontif) */
     getYontifs(): string[] {
-        let y = [];
+        let y: string[] = [];
 
         if (this.settings.getYontif("rh1")) {
-            y.push("rh1");
+            y = [...y, "rh1"];
         }
 
         if (this.settings.getYontif("rh2")) {
-            y.push("rh2");
+            y = [...y, "rh2"];
         }
 
         if (this.settings.getYontif("yk")) {
-            y.push("yk");
+            y = [...y, "yk"];
         }
 
         if (this.settings.getYontif("sukkot1")) {
-            y.push("sukkot1");
+            y = [...y, "sukkot1"];
         }
 
         if (this.settings.getYontif("sukkot2")) {
-            y.push("sukkot2");
+            y = [...y, "sukkot2"];
+        }
+
+        if (this.settings.getYontif("sukkot7")) {
+            y = [...y, "sukkot7"];
         }
 
         if (this.settings.getYontif("sukkotSA")) {
-            y.push("sukkotSA");
+            y = [...y, "sukkotSA"];
         }
 
         if (this.settings.getYontif("sukkotST")) {
-            y.push("sukkotST");
+            y = [...y, "sukkotST"];
         }
 
         if (this.settings.getYontif("pesach1")) {
-            y.push("pesach1");
+            y = [...y, "pesach1"];
         }
 
         if (this.settings.getYontif("pesach2")) {
-            y.push("pesach2");
+            y = [...y, "pesach2"];
         }
 
         if (this.settings.getYontif("pesach7")) {
-            y.push("pesach7");
+            y = [...y, "pesach7"];
         }
 
         if (this.settings.getYontif("pesach8")) {
-            y.push("pesach8")
+            y = [...y, "pesach8"];
         }
 
         if (this.settings.getYontif("shavuot1")) {
-            y.push("shavuot1");
+            y = [...y, "shavuot1"];
         }
 
         if (this.settings.getYontif("shavuot2")) {
-            y.push("shavuot2");
+            y = [...y, "shavuot2"];
         }
 
         return y;
