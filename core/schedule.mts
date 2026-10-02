@@ -324,6 +324,8 @@ export class Schedule {
                     return "Chanukah IV Shabbat";
                 } else if (occassions_asStrings.some((o: string) => o.includes("5"))) {
                     return "Chanukah V Shabbat";
+                } else if (occassions_asStrings.some((o: string) => o.includes("6"))) {
+                    return "Chanukah VI Shabbat"
                 } else if (occassions_asStrings.some((o: string) => o.includes("7"))) {
                     return "Chanukah VII Shabbat";
                 } else if (occassions_asStrings.some((o: string) => o.includes("8"))) {
@@ -338,7 +340,7 @@ export class Schedule {
         }
 
         // Determines if given Shabbat is occurance of Shabbat Machar Chodesh
-        const day: Date = parsha.getDate()?.greg() ?? null;
+        const day: Date | null = parsha.getDate()?.greg() ?? null;
 
         const nextDay: Date = new Date(day.getFullYear(), day.getMonth(), day.getDate()+1);
         const hday: HDate = new HDate(nextDay);
