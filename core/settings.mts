@@ -47,9 +47,6 @@ export class Settings {
                     
                     /* Sukkot Day 2 */
                     sukkot2: true,    
-
-                    /* Sukkot Day 7 */
-                    sukkot7: true,
                     
                     /* Shmini Atzeret */
                     sukkotSA: true,    
