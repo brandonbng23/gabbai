@@ -26,7 +26,7 @@ export class Parsha {
     /* @field readingSet: instance of ReadingSet repersenting the ReadingSet belonging to this parsha */
     readingSet: ReadingSet;
 
-    /* @field occassion: string repersenting when this parsha will be read (shabbat or specific yotnif, etc.) */
+    /* @field occassion: string repersenting when this parsha will be read (shabbat or specific yontif, etc.) */
     occassion: string;
 
     /* @field a: number repersenting amount of aliyot (number of aliyot) to be read. Ranges from 
@@ -126,7 +126,7 @@ export class Parsha {
         return `${day} ${month} ${year}`
     }
 
-    getSearchTerms(): string[] | void {
+    getSearchTerms(): string[] {
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename)
         let csvPath = path.join(__dirname, "../data", "search_terms.csv")
@@ -141,6 +141,8 @@ export class Parsha {
                 return cells;
             }
         }
+
+        return [this.desc]
     }
 
     /* Returns parsha data for current parsha
@@ -169,7 +171,7 @@ export class Parsha {
             parshaLockStatus: this.readingSet.getLockStatus(),
             aliyotLockStatus: this.readingSet.getLockStatusArr(),
             readers: this.readingSet.getReaderArr(),
-            searchTerms: this.getSearchTerms() ?? [this.desc],
+            searchTerms: [...this.getSearchTerms(), this.occassion],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
     }
