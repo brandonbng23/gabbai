@@ -132,16 +132,13 @@ export class Parsha {
         let csvPath = path.join(__dirname, "../data", "search_terms.csv")
 
         let sheet = fs.readFileSync(csvPath, "utf8");
-        let rows = sheet.split("\n");
+        let rows = sheet.split(/\r?\n/);
 
-        for (let row in rows) {
-            let cells: string[] = row.split(", ");
-            let result: string[] = [];
-
-            if (cells[0] === this.desc) {
-                for (let cell in cells) {
-                    result = [...result, cell];
-                }
+        for (let row of rows) {
+            let cells: string[] = row.split(", ").map((cell: string): string => cell.trim());
+            
+            if (cells[0].toLowerCase() === this.desc.toLowerCase() || this.desc.toLowerCase().includes(cells[0].toLowerCase())) {
+                return cells;
             }
         }
     }
