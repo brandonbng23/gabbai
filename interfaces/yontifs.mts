@@ -16,6 +16,9 @@ export interface Yontifs {
     /* Sukkot Day 2 */
     sukkot2: boolean,
 
+    /* Sukkot Day 7 */
+    sukkot7: boolean,
+
     /* Shmini Atzeret */
     sukkotSA: boolean,
 
