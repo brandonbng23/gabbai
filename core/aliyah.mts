@@ -151,7 +151,7 @@ export class Aliyah {
             let rows = sheet.split("\n");
     
             for (let row of rows) {
-                let cells = row.split(",");
+                let cells: string[] = row.split(",");
     
                 if (!this.desc?.trim() || flag) {
                     if (cells[0] == this.desc) {
