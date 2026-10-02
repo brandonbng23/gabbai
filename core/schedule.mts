@@ -158,6 +158,7 @@ export class Schedule {
                 if (desc.includes("rosh hashana") ||
                     desc.includes("yom kippur") ||
                     desc.includes("sukkot") ||
+                    desc.includes("shmini") ||
                     desc.includes("pesach") ||
                     desc.includes("shavuot")) {
                         this.cal.push(ev);
