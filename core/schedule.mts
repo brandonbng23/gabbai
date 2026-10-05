@@ -4,7 +4,8 @@ import { HebrewCalendar,
          ParshaEvent,
          getHolidaysOnDate,
          Event,
-         HolidayEvent } from '@hebcal/core'
+         HolidayEvent,
+         Sedra } from '@hebcal/core'
 import { ReadingSet } from "./readingSet.mts"
 import { Parsha } from "./parsha.mts"
 import { Settings } from "./settings.mts"
@@ -371,7 +372,8 @@ export class Schedule {
                                                           this.readingOccassion(reading),
                                                           this.hebYear),
                                 this.calculateAliyot(desc),
-                                "Shabbat"))];
+                                false,
+                                new Sedra(this.hebYear, this.settings.getIL()).find(desc)))];
 
                 parshaIndex++;
             } else if (this.special[i] == 1) {
@@ -416,9 +418,9 @@ export class Schedule {
                                                         "", 
                                                         this.hebYear),
                                             this.calculateAliyot(desc),
-                                            desc);
+                                            true,
+                                            ev.getDate());
 
-                    parsha.setHebDate(ev.getDate());
                     schedule = [...schedule, parsha];
                     
                 } else {
@@ -431,7 +433,8 @@ export class Schedule {
                                                         "", 
                                                         this.hebYear), 
                                             this.calculateAliyot(desc), 
-                                            desc);
+                                            true,
+                                            ev.getDate());
 
                     parsha.setHebDate(ev.getDate());
                     schedule = [...schedule, parsha];
