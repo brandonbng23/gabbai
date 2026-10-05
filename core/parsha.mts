@@ -120,7 +120,7 @@ export class Parsha {
         // Identifying Special Shabbatot
         const specialShabbatot = holidays.filter((h: HolidayEvent) => h.hasFlag("SPECIAL_SHABBAT"));
 
-        for (let ev of roshChodesh) {
+        for (let ev of specialShabbatot) {
             if (this.hebDate?.isSameDate(ev.getDate())) {
                 occassions = [...occassions, ev.getDesc()];
                 shabbat = true;
