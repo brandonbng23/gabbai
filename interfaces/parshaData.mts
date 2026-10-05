@@ -15,7 +15,7 @@ export interface ParshaData {
 
     /* String repersenting the name of a reading occassion that may alter psukim. If no occassion,
      * set occassion as "". */
-    occassion: string;
+    occassions: string[];
 
     /* String repersenting book of Torah aliyah is read from */
     book: string;

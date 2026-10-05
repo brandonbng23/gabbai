@@ -187,7 +187,7 @@ export class Parsha {
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
-            occassion: this.findOccassions(),
+            occassions: this.findOccassions(),
             psukim: this.readingSet.getPsukimArr(),
             book: this.readingSet.getBook(),
             parshaLockStatus: this.readingSet.getLockStatus(),
