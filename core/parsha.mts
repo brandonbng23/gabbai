@@ -47,6 +47,10 @@ export class Parsha {
     /* @field gregData: Date repersenting the Gregorian date when this parsha will be read */
     gregDate: Date | null = null;
 
+    /* Array of strings repersenting occassions to be observed that Shabbat e.g. Shabbat, Special Shabbatot, 
+     * Yontif */
+    occassions: string[]
+
     constructor(settings: Settings, desc: string, hebYear: number, a: number, sedra: boolean, hebDate: HDate | null) {
         this.settings = settings;
         this.il = this.settings.getIL();
@@ -55,8 +59,9 @@ export class Parsha {
         this.a = a;
         this.sedra = sedra;
         this.hebDate = hebDate;
+        this.occassions = this.findOccassions();
 
-        this.readingSet = new ReadingSet(this.desc, this.a, this.settings, this.findOccassions(), this.hebYear)
+        this.readingSet = new ReadingSet(this.desc, this.a, this.settings, this.occassions, this.hebYear)
 
         if (!this.gregDate && this.hebDate) {
             this.gregDate = new HebcalEvent(this.hebDate, this.desc).greg();
@@ -87,7 +92,7 @@ export class Parsha {
 
     findOccassions(): string[] {
         let occassions: string [] = [];
-        let shabbat: boolean = false;
+        let specialShabbat: boolean = false;
 
         // Identifying Yontifs
         if (this.desc.toLowerCase().includes("rosh hashana")) {
@@ -123,7 +128,7 @@ export class Parsha {
         for (let ev of specialShabbatot) {
             if (this.hebDate?.isSameDate(ev.getDate())) {
                 occassions = [...occassions, ev.getDesc()];
-                shabbat = true;
+                specialShabbat = true;
             }
         }
 
@@ -149,8 +154,8 @@ export class Parsha {
             }
         }
  
-        if (this.gregDate?.getDay() === 6 && !shabbat) {
-            shabbat = true;
+        if (this.gregDate?.getDay() === 6 && !specialShabbat) {
+            // If special shabbat, shabbat will not be redundantly added as an observed occassion 
             occassions = [...occassions, "Shabbat"];
         }
 
