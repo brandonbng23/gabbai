@@ -4,6 +4,9 @@ import type { ParshaData } from "../interfaces/parshaData.mts"
 
 import { HDate, 
          Sedra, 
+         HebrewCalendar,
+         HolidayEvent,
+         flags,
          Event as HebcalEvent } from '@hebcal/core';
 
 import fs from "fs";
@@ -84,7 +87,9 @@ export class Parsha {
 
     findOccassions(): string[] {
         let occassions: string [] = [];
+        let shabbat: boolean = false;
 
+        // Identifying Yontifs
         if (this.desc.toLowerCase().includes("rosh hashana")) {
             occassions = ["Rosh Hashana"];
         } else if (this.desc.toLowerCase().includes("yom kippur")) {
@@ -101,11 +106,38 @@ export class Parsha {
             occassions = ["Shavuot"]
         } 
 
-        if (!this.desc.toLowerCase().includes("rosh hashana") && this.hebDate?.getDate() === 1) {
-            occassions = [...occassions, "Rosh Chodesh"];
+        const holidays: HolidayEvent[] = HebrewCalendar.getHolidaysForYearArray(this.hebYear, this.il);   
+        
+        // Identifying Rosh Chodesh
+        const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
+
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                occassions = [...occassions, "Rosh Chodesh"];
+            }
         }
 
-        if (this.gregDate?.getDay() === 6) {
+        // Identifying Special Shabbatot
+        const specialShabbatot = holidays.filter((h: HolidayEvent) => h.hasFlag("SPECIAL_SHABBAT"));
+
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                occassions = [...occassions, ev.getDesc()];
+                shabbat = true;
+            }
+        }
+
+        // Identifying Chanukah
+        const chanukah = holidays.filter((h: HolidayEvent) => h.hasFlag("CHANUKAH_CANDLES"));
+
+        for (let ev of chanukah) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                occassions = [...occassions, ev.getDesc()];
+            }
+        }
+ 
+        if (this.gregDate?.getDay() === 6 && !shabbat) {
+            shabbat = true;
             occassions = [...occassions, "Shabbat"];
         }
 
