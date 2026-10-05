@@ -27,7 +27,7 @@ export class Parsha {
     readingSet: ReadingSet;
 
     /* @field occassion: string repersenting when this parsha will be read (shabbat or specific yontif, etc.) */
-    occassion: string;
+    sedra: boolean;
 
     /* @field a: number repersenting amount of aliyot (number of aliyot) to be read. Ranges from 
      * 1-7, not including Maftir and Haftarah. @default: 7 */
@@ -37,20 +37,26 @@ export class Parsha {
      * (false) or Israeli (true) reading pattern @default: false (diasparic) */
     il: boolean;
 
-    /* @field hebDate: HDate repersenting the Hebrew date when this parsha will be read */
-    hebDate: HDate | null = null;
+    /* @field hebDate: HDate repersenting the Hebrew date when this parsha will be read. 
+     * IMPORTANT: HebDate should be passed in as null if  */
+    hebDate: HDate | null;
 
     /* @field gregData: Date repersenting the Gregorian date when this parsha will be read */
     gregDate: Date | null = null;
 
-    constructor(settings: Settings, desc: string, hebYear: number, readingSet: ReadingSet, a: number, occassion: string) {
+    constructor(settings: Settings, desc: string, hebYear: number, readingSet: ReadingSet, a: number, sedra: boolean, hebDate: HDate | null) {
         this.settings = settings;
         this.il = this.settings.getIL();
         this.desc = desc;
         this.hebYear = hebYear;
         this.readingSet = readingSet;
         this.a = a;
-        this.occassion = occassion;
+        this.sedra = sedra;
+        this.hebDate = hebDate;
+
+        if (!this.gregDate && this.hebDate) {
+            this.gregDate = new HebcalEvent(this.hebDate, this.desc).greg();
+        }
     }
 
     /* Accesses description (name) of parsha 
@@ -75,11 +81,27 @@ export class Parsha {
         return this.hebYear;
     }
 
-    /* Accesses occassion field
-    @returns string repersenting occassion when parsha will be read */
-    getOccassion(): string {
-        return this.occassion;
-    } 
+    findOccassions(): string[] {
+        let occassions: string [] = [];
+
+        if (this.desc.toLowerCase().includes("rosh hashana")) {
+            occassions = ["Rosh Hashana", "RH"];
+        } else if (this.desc.toLowerCase().includes("yom kippur")) {
+            occassions = ["Yom Kippur"];
+        } else if (this.desc.toLowerCase().includes("sukkot")) {
+            occassions = ["Sukkot"];
+        } else if (this.desc.toLowerCase().includes("shmini")) {
+            occassions = ["Shmini Atzeret"];
+        } else if (this.desc.toLowerCase().includes("simchat")) {
+            occassions = ["Simchat Torah"];
+        } else if (this.desc.toLowerCase().includes("pesach")) {
+            occassions = ["Pesach"];
+        } else if (this.desc.toLowerCase().includes("shavuot")) {
+            occassions = ["Shavuot"]
+        }
+
+        return occassions;
+    }
 
     formatGregDateString(date: Date): string {
         const month = String(date.getMonth()+1).padStart(2, "0");
@@ -165,13 +187,13 @@ export class Parsha {
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
-            occassion: this.getOccassion(),
+            occassion: this.findOccassions(),
             psukim: this.readingSet.getPsukimArr(),
             book: this.readingSet.getBook(),
             parshaLockStatus: this.readingSet.getLockStatus(),
             aliyotLockStatus: this.readingSet.getLockStatusArr(),
             readers: this.readingSet.getReaderArr(),
-            searchTerms: [...this.getSearchTerms(), this.occassion],
+            searchTerms: [...this.getSearchTerms(), ...this.findOccassions()],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
     }
