@@ -162,7 +162,7 @@ export class ReadingSet {
         let text = "";
 
         for (let i = 0; i < a+2; i++) {
-            let verses = this.getPsukim(i);
+            let verses = this.getPsukim(i+1);
 
             if (i < a) {
                 text = "   Aliyah " + (i+1) + "        " + verses;
