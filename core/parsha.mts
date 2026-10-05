@@ -85,7 +85,7 @@ export class Parsha {
         let occassions: string [] = [];
 
         if (this.desc.toLowerCase().includes("rosh hashana")) {
-            occassions = ["Rosh Hashana", "RH"];
+            occassions = ["Rosh Hashana"];
         } else if (this.desc.toLowerCase().includes("yom kippur")) {
             occassions = ["Yom Kippur"];
         } else if (this.desc.toLowerCase().includes("sukkot")) {
@@ -98,6 +98,10 @@ export class Parsha {
             occassions = ["Pesach"];
         } else if (this.desc.toLowerCase().includes("shavuot")) {
             occassions = ["Shavuot"]
+        } 
+
+        if (this.gregDate?.getDay() === 6) {
+            occassions = [...occassions, "Shabbat"];
         }
 
         return occassions;
