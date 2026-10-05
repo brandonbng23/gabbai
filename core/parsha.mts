@@ -132,7 +132,20 @@ export class Parsha {
 
         for (let ev of chanukah) {
             if (this.hebDate?.isSameDate(ev.getDate())) {
-                occassions = [...occassions, ev.getDesc()];
+                occassions = [...occassions, ev.getDesc().includes("1") ? "Chanukah I"
+                : (ev.getDesc().includes("2") ? "Chanukah II"
+                    : (ev.getDesc().includes("3") ? "Chanukah III"
+                        : (ev.getDesc().includes("4") ? "Chanukah IV"
+                            : (ev.getDesc().includes("5") ? "Chanukah V"
+                                : (ev.getDesc().includes("6") ? "Chanukah VI"
+                                    : (ev.getDesc().includes("7") ? "Chanukah VII"
+                                        : "Chanukah VIII")
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ];
             }
         }
  
