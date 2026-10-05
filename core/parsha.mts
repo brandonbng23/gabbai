@@ -100,6 +100,10 @@ export class Parsha {
             occassions = ["Shavuot"]
         } 
 
+        if (!this.desc.toLowerCase().includes("rosh hashana") && this.hebDate?.getDate() === 1) {
+            occassions = [...occassions, "Rosh Chodesh"];
+        }
+
         if (this.gregDate?.getDay() === 6) {
             occassions = [...occassions, "Shabbat"];
         }
