@@ -44,15 +44,16 @@ export class Parsha {
     /* @field gregData: Date repersenting the Gregorian date when this parsha will be read */
     gregDate: Date | null = null;
 
-    constructor(settings: Settings, desc: string, hebYear: number, readingSet: ReadingSet, a: number, sedra: boolean, hebDate: HDate | null) {
+    constructor(settings: Settings, desc: string, hebYear: number, a: number, sedra: boolean, hebDate: HDate | null) {
         this.settings = settings;
         this.il = this.settings.getIL();
         this.desc = desc;
         this.hebYear = hebYear;
-        this.readingSet = readingSet;
         this.a = a;
         this.sedra = sedra;
         this.hebDate = hebDate;
+
+        this.readingSet = new ReadingSet(this.desc, this.a, this.settings, this.findOccassions(), this.hebYear)
 
         if (!this.gregDate && this.hebDate) {
             this.gregDate = new HebcalEvent(this.hebDate, this.desc).greg();
