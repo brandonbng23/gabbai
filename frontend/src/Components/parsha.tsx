@@ -48,8 +48,8 @@ function Aliyah(props: Aliyah): React.JSX.Element {
 function Parsha({hDate, gregDate, occassions, desc, psukim}: ParshaObj): React.JSX.Element {
     return (
         <div className="parsha">
-            <div className="occassions">
-                <span>{occassions.map((o: string, index) => <span key={index} className="occassion">{o}</span>)}</span>
+            <div className="occassion-bar">
+                {occassions.map((o: string, index) => <div key={index} className="occassion">{o}</div>)}
             </div>
             <h3>{desc}</h3>
             <span>

@@ -1120,13 +1120,15 @@ h4 {
     border-radius: 15px;
 }
 
-.occassions {
+.occassion-bar {
+    display: flex;
+    flex-direction: row;
     background-color: #66B1F2;
-    height: 35px;
+    height: 45px;
     width: 100%;
 
     padding-top: 5px;
-    padding-left: 2%;
+    padding-left: 5px;
     padding-bottom: 5px;
 
     border-radius: 15px 15px 0px 0px;
@@ -1138,7 +1140,14 @@ h4 {
 }
 
 .occassion {
-    padding-right: 17.5px;
+    border-radius: 10px;
+    align-content: center;
+    margin-right: 5px;
+
+    background-color:rgb(251, 252, 252, .15); 
+
+    padding-right: 12px;
+    padding-left: 12px;
 }
 
 .parsha h3 {
