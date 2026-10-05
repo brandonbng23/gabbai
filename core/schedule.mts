@@ -283,6 +283,8 @@ export class Schedule {
         return this.settings.getAliyotCount();
     }
 
+    /* Rewrite this entire method. Can be done cleaner and it appears to yield some issues - rosh chodesh and chanukah never
+     * make it onto schedule as occassions */
     readingOccassion(parsha: ParshaEvent): string {
         const tempDate: HDate | null = parsha.getDate();
         const occassionsUnRefined: HolidayEvent[] | undefined = tempDate ? getHolidaysOnDate(tempDate) : [];
