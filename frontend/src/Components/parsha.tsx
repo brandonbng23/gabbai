@@ -49,7 +49,7 @@ function Parsha({hDate, gregDate, occassions, desc, psukim}: ParshaObj): React.J
     return (
         <div className="parsha">
             <div className="occassions">
-                <span>{occassions.map((o: string) => <span className="occassion">{o}</span>)}</span>
+                <span>{occassions.map((o: string, index) => <span key={index} className="occassion">{index !== occassions.length - 1 ? o + ",": o}</span>)}</span>
             </div>
             <h3>{desc}</h3>
             <span>
