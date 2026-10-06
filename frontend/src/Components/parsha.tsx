@@ -45,12 +45,32 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
+function formatOccassionView(o: string): string {
+    const lowerCase_o: string = o.toLowerCase();
+
+    if (lowerCase_o.includes("sukkot") || lowerCase_o.includes("pesach") || lowerCase_o.includes("shavuot") || lowerCase_o.includes("rosh hashana")) {
+        if (lowerCase_o.includes("v") && !(lowerCase_o.includes("v") && lowerCase_o.includes("ii"))) {
+            return o.replace("I", "").replace("I", "").replace("I", "").replace("V", "") + " Chol HaMoed";
+        } else if (lowerCase_o.includes("iii")) {
+            return o.replace("I", "").replace("I", "").replace("I", "").replace("V", "") + " Chol HaMoed";
+        } else {
+            return o.replace("I", "").replace("I", "").replace("I", "").replace("V", "");
+         }
+    }
+
+    return o;
+}
+
 function Parsha({hDate, gregDate, occassions, desc, psukim}: ParshaObj): React.JSX.Element {
     return (
         <div className="parsha">
             <div className="occassion-bar">
-                {occassions.map((o: string, index) => <div key={index} className="occassion">{o}</div>)}
-            </div>
+                {occassions.map((o: string, index) => <div 
+                key={index} 
+                className="occassion">{
+                    formatOccassionView(o)}
+            </div>)}
+        </div>
             <h3>{desc}</h3>
             <span>
                 <h5>
@@ -69,8 +89,6 @@ function Parsha({hDate, gregDate, occassions, desc, psukim}: ParshaObj): React.J
                     available={true}>
                 </Aliyah> : "")} 
             </span>
-            
-            
         </div>
     )
 }
