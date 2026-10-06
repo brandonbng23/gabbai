@@ -378,14 +378,7 @@ export class Schedule {
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
-                if (desc.includes("Chol HaMoed")) {
-                    desc = desc.replace("I", "")
-                               .replace("I", "")
-                               .replace("I", "")
-                               .replace("V", "")
-                               .replace("  ", " ")
-                               .replace("  ", " ");
-                }
+           
 
                 desc = desc.trim();
 
