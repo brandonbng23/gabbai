@@ -90,45 +90,80 @@ export class Parsha {
         return this.hebYear;
     }
 
+    /* Generates array of all occassions observed on date of reading. Shabbat always heads list, when applicable.
+     * Only includes occassions that impact reading.
+     * @returns array of strings each repersenting an observed occassion */
     findOccassions(): string[] {
         let occassions: string [] = [];
-        let specialShabbat: boolean = false;
+
+        // Identifying Shabbat
+        if (this.gregDate?.getDay() === 6) {
+            occassions = ["Shabbat"];
+        }
 
         // Identifying Yontifs
         if (this.desc.toLowerCase().includes("rosh hashana")) {
-            occassions = ["Rosh Hashana"];
+            occassions = [...occassions, this.desc.toLowerCase().includes("ii") ? "Rosh Hashana II" : "Rosh Hashana I"];
         } else if (this.desc.toLowerCase().includes("yom kippur")) {
-            occassions = ["Yom Kippur"];
+            occassions = [...occassions, "Yom Kippur"];
         } else if (this.desc.toLowerCase().includes("sukkot")) {
-            occassions = ["Sukkot"];
+            occassions = [...occassions, this.desc.toLowerCase().includes("viii") ? "Sukkot VIII" 
+                : (this.desc.toLowerCase().includes("vii") ? "Sukkot VII"
+                    : (this.desc.toLowerCase().includes("vi") ? "Sukkot VI"
+                        : (this.desc.toLowerCase().includes("v") ? "Sukkot V"
+                            : (this.desc.toLowerCase().includes("iv") ? "Sukkot IV"
+                                : (this.desc.toLowerCase().includes("iii") ? "Sukkot III"
+                                    : (this.desc.toLowerCase().includes("ii") ? "Sukkot II"
+                                        : "Sukkot I")
+                                )
+                            )
+                        )
+                    )
+                )
+            ];
         } else if (this.desc.toLowerCase().includes("shmini")) {
-            occassions = ["Shmini Atzeret"];
+            occassions = [...occassions, "Shmini Atzeret"];
         } else if (this.desc.toLowerCase().includes("simchat")) {
-            occassions = ["Simchat Torah"];
+            occassions = [...occassions, "Simchat Torah"];
         } else if (this.desc.toLowerCase().includes("pesach")) {
-            occassions = ["Pesach"];
+            occassions = [...occassions, this.desc.toLowerCase().includes("viii") ? "Pesach VIII" 
+                : (this.desc.toLowerCase().includes("vii") ? "Pesach VII"
+                    : (this.desc.toLowerCase().includes("vi") ? "Pesach VI"
+                        : (this.desc.toLowerCase().includes("v") ? "Pesach V"
+                            : (this.desc.toLowerCase().includes("iv") ? "Pesach IV"
+                                : (this.desc.toLowerCase().includes("iii") ? "Pesach III"
+                                    : (this.desc.toLowerCase().includes("ii") ? "Pesach II"
+                                        : "Pesach I")
+                                )
+                            )
+                        )
+                    )
+                )
+            ];
         } else if (this.desc.toLowerCase().includes("shavuot")) {
-            occassions = ["Shavuot"]
-        } 
+            occassions = [...occassions, this.desc.toLowerCase().includes("ii") ? "Shavuot II" : "Shavuot I"];
+        }
 
         const holidays: HolidayEvent[] = HebrewCalendar.getHolidaysForYearArray(this.hebYear, this.il);   
-        
-        // Identifying Rosh Chodesh
-        const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
-
-        for (let ev of roshChodesh) {
-            if (this.hebDate?.isSameDate(ev.getDate())) {
-                occassions = [...occassions, "Rosh Chodesh"];
-            }
-        }
 
         // Identifying Special Shabbatot
         const specialShabbatot = holidays.filter((h: HolidayEvent) => h.hasFlag("SPECIAL_SHABBAT"));
 
         for (let ev of specialShabbatot) {
             if (this.hebDate?.isSameDate(ev.getDate())) {
+                // If special shabbat, shabbat will not be redundantly added as an observed occassion
+                occassions = [...occassions, ev.getDesc()].filter((o: string) => o.toLowerCase() !== "shabbat");
+            }
+        }
+        
+        // Identifying Rosh Chodesh
+        const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
+
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
                 occassions = [...occassions, ev.getDesc()];
-                specialShabbat = true;
+                             
+
             }
         }
 
@@ -152,11 +187,6 @@ export class Parsha {
                     )
                 ];
             }
-        }
- 
-        if (this.gregDate?.getDay() === 6 && !specialShabbat) {
-            // If special shabbat, shabbat will not be redundantly added as an observed occassion 
-            occassions = [...occassions, "Shabbat"];
         }
 
         return occassions;
