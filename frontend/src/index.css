@@ -1120,6 +1120,15 @@ h4 {
     border-radius: 15px;
 }
 
+.notices {
+    display: flex;
+    flex-direction: column;
+
+    border-radius: 15px 15px 0px 0px;
+
+    background-color: #66B1F2;
+}
+
 .occassion-bar {
     display: flex;
     flex-direction: row;
@@ -1145,9 +1154,89 @@ h4 {
     font-family: Fustat;
     font-size : 20px;
     font-weight: 550;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
 
     padding-right: 12px;
     padding-left: 12px;
+}
+
+.locked-bar {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+
+    padding-left: 5px;
+    align-items: center;
+
+    width: 100%;
+    height: 45px;
+
+    background-color: #fe6767;
+
+    color: white;
+    font-family: Fustat;
+    font-size: 20px;
+    font-weight: 550;
+}
+
+.locked-bar img {
+    width: 35px;
+    height: 35px;
+
+    border-radius: 10px;
+    padding: 5px;
+    background-color: rgb(251, 252, 252, .15);
+
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.locked {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.lockbox {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+
+    border: none;
+    border-radius: 12px 12px 12px 12px;
+
+    margin-left: 15px;
+    align-items: center;
+    padding-left: 5px;
+
+    width: 110px;
+    height: 38px;
+
+    background-color: #f36767;
+
+    color: white;
+    font-family: Fustat;
+    font-size: 15px;
+    font-weight: 550;
+}
+
+.lockbox img {
+    width: 30px;
+    height: 30px;
+
+    border-radius: 10px;
+    padding: 5px;
+    background-color: rgb(251, 252, 252, .15);
+
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
+.locked-msg {
+    margin-left: 15px;
+
+    color: #f36767;
+    font-family: Fustat;
+
+    padding-bottom: 7.5px;
 }
 
 .parsha h3 {
@@ -1228,7 +1317,16 @@ h4 {
     border-color: grey;
 }
 
+.aliyah-locked {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 .aliyah {
+    display: flex;
+    flex-direction: fow;
+    align-items: center;
     margin-bottom: 7.5px;
 }
 
