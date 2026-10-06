@@ -364,63 +364,71 @@ export class Aliyah {
      * @returns: string repersenting verses to be read for argued aliyah
      * NOTE: refers to help function doublePsukim() when finding verses for a double parsha */
     triPsukim(a: number): string {
-        let __filename = fileURLToPath(import.meta.url);
-        let __dirname = path.dirname(__filename)
-        let csvPath = path.join(__dirname, "../data", "triennial.csv")
+    let __filename = fileURLToPath(import.meta.url);
+    let __dirname = path.dirname(__filename);
+    let csvPath = path.join(__dirname, "../data", "triennial.csv");
 
-        let sheet = fs.readFileSync(csvPath, "utf8");
-        let rows = sheet.split("\n");
-        let cycle = this.calculateTriennial();
-        let verses = "";
+    let sheet = fs.readFileSync(csvPath, "utf8");
+    let rows = sheet.split("\n");
 
-        if (a < 8) {
-            if (this.desc == "Vaetchanan" && this.settings.getVaetchanan()) {
-                this.desc = "Vaetchanan T";
-            } else if (this.desc == "Vaetchanan") {
-                this.desc = "Vaetchanan F";
-            } 
-        } else if (this.desc.toLowerCase().includes("vaetchanan")) {
-            this.desc = "Vaetchanan";
-        }
+    let cycle = this.calculateTriennial();
+    let verses = "";
 
-        for (let row of rows) {
-            let cells = row.split(",");
+    // Determine which name to use for the triennial CSV.
+    // Do not modify this.desc.
+    let readingName = this.desc;
 
-            if (this.settings.getMaftir() == "trad" && a == 8) {
-                    return this.tradPsukim(8, false) ?? "";
-                } else if (a == 9) {
-                    return this.tradPsukim(9, false) ?? "";
-                } else if (this.settings.getYitro() && this.desc == "Yitro") {
-                    return this.tradPsukim(a, false) ?? "";
-                } 
-
-                if (cells[0] == this.desc) {
-                    if (cycle == 1) {
-                        verses = cells[a];
-                    } else if (cycle == 2) {
-                        verses = cells[a+8];
-                    } else if (cycle == 3) {
-                        verses = cells[a+16];
-                    }
-
-                    break;
-                }
-        }
-
-        if (this.RO) {
-            if (verses != "double") {
-                verses = this.tradPsukim(a, false) ?? "";
-            }
-        }
-
-        if (verses == "trad") {
-            verses = this.tradPsukim(a, false) ?? "";
-        } else if (verses == "double") {
-            verses = this.doublePsukim(a);
-        } 
-
-        return verses;
+    if (a < 8 && this.desc === "Vaetchanan") {
+        readingName = this.settings.getVaetchanan()
+            ? "Vaetchanan T"
+            : "Vaetchanan F";
     }
+
+    // Traditional readings
+    if (this.settings.getMaftir() === "trad" && a === 8) {
+        return this.tradPsukim(8, false) ?? "";
+    }
+
+    if (a === 9) {
+        return this.tradPsukim(9, false) ?? "";
+    }
+
+    if (this.settings.getYitro() && this.desc === "Yitro") {
+        return this.tradPsukim(a, false) ?? "";
+    }
+
+    for (let row of rows) {
+        let cells = row.split(",");
+
+        if (cells[0].trim() !== readingName.trim()) {
+            continue;
+        }
+
+        if (cycle === 1) {
+            verses = cells[a]?.trim() ?? "";
+        } else if (cycle === 2) {
+            verses = cells[a + 8]?.trim() ?? "";
+        } else if (cycle === 3) {
+            verses = cells[a + 16]?.trim() ?? "";
+        }
+
+        break;
+    }
+
+    if (this.RO) {
+        if (verses !== "double") {
+            verses = this.tradPsukim(a, false) ?? "";
+        }
+    }
+
+    if (verses === "trad") {
+        verses = this.tradPsukim(a, false) ?? "";
+    } else if (verses === "double") {
+        verses = this.doublePsukim(a);
+    }
+
+    return verses;
+}
 
     /* Helper function to find verses for aliyah (according to fields)
      * @returns string repersenting verses
