@@ -1238,6 +1238,81 @@ h4 {
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 
+.pandora-box {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+
+    border: 1px solid transparent;
+    border-radius: 12px;
+
+    margin-left: 15px;
+    align-items: center;
+
+    width: 255px;
+    height: 40px;
+
+    color: black;
+    font-family: Fustat;
+    font-size: 18px;
+    font-weight: 300;
+
+    button {
+        border: 1px solid black;
+        border-radius: 7.5px;
+
+        width: 115px;
+        margin-right: 20px;
+
+        background-color: rgb(255, 255, 255, 0);
+    }
+}
+
+.pandora-box-hover {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+
+    border: 1px solid transparent;
+    border-radius: 12px;
+
+    margin-left: 15px;
+    align-items: center;
+
+    width: 255px;
+    height: 40px;
+
+    color: #66B1F2;
+    font-family: Fustat;
+    font-size: 18px;
+    font-weight: 300;
+
+    .aliyah-label-hover {
+        color: white;
+    }
+
+    button {
+        border: 1.5px solid white;
+        border-radius: 7.5px;
+
+        width: 115px;
+        margin-right: 20px;
+
+        color: white;
+        background-color: rgb(255, 255, 255, 0);
+    }
+
+    button:hover {
+        background-color: white;
+        color: #66B1F2;
+    }
+}
+
+.pandoraBox .aliyah-label,
+.pandoraBox .aliyah-label-hover {
+        margin-left: 15px;
+    }
+
 .hover-color {
     height: 40px;
     padding-top: 4.5px;
@@ -1289,7 +1364,7 @@ h4 {
     font-weight: 700;
 }
 
-.aliyahLabel {
+.aliyah-label, .aliyah-label-hover {
     width: 95px;
 
     font-family: Fustat;
@@ -1334,14 +1409,18 @@ h4 {
 
 }
 
-.psukimText {
-    font-weight: 500;
+.psukim-text,
+.psukim-text-hover {
     font-size: 16.5px;
     font-family: Fustat;
 
     margin-left: 2%;
 
     width: 450px;
+}
+
+.psukim-text-hover {
+    font-weight: 700;
 }
 
 .parsha-btn-un:hover {
@@ -1370,20 +1449,43 @@ h4 {
     border-color: grey;
 }
 
+.aliyot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-left: 35px;
+}
+
 .aliyah-locked {
     display: flex;
     flex-direction: row;
+
     align-items: center;
+    justify-content: center;
+
     padding-bottom: 7.5px;
     gap: 10px;
 }
 
-.aliyah {
+.aliyah,
+.aliyah-hover {
     display: flex;
-    flex-direction: fow;
+    flex-direction: row;
+
+    width: 95%;
+
+    border-radius: 12px;
     align-items: center;
-    padding-bottom: 7.5px;
+
+    padding-bottom: 3.75px;
+    padding-top: 3.75px;
     gap: 10px;
+}
+
+.aliyah-hover {
+    color: white;;
+    background-color: #66B1F2;
 }
 
 .footer {
