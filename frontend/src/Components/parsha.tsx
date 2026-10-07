@@ -62,6 +62,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                                 <span>Another reader has<br/>registered for this aliyah.</span>
                             </div>}
                             </div>
+                            <div className="psukimText">{props.psukim}</div>
                         </div>
                     </div>} 
             </> }
@@ -136,8 +137,8 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     key={index}
                                     a={index + 1}
                                     psukim={p}
-                                    locked={true}
-                                    available={true}
+                                    locked={false}
+                                    available={false}
                                     reader={props.readers[index]}
                                 />
                             ))
