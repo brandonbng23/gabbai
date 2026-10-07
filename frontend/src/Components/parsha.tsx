@@ -39,7 +39,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         </div>
                         {!hovered ? <>
                             <div className="aliyahLabel">{aliyahLabels[props.a-1]}</div>
-                            <span>Locked</span> 
+                            <span style={{ marginLeft: "15px"}}>Locked</span> 
                         </> : <div className="locked-msg">
                             <span>This aliyah has been<br/>restricted by your shul.</span>
                         </div>}
@@ -57,7 +57,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                             </div>
                             {!hovered ? <>
                                 <div className="aliyahLabel">{aliyahLabels[props.a-1]}</div>
-                                <span>Locked</span>
+                                <span style={{ marginLeft: "15px"}}>Locked</span>
                             </> : <div className="locked-msg">
                                 <span>Another reader has<br/>registered for this aliyah.</span>
                             </div>}

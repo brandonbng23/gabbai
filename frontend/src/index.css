@@ -1261,11 +1261,11 @@ h4 {
         width: 150px;
         height: 40px;
 
-        margin-left: 10px;
+        margin-left: 5px;
         align-items: center;
         justify-content: center;
 
-        line-height: 0.9;
+        line-height: 1.0;
 
         background-color: white;
         border-bottom: 1px solid #f36767;
