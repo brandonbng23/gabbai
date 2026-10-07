@@ -1200,10 +1200,22 @@ h4 {
 
 .locked {
     display: flex;
+    width: 100%;
     gap: 1px;
 }
 
-.lockbox {
+.lockbox,
+.lockbox-hover,
+.pandora-box,
+.pandora-box-hover {
+    box-sizing: border-box;
+    flex: 0 0 240px;
+    width: 240px;
+    height: 40px;
+}
+
+.lockbox,
+.lockbox-hover {
     display: flex;
     flex-direction: row;
     gap: 7px;
@@ -1211,7 +1223,6 @@ h4 {
     border: 1px solid transparent;
     border-radius: 12px;
 
-    margin-left: 15px;
     align-items: center;
 
     width: 240px;
@@ -1225,7 +1236,8 @@ h4 {
     font-weight: 300;
 }
 
-.lockbox img {
+.lockbox img,
+.lockbox-hover img {
     box-sizing: border-box;
     width: 31px;
     height: 31px;
@@ -1249,7 +1261,7 @@ h4 {
     margin-left: 15px;
     align-items: center;
 
-    width: 255px;
+    width: 240px;
     height: 40px;
 
     color: black;
@@ -1279,7 +1291,7 @@ h4 {
     margin-left: 15px;
     align-items: center;
 
-    width: 255px;
+    width: 240px;
     height: 40px;
 
     color: #66B1F2;
@@ -1314,27 +1326,27 @@ h4 {
     }
 
 .hover-color {
-    height: 40px;
-    padding-top: 4.5px;
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
-.lockbox:hover {
+.lockbox-hover {
     background-color: white;
     border: 1px solid #f36767;
 
     .hover-color {
         width: 20%;
-        height: 40px;
 
         background-color: #f36767;
-        border-radius: 11px;
+        border-radius: 5px 0px 0px 5px;
     }
 
     .locked-msg {
         display: flex;
 
         width: 150px;
-        height: 40px;
+        height: 100%;
 
         margin-left: 5px;
         align-items: center;
@@ -1343,8 +1355,6 @@ h4 {
         line-height: 1.0;
 
         background-color: white;
-        border-bottom: 1px solid #f36767;
-        border-top: 1px solid #f36767;
         border-radius: 0;
 
         font-family: Fustat;
@@ -1457,34 +1467,32 @@ h4 {
     margin-left: 35px;
 }
 
-.aliyah-locked {
-    display: flex;
-    flex-direction: row;
-
-    align-items: center;
-    justify-content: center;
-
-    padding-bottom: 7.5px;
-    gap: 10px;
-}
-
+.aliyah-locked,
+.aliyah-locked-hover,
 .aliyah,
 .aliyah-hover {
     display: flex;
     flex-direction: row;
+
+    align-items: center;
 
     width: 95%;
 
     border-radius: 12px;
     align-items: center;
 
+    gap: 10px;
     padding-bottom: 3.75px;
     padding-top: 3.75px;
-    gap: 10px;
+}
+
+.aliyah-locked-hover {
+    color: white;
+    background-color: #f36767;
 }
 
 .aliyah-hover {
-    color: white;;
+    color: white;
     background-color: #66B1F2;
 }
 

@@ -31,9 +31,9 @@ function Aliyah(props: Aliyah): React.JSX.Element {
 
     return (
         <div>
-            { props.locked ? <div className="locked">
-                <div className="aliyah-locked">
-                    <div className="lockbox" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+            { props.locked ? <>
+                <div className={`aliyah-locked${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                    <div className={`lockbox${hovered ? "-hover" : ""}`}>
                         <div className="hover-color">
                             <img src="/lock-solid-full.svg" alt="Locked Icon"/>
                         </div>
@@ -46,7 +46,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                 </div>
-            </div>
+            </>
             : <>
                 {props.available ? <>
                 <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
@@ -57,9 +57,9 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                 </div>
                 </>
-                : <div className="locked">
-                    <div className="aliyah-locked">
-                        <div className="lockbox" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                : <>
+                    <div className={`aliyah-locked${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                        <div className={`lockbox${hovered ? "-hover" : ""}`}>
                             <div className="hover-color">
                                 <img src="/lock-solid-full.svg" alt="Locked Icon"/>
                             </div>
@@ -72,7 +72,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                             </div>
                             <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                         </div>
-                    </div>} 
+                    </>} 
             </> }
         </div> 
     )
@@ -146,7 +146,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     a={index + 1}
                                     psukim={p}
                                     locked={false}
-                                    available={true}
+                                    available={false}
                                     reader={props.readers[index]}
                                 />
                             ))
