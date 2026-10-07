@@ -49,12 +49,12 @@ function Aliyah(props: Aliyah): React.JSX.Element {
             </div>
             : <>
                 {props.available ? <>
-                <div className={`aliyah${hovered ? "-hover" : ""}`}>
-                    <div className={`pandora-box${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                    <div className={`pandora-box${hovered ? "-hover" : ""}`}>
                         <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
                         <button>Register</button>
                     </div>
-                    <div className={`psukim-text${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>{props.psukim}</div>
+                    <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                 </div>
                 </>
                 : <div className="locked">
