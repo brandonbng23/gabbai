@@ -1206,7 +1206,7 @@ h4 {
 .lockbox {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 7px;
 
     border: 1px solid transparent;
     border-radius: 12px;
@@ -1214,7 +1214,7 @@ h4 {
     margin-left: 15px;
     align-items: center;
 
-    width: 220px;
+    width: 240px;
     height: 40px;
 
     background-color: #f36767;
@@ -1261,6 +1261,7 @@ h4 {
         width: 150px;
         height: 40px;
 
+        margin-left: 10px;
         align-items: center;
         justify-content: center;
 
@@ -1340,6 +1341,7 @@ h4 {
 
     margin-left: 2%;
 
+    width: 450px;
 }
 
 .parsha-btn-un:hover {

@@ -47,12 +47,25 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                     <div className="psukimText">{props.psukim}</div>
                 </div>
             </div>
-            : <div className="aliyah">
-                <span className="psukim">
-                    <span className="psukimText">{props.psukim}</span>
-                </span>
-            </div>}
-        </div>
+            : <>
+                {props.available ? <></>
+                : <div className="locked">
+                    <div className="aliyah-locked">
+                        <div className="lockbox" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                            <div className="hover-color">
+                                <img src="/lock-solid-full.svg" alt="Locked Icon"/>
+                            </div>
+                            {!hovered ? <>
+                                <div className="aliyahLabel">{aliyahLabels[props.a-1]}</div>
+                                <span>Locked</span>
+                            </> : <div className="locked-msg">
+                                <span>Another reader has<br/>registered for this aliyah.</span>
+                            </div>}
+                            </div>
+                        </div>
+                    </div>} 
+            </> }
+        </div> 
     )
 }
 
@@ -85,7 +98,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                     ))}
                 </div>
 
-                {(props.locked || props.lockedArr.every((a: boolean) => a) || 1) && (
+                {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
                     <div className="locked-bar">
                         <img src="/lock-solid-full.svg" alt="Locked Icon" />
                         <span>This parsha has been restricted by your shul.</span>
@@ -124,7 +137,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     a={index + 1}
                                     psukim={p}
                                     locked={true}
-                                    available={!props.lockedArr[index] && !!props.readers[index]}
+                                    available={true}
                                     reader={props.readers[index]}
                                 />
                             ))
