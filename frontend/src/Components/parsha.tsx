@@ -146,7 +146,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     a={index + 1}
                                     psukim={p}
                                     locked={false}
-                                    available={false}
+                                    available={true}
                                     reader={props.readers[index]}
                                 />
                             ))

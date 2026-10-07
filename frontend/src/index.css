@@ -1209,8 +1209,8 @@ h4 {
 .pandora-box,
 .pandora-box-hover {
     box-sizing: border-box;
-    flex: 0 0 240px;
-    width: 240px;
+    flex: 0 0 255px;
+    width: 255px;
     height: 40px;
 }
 
@@ -1225,7 +1225,7 @@ h4 {
 
     align-items: center;
 
-    width: 240px;
+    width: 255px;
     height: 40px;
 
     background-color: #f36767;
@@ -1261,7 +1261,7 @@ h4 {
     margin-left: 15px;
     align-items: center;
 
-    width: 240px;
+    width: 255px;
     height: 40px;
 
     color: black;
@@ -1291,7 +1291,7 @@ h4 {
     margin-left: 15px;
     align-items: center;
 
-    width: 240px;
+    width: 255px;
     height: 40px;
 
     color: #66B1F2;
