@@ -1154,7 +1154,7 @@ h4 {
     font-family: Fustat;
     font-size : 20px;
     font-weight: 550;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.7));
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 
     padding-right: 12px;
     padding-left: 12px;
@@ -1187,7 +1187,7 @@ h4 {
     padding: 5px;
     background-color: rgb(251, 252, 252, .15);
 
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 
 .locked {
@@ -1227,7 +1227,7 @@ h4 {
     padding: 5px;
     background-color: rgb(251, 252, 252, .15);
 
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 
 .locked-msg {
