@@ -12,6 +12,10 @@
     font-style: normal;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     background: #d9d9d9;
     margin: 0;
@@ -1112,9 +1116,13 @@ h4 {
 }
 
 .parsha {
+    display: flex;
+    flex-direction: column;
+
     margin-left: 50px;
     padding-bottom: 1.25%;
     width: 60%;
+
 
     background-color: white;
     border-radius: 15px;
@@ -1192,36 +1200,36 @@ h4 {
 
 .locked {
     display: flex;
-    flex-direction: column;
     gap: 1px;
 }
 
 .lockbox {
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    gap: 6px;
 
-    border: none;
-    border-radius: 12px 12px 12px 12px;
+    border: 1px solid transparent;
+    border-radius: 12px;
 
     margin-left: 15px;
     align-items: center;
-    padding-left: 5px;
 
-    width: 110px;
-    height: 38px;
+    width: 220px;
+    height: 40px;
 
     background-color: #f36767;
 
     color: white;
     font-family: Fustat;
-    font-size: 15px;
-    font-weight: 550;
+    font-size: 18px;
+    font-weight: 300;
 }
 
 .lockbox img {
-    width: 30px;
-    height: 30px;
+    box-sizing: border-box;
+    width: 31px;
+    height: 31px;
+    margin-left: 5px;
 
     border-radius: 10px;
     padding: 5px;
@@ -1230,19 +1238,62 @@ h4 {
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 
-.locked-msg {
-    margin-left: 15px;
+.hover-color {
+    height: 40px;
+    padding-top: 4.5px;
+}
 
-    color: #f36767;
-    font-family: Fustat;
+.lockbox:hover {
+    background-color: white;
+    border: 1px solid #f36767;
 
-    padding-bottom: 7.5px;
+    .hover-color {
+        width: 20%;
+        height: 40px;
+
+        background-color: #f36767;
+        border-radius: 11px;
+    }
+
+    .locked-msg {
+        display: flex;
+
+        width: 150px;
+        height: 40px;
+
+        align-items: center;
+        justify-content: center;
+
+        line-height: 0.9;
+
+        background-color: white;
+        border-bottom: 1px solid #f36767;
+        border-top: 1px solid #f36767;
+        border-radius: 0;
+
+        font-family: Fustat;
+        font-size: 15px;
+        font-weight: 300;
+        color: #f36767;
+
+
+        white-space: nowrap;
+        z-index: 10;
+    }
 }
 
 .parsha h3 {
     margin-top: 2%;
     margin-left: 2%;
     font-weight: 700;
+}
+
+.aliyahLabel {
+    width: 95px;
+
+    font-family: Fustat;
+    font-size: 18px;
+    font-weight: 900;
 }
 
 .psukim {
@@ -1321,13 +1372,16 @@ h4 {
     display: flex;
     flex-direction: row;
     align-items: center;
+    padding-bottom: 7.5px;
+    gap: 10px;
 }
 
 .aliyah {
     display: flex;
     flex-direction: fow;
     align-items: center;
-    margin-bottom: 7.5px;
+    padding-bottom: 7.5px;
+    gap: 10px;
 }
 
 .footer {

@@ -21,37 +21,33 @@ interface Aliyah {
     psukim: string;
     available: boolean;
     locked: boolean;
+    reader: string;
 }
 
 function Aliyah(props: Aliyah): React.JSX.Element {
-    const [available, toggleAvailable] = useState<boolean>(props.available);
+    const [hovered, setHovered] = useState<boolean>(false);
 
-    function aliyahText(): string {
-        return props.a < 8 ? `Aliyah ${props.a}` : (props.a === 8 ? "Maftir" : "Haftarah");
-    }
-
-    function buttonText(): string {
-        return available ? ("Register for " + aliyahText()) : ("Unavailable");
-    }
-
-    function buttonClass(): string {
-        return available ? "av" : "un"
-    }
+    const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
 
     return (
         <div>
             { props.locked ? <div className="locked">
                 <div className="aliyah-locked">
-                    <div className="lockbox">
-                        <img src="/lock-solid-full.svg" alt="Locked Icon" />
-                        Locked
+                    <div className="lockbox" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                        <div className="hover-color">
+                            <img src="/lock-solid-full.svg" alt="Locked Icon"/>
+                        </div>
+                        {!hovered ? <>
+                            <div className="aliyahLabel">{aliyahLabels[props.a-1]}</div>
+                            <span>Locked</span> 
+                        </> : <div className="locked-msg">
+                            <span>This aliyah has been<br/>restricted by your shul.</span>
+                        </div>}
                     </div>
                     <div className="psukimText">{props.psukim}</div>
                 </div>
-                <div className="locked-msg">This aliyah has been restricted by your shul.</div>
             </div>
             : <div className="aliyah">
-                <button className={`parsha-btn-${buttonClass()}`} onClick={() => {toggleAvailable(!available)}}>{buttonText()}</button>
                 <span className="psukim">
                     <span className="psukimText">{props.psukim}</span>
                 </span>
@@ -60,7 +56,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-function Parsha({hDate, gregDate, occassions, locked, lockedArr, desc, psukim}: ParshaObj): React.JSX.Element {
+function Parsha(props: ParshaObj): React.JSX.Element {
     function formatOccassionView(o: string): string {
         const lowerCase_o: string = o.toLowerCase();
 
@@ -82,14 +78,14 @@ function Parsha({hDate, gregDate, occassions, locked, lockedArr, desc, psukim}: 
             <div className="notices">
 
                 <div className="occassion-bar">
-                    {occassions.map((o: string, index) => (
+                    {props.occassions.map((o: string, index) => (
                         <div key={index} className="occassion">
                             {formatOccassionView(o)}
                         </div>
                     ))}
                 </div>
 
-                {(locked || lockedArr.every((a: boolean) => a) || 1) && (
+                {(props.locked || props.lockedArr.every((a: boolean) => a) || 1) && (
                     <div className="locked-bar">
                         <img src="/lock-solid-full.svg" alt="Locked Icon" />
                         <span>This parsha has been restricted by your shul.</span>
@@ -99,27 +95,28 @@ function Parsha({hDate, gregDate, occassions, locked, lockedArr, desc, psukim}: 
             </div>
 
             <div>
-                <h3>{desc}</h3>
+                <h3>{props.desc}</h3>
 
                 <div>
                     <h5>
-                        <span className="engl">{gregDate}</span>
-                        <span className="heb">{hDate}</span>
+                        <span className="engl">{props.gregDate}</span>
+                        <span className="heb">{props.hDate}</span>
                     </h5>
                 </div>
 
                 <div className="divider"></div>
 
                 <div>
-                    {psukim.map((p: string, index) =>
+                    {props.psukim.map((p: string, index) =>
                         p !== "null" ? (
-                            (locked ? (
+                            (props.locked ? (
                                 <Aliyah
                                     key={index}
                                     a={index + 1}
                                     psukim={p}
                                     locked={true}
                                     available={false}
+                                    reader={props.readers[index]}
                                 />
                             ) : (
                                 <Aliyah
@@ -127,7 +124,8 @@ function Parsha({hDate, gregDate, occassions, locked, lockedArr, desc, psukim}: 
                                     a={index + 1}
                                     psukim={p}
                                     locked={true}
-                                    available={!lockedArr[index]}
+                                    available={!props.lockedArr[index] && !!props.readers[index]}
+                                    reader={props.readers[index]}
                                 />
                             ))
                         ) : null
