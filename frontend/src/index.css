@@ -795,31 +795,33 @@ h4 {
 }
 
 .content-window {
+    --content-offset: 245px;
+    --parsha-left-gap: calc(250px + 1.5vw - var(--content-offset));
     display: flex;
     flex-direction: column;
     gap: 20px; 
 
     margin-top: 65px;
-    margin-left: 245px;
+    margin-left: var(--content-offset);
     width: 77.5%;
     padding-top: 1.5%;
 }
 
 @media (max-width: 1200px) {
     .content-window {
-        margin-left: 150px;
+        --content-offset: 150px;
     }
 }
 
 @media (max-width: 715px) {
     .content-window {
-        margin-left: 90px;
+        --content-offset: 90px;
     }
 }
 
 .welcomeBar {
-    margin-left: 50px;
-    width: 100%;
+    margin-left: var(--parsha-left-gap);
+    width: calc(100% + 50px - var(--parsha-left-gap));
     padding: 5px;
 
     background-color: white;
@@ -846,9 +848,9 @@ h4 {
     justify-content: left;
     align-content: center;
 
-    margin-left: 50px;
+    margin-left: var(--parsha-left-gap);
     min-height: 75px;
-    width: 60%;
+    width: calc(58.75% + 50px - var(--parsha-left-gap));
 
     background-color: white;
     border-radius: 15px;
@@ -1119,9 +1121,9 @@ h4 {
     display: flex;
     flex-direction: column;
 
-    margin-left: 50px;
+    margin-left: var(--parsha-left-gap);
     padding-bottom: 0.45%;
-    width: 60%;
+    width: calc(58.75% + 50px - var(--parsha-left-gap));
 
 
     background-color: white;
@@ -1130,31 +1132,23 @@ h4 {
 
 .notices {
     display: flex;
-    flex-direction: column;
-
-    border-radius: 15px 15px 0px 0px;
-
-    background-color: #66B1F2;
-}
-
-.occassion-bar {
-    display: flex;
     flex-direction: row;
-    background-color: #66B1F2;
-    height: 45px;
-    width: 100%;
-
-    padding-top: 5px;
-    padding-left: 5px;
-    padding-bottom: 5px;
+    flex-wrap: wrap;
 
     border-radius: 15px 15px 0px 0px;
+
+    background-color: #66B1F2;
+
+    gap: 5px;
+
+    min-height: 45px;
+    width: 100%;
+    padding: 5px;
 }
 
 .occassion {
     border-radius: 10px;
     align-content: center;
-    margin-right: 5px;
 
     background-color:rgb(251, 252, 252, .15); 
 
@@ -1168,6 +1162,13 @@ h4 {
     padding-left: 12px;
 }
 
+.notices > div {
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-height: 35px;
+    overflow-wrap: anywhere;
+}
+
 .locked-bar {
     display: flex;
     flex-direction: row;
@@ -1179,7 +1180,7 @@ h4 {
     width: 100%;
     height: 45px;
 
-    background-color: #fe6767;
+    background-color: #66B1F2;
 
     color: white;
     font-family: Fustat;
@@ -1187,95 +1188,82 @@ h4 {
     font-weight: 550;
 }
 
-.locked-bar img {
-    width: 35px;
-    height: 35px;
+.locked-msg img {
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+    margin-bottom: 3px;
 
+    filter: drop-shadow(0 2px 3px rgba(187, 8, 8, 0.859));
+}
+
+.locked-msg {
     border-radius: 10px;
-    padding: 5px;
+    padding: 3px 12px 3px 12px;
     background-color: rgb(251, 252, 252, .15);
-
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
-}
-
-.locked {
-    display: flex;
-    width: 100%;
-    gap: 1px;
-}
-
-.lockbox,
-.lockbox-hover,
-.pandora-box,
-.pandora-box-hover {
-    box-sizing: border-box;
-    flex: 0 0 255px;
-    width: 255px;
-    height: 40px;
-}
-
-.lockbox,
-.lockbox-hover {
-    display: flex;
-    flex-direction: row;
-    gap: 7px;
-
-    border: 1px solid transparent;
-    border-radius: 12px;
-
-    align-items: center;
-
-    width: 255px;
-    height: 40px;
-
-    background-color: #f36767;
 
     color: white;
     font-family: Fustat;
-    font-size: 18px;
-    font-weight: 300;
+    font-size : 20px;
+    font-weight: 550;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
 
-.lockbox img,
-.lockbox-hover img {
-    box-sizing: border-box;
-    width: 31px;
-    height: 31px;
-    margin-left: 5px;
+.pandora-box,
+.pandora-box-hover {
+    width: 300px;
+    flex: 0 1 300px;
+    max-width: 100%;
+    min-width: 0;
+    height: 40px;
 
-    border-radius: 10px;
-    padding: 5px;
-    background-color: rgb(251, 252, 252, .15);
+    color: black;
+    font-family: Fustat;
+    font-size: 15px;
+    font-weight: 500;
 
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+    button {
+        border-radius: 7.5px;
+        width: 125px;
+        margin-left: 40px;
+        margin-right: 20px;
+    }
+
+    img {
+        box-sizing: border-box;
+        width: 31px;
+        height: 31px;
+
+        border-radius: 10px;
+        padding: 5px;
+        background-color: rgb(100, 176, 242, 0.15);
+
+        filter: drop-shadow(0 2px 3px rgba(187, 8, 8, 0.532));
+    }
+
+    .locked {
+        display: flex;
+        flex-direction: row;
+
+        gap: 10px;
+        margin-left: 40px;
+        margin-right: 0;
+        flex-shrink: 0;
+        align-items: center;
+    }
 }
 
 .pandora-box {
     display: flex;
     flex-direction: row;
-    gap: 40px;
 
     border: 1px solid transparent;
     border-radius: 12px;
 
-    margin-left: 15px;
     align-items: center;
-
-    width: 255px;
-    height: 40px;
-
-    color: black;
-    font-family: Fustat;
-    font-size: 18px;
-    font-weight: 300;
 
     button {
         border: 1px solid black;
-        border-radius: 7.5px;
-
-        width: 115px;
-        margin-right: 20px;
-
         background-color: rgb(255, 255, 255, 0);
     }
 }
@@ -1283,21 +1271,13 @@ h4 {
 .pandora-box-hover {
     display: flex;
     flex-direction: row;
-    gap: 40px;
 
     border: 1px solid transparent;
     border-radius: 12px;
 
-    margin-left: 15px;
     align-items: center;
 
-    width: 255px;
-    height: 40px;
-
-    color: #66B1F2;
-    font-family: Fustat;
-    font-size: 18px;
-    font-weight: 300;
+    color: white;
 
     .aliyah-label-hover {
         color: white;
@@ -1320,57 +1300,15 @@ h4 {
     }
 }
 
-.pandoraBox .aliyah-label,
-.pandoraBox .aliyah-label-hover {
-        margin-left: 15px;
+.pandora-box .aliyah-label,
+.pandora-box-hover .aliyah-label-hover {
+        margin-left: 0;
+        flex-shrink: 0;
     }
-
-.hover-color {
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.lockbox-hover {
-    background-color: white;
-    border: 1px solid #f36767;
-
-    .hover-color {
-        width: 20%;
-
-        background-color: #f36767;
-        border-radius: 5px 0px 0px 5px;
-    }
-
-    .locked-msg {
-        display: flex;
-
-        width: 150px;
-        height: 100%;
-
-        margin-left: 5px;
-        align-items: center;
-        justify-content: center;
-
-        line-height: 1.0;
-
-        background-color: white;
-        border-radius: 0;
-
-        font-family: Fustat;
-        font-size: 15px;
-        font-weight: 300;
-        color: #f36767;
-
-
-        white-space: nowrap;
-        z-index: 10;
-    }
-}
 
 .parsha h3 {
     margin-top: 2%;
-    margin-left: 2%;
+    margin-left: 2.5%;
     font-weight: 700;
 }
 
@@ -1424,9 +1362,9 @@ h4 {
     font-size: 16.5px;
     font-family: Fustat;
 
-    margin-left: 2%;
-
-    width: 450px;
+    flex: 1 1 200px;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .psukim-text-hover {
@@ -1449,11 +1387,11 @@ h4 {
 
 .parsha h5 {
     font-family: Fustat;
-    margin-left: 2%
+    margin-left: 2.5%;
 }
 
 .parsha .divider {
-    margin: 2%;
+    margin: 2% auto;
     width: 95%;
 
     border-color: grey;
@@ -1462,9 +1400,15 @@ h4 {
 .aliyot {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
 
-    margin-left: 35px;
+    padding: 0;
+    min-width: 0;
+}
+
+.aliyot > div {
+    width: 100%;
+    min-width: 0;
 }
 
 .aliyah-locked,
@@ -1473,17 +1417,19 @@ h4 {
 .aliyah-hover {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
 
     align-items: center;
 
-    width: 95%;
+    width: 98.5%;
+    margin-inline: auto;
 
     border-radius: 12px;
     align-items: center;
 
     gap: 10px;
-    padding-bottom: 3.75px;
-    padding-top: 3.75px;
+    padding: 3.75px 5px;
+    padding-left: calc(1.75% + 4px);
 }
 
 .aliyah-locked-hover {

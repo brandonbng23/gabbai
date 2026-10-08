@@ -32,20 +32,16 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     return (
         <div>
             { props.locked ? <>
-                <div className={`aliyah-locked${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-                    <div className={`lockbox${hovered ? "-hover" : ""}`}>
-                        <div className="hover-color">
-                            <img src="/lock-solid-full.svg" alt="Locked Icon"/>
+               <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                    <div className={`pandora-box${hovered ? "-hover" : ""}`}>
+                        <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
+                        <div className="locked">
+                            <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
+                            Locked
                         </div>
-                        {!hovered ? <>
-                            <div className="aliyah-label">{aliyahLabels[props.a-1]}</div>
-                            <span style={{ marginLeft: "15px"}}>Locked</span> 
-                        </> : <div className="locked-msg">
-                            <span>This aliyah has been<br/>restricted by your shul.</span>
-                        </div>}
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
-                </div>
+               </div>
             </>
             : <>
                 {props.available ? <>
@@ -57,22 +53,18 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                 </div>
                 </>
-                : <>
-                    <div className={`aliyah-locked${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-                        <div className={`lockbox${hovered ? "-hover" : ""}`}>
-                            <div className="hover-color">
-                                <img src="/lock-solid-full.svg" alt="Locked Icon"/>
-                            </div>
-                            {!hovered ? <>
-                                <div className="aliyah-label">{aliyahLabels[props.a-1]}</div>
-                                <span style={{ marginLeft: "15px"}}>Locked</span>
-                            </> : <div className="locked-msg">
-                                <span>Another reader has<br/>registered for this aliyah.</span>
-                            </div>}
-                            </div>
-                            <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
+                :  <>
+                <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                    <div className={`pandora-box${hovered ? "-hover" : ""}`}>
+                        <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
+                        <div className="locked">
+                            <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
+                            Unavailable
                         </div>
-                    </>} 
+                    </div>
+                    <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
+                </div>
+                </>} 
             </> }
         </div> 
     )
@@ -98,22 +90,17 @@ function Parsha(props: ParshaObj): React.JSX.Element {
         <div className="parsha">
 
             <div className="notices">
-
-                <div className="occassion-bar">
-                    {props.occassions.map((o: string, index) => (
-                        <div key={index} className="occassion">
-                            {formatOccassionView(o)}
-                        </div>
-                    ))}
-                </div>
-
                 {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
-                    <div className="locked-bar">
+                    <div className="locked-msg">
                         <img src="/lock-solid-full.svg" alt="Locked Icon" />
-                        <span>This parsha has been restricted by your shul.</span>
+                        This parsha has been locked by your shul.
                     </div>
                 )}
-
+                {props.occassions.map((o: string, index) => (
+                    <div key={index} className="occassion">
+                        {formatOccassionView(o)}
+                    </div>
+                ))}
             </div>
 
             <div>
@@ -136,7 +123,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     key={index}
                                     a={index + 1}
                                     psukim={p}
-                                    locked={true}
+                                    locked={props.locked}
                                     available={false}
                                     reader={props.readers[index]}
                                 />
@@ -145,8 +132,8 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                                     key={index}
                                     a={index + 1}
                                     psukim={p}
-                                    locked={false}
-                                    available={true}
+                                    locked={props.lockedArr[index]}
+                                    available={index % 2 === 0 ? false : true}
                                     reader={props.readers[index]}
                                 />
                             ))
