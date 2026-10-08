@@ -143,12 +143,7 @@ export class Aliyah {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
-    /* Finds verses read for each aliyah according to schedule settings
-     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-     * @param flag: boolean indicating control flow when the method is called recusively 
-     * @returns: string repersenting verses to be read for argued aliyah */
-    tradPsukim(a: number, flag: boolean): string | void {
-
+    private specialReadingName(): string | null {
         const specialShabbat =
             this.occassions.includes("Shabbat Shuva") ? "Shabbat Shuva" :
             this.occassions.includes("Shabbat Shirah") ? "Shabbat Shirah" :
@@ -161,9 +156,34 @@ export class Aliyah {
             this.occassions.includes("Shabbat Nachamu") ? "Shabbat Nachamu" :
             null;
 
+        if (specialShabbat) {
+            return specialShabbat;
+        }
+
+        // The combined Chanukah reading already specifies its own maftir and haftarah.
+        if (this.desc === "Chanukah VII Shabbat Rosh Chodesh") {
+            return null;
+        }
+
+        if (this.occassions.some(o => o === "Shabbat Rosh Chodesh" || /^Rosh Chodesh(?:\s|$)/.test(o))) {
+            return "Shabbat Rosh Chodesh";
+        }
+
+        if (this.occassions.includes("Machar Chodesh") || this.occassions.includes("Shabbat Machar Chodesh")) {
+            return "Shabbat Machar Chodesh";
+        }
+
+        return null;
+    }
+
+    /* Finds verses read for each aliyah according to schedule settings
+     * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
+     * @param flag: boolean indicating control flow when the method is called recusively
+     * @returns: string repersenting verses to be read for argued aliyah */
+    tradPsukim(a: number, flag: boolean): string | void {
         const readingName = flag
             ? this.desc
-            : (specialShabbat ?? this.desc);
+            : (this.specialReadingName() ?? this.desc);
 
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename);
@@ -385,6 +405,19 @@ export class Aliyah {
     }
 
     // Traditional readings
+    // A special maftir takes precedence over the weekly triennial maftir.
+    // A "ref" maftir (such as Machar Chodesh) keeps the weekly reading.
+    const specialReading = this.specialReadingName()
+        ?? (this.desc === "Chanukah VII Shabbat Rosh Chodesh" ? this.desc : null);
+    if (a === 8 && specialReading) {
+        const traditionalRows = fs.readFileSync(path.join(__dirname, "../data", "psukim.csv"), "utf8")
+            .split("\n").map(row => row.split(",").map(cell => cell.trim()));
+        const specialMaftir = traditionalRows.find(row => row[0] === specialReading)?.[8];
+        if (specialMaftir && specialMaftir !== "ref") {
+            return specialMaftir;
+        }
+    }
+
     if (this.settings.getMaftir() === "trad" && a === 8) {
         return this.tradPsukim(8, false) ?? "";
     }
