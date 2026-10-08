@@ -167,6 +167,13 @@ export class Parsha {
             }
         }
 
+        // Identifying Machar Chodesh
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate().prev())) {
+                occassions = [...occassions, "Machar Chodesh"];
+            }
+        }
+
         // Identifying Chanukah
         const chanukah = holidays.filter((h: HolidayEvent) => h.hasFlag("CHANUKAH_CANDLES"));
 
