@@ -386,7 +386,7 @@ export class Schedule {
                     desc = desc.replace(this.hebYear.toString(), "");
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                     if (!desc.includes("Shabbat")) {
-                        desc += "Shabbat";
+                        desc = `${desc.trimEnd()} Shabbat`;
                     }
 
                     if (desc.includes("IS")) {
