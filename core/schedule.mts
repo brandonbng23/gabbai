@@ -4,7 +4,8 @@ import { HebrewCalendar,
          ParshaEvent,
          getHolidaysOnDate,
          Event,
-         HolidayEvent } from '@hebcal/core'
+         HolidayEvent,
+         Sedra } from '@hebcal/core'
 import { ReadingSet } from "./readingSet.mts"
 import { Parsha } from "./parsha.mts"
 import { Settings } from "./settings.mts"
@@ -365,13 +366,9 @@ export class Schedule {
                 schedule = [...schedule, (new Parsha(this.settings,
                                            desc, 
                                            this.hebYear, 
-                                           new ReadingSet(desc,
-                                                          this.calculateAliyot(desc),
-                                                          this.settings,
-                                                          this.readingOccassion(reading),
-                                                          this.hebYear),
                                 this.calculateAliyot(desc),
-                                "Shabbat"))];
+                                false,
+                                new Sedra(this.hebYear, this.settings.getIL()).find(desc)))];
 
                 parshaIndex++;
             } else if (this.special[i] == 1) {
@@ -381,14 +378,7 @@ export class Schedule {
                     .replace("(CH''M)", "Chol HaMoed")
                     .replace("  ", " ");
 
-                if (desc.includes("Chol HaMoed")) {
-                    desc = desc.replace("I", "")
-                               .replace("I", "")
-                               .replace("I", "")
-                               .replace("V", "")
-                               .replace("  ", " ")
-                               .replace("  ", " ");
-                }
+           
 
                 desc = desc.trim();
 
@@ -396,7 +386,7 @@ export class Schedule {
                     desc = desc.replace(this.hebYear.toString(), "");
                     desc = desc.replace("Chol HaMoed", "Chol HaMoed Shabbat");
                     if (!desc.includes("Shabbat")) {
-                        desc += "Shabbat";
+                        desc = `${desc.trimEnd()} Shabbat`;
                     }
 
                     if (desc.includes("IS")) {
@@ -410,28 +400,19 @@ export class Schedule {
                     let parsha = new Parsha(this.settings,
                                             desc,
                                             this.hebYear,
-                                            new ReadingSet(desc, 
-                                                        this.calculateAliyot(desc),
-                                                        this.settings, 
-                                                        "", 
-                                                        this.hebYear),
                                             this.calculateAliyot(desc),
-                                            desc);
+                                            true,
+                                            ev.getDate());
 
-                    parsha.setHebDate(ev.getDate());
                     schedule = [...schedule, parsha];
                     
                 } else {
                     let parsha = new Parsha(this.settings,
                                             desc, 
                                             this.hebYear, 
-                                            new ReadingSet(desc, 
-                                                        this.calculateAliyot(desc),
-                                                        this.settings, 
-                                                        "", 
-                                                        this.hebYear), 
                                             this.calculateAliyot(desc), 
-                                            desc);
+                                            true,
+                                            ev.getDate());
 
                     parsha.setHebDate(ev.getDate());
                     schedule = [...schedule, parsha];

@@ -4,6 +4,9 @@ import type { ParshaData } from "../interfaces/parshaData.mts"
 
 import { HDate, 
          Sedra, 
+         HebrewCalendar,
+         HolidayEvent,
+         flags,
          Event as HebcalEvent } from '@hebcal/core';
 
 import fs from "fs";
@@ -27,7 +30,7 @@ export class Parsha {
     readingSet: ReadingSet;
 
     /* @field occassion: string repersenting when this parsha will be read (shabbat or specific yontif, etc.) */
-    occassion: string;
+    sedra: boolean;
 
     /* @field a: number repersenting amount of aliyot (number of aliyot) to be read. Ranges from 
      * 1-7, not including Maftir and Haftarah. @default: 7 */
@@ -37,20 +40,32 @@ export class Parsha {
      * (false) or Israeli (true) reading pattern @default: false (diasparic) */
     il: boolean;
 
-    /* @field hebDate: HDate repersenting the Hebrew date when this parsha will be read */
-    hebDate: HDate | null = null;
+    /* @field hebDate: HDate repersenting the Hebrew date when this parsha will be read. 
+     * IMPORTANT: HebDate should be passed in as null if  */
+    hebDate: HDate | null;
 
     /* @field gregData: Date repersenting the Gregorian date when this parsha will be read */
     gregDate: Date | null = null;
 
-    constructor(settings: Settings, desc: string, hebYear: number, readingSet: ReadingSet, a: number, occassion: string) {
+    /* Array of strings repersenting occassions to be observed that Shabbat e.g. Shabbat, Special Shabbatot, 
+     * Yontif */
+    occassions: string[]
+
+    constructor(settings: Settings, desc: string, hebYear: number, a: number, sedra: boolean, hebDate: HDate | null) {
         this.settings = settings;
         this.il = this.settings.getIL();
         this.desc = desc;
         this.hebYear = hebYear;
-        this.readingSet = readingSet;
         this.a = a;
-        this.occassion = occassion;
+        this.sedra = sedra;
+        this.hebDate = hebDate;
+        this.occassions = this.findOccassions();
+
+        this.readingSet = new ReadingSet(this.desc, this.a, this.settings, this.occassions, this.hebYear)
+
+        if (!this.gregDate && this.hebDate) {
+            this.gregDate = new HebcalEvent(this.hebDate, this.desc).greg();
+        }
     }
 
     /* Accesses description (name) of parsha 
@@ -75,11 +90,114 @@ export class Parsha {
         return this.hebYear;
     }
 
-    /* Accesses occassion field
-    @returns string repersenting occassion when parsha will be read */
-    getOccassion(): string {
-        return this.occassion;
-    } 
+    /* Generates array of all occassions observed on date of reading. Shabbat always heads list, when applicable.
+     * Only includes occassions that impact reading.
+     * @returns array of strings each repersenting an observed occassion */
+    findOccassions(): string[] {
+        let occassions: string [] = [];
+
+        // Identifying Shabbat
+        if (this.gregDate?.getDay() === 6) {
+            occassions = ["Shabbat"];
+        }
+
+        // Identifying Yontifs
+        if (this.desc.toLowerCase().includes("rosh hashana")) {
+            occassions = [...occassions, this.desc.toLowerCase().includes("ii") ? "Rosh Hashana II" : "Rosh Hashana I"];
+        } else if (this.desc.toLowerCase().includes("yom kippur")) {
+            occassions = [...occassions, "Yom Kippur"];
+        } else if (this.desc.toLowerCase().includes("sukkot")) {
+            occassions = [...occassions, this.desc.toLowerCase().includes("viii") ? "Sukkot VIII" 
+                : (this.desc.toLowerCase().includes("vii") ? "Sukkot VII"
+                    : (this.desc.toLowerCase().includes("vi") ? "Sukkot VI"
+                        : (this.desc.toLowerCase().includes("v") ? "Sukkot V"
+                            : (this.desc.toLowerCase().includes("iv") ? "Sukkot IV"
+                                : (this.desc.toLowerCase().includes("iii") ? "Sukkot III"
+                                    : (this.desc.toLowerCase().includes("ii") ? "Sukkot II"
+                                        : "Sukkot I")
+                                )
+                            )
+                        )
+                    )
+                )
+            ];
+        } else if (this.desc.toLowerCase().includes("shmini")) {
+            occassions = [...occassions, "Shmini Atzeret"];
+        } else if (this.desc.toLowerCase().includes("simchat")) {
+            occassions = [...occassions, "Simchat Torah"];
+        } else if (this.desc.toLowerCase().includes("pesach")) {
+            occassions = [...occassions, this.desc.toLowerCase().includes("viii") ? "Pesach VIII" 
+                : (this.desc.toLowerCase().includes("vii") ? "Pesach VII"
+                    : (this.desc.toLowerCase().includes("vi") ? "Pesach VI"
+                        : (this.desc.toLowerCase().includes("v") ? "Pesach V"
+                            : (this.desc.toLowerCase().includes("iv") ? "Pesach IV"
+                                : (this.desc.toLowerCase().includes("iii") ? "Pesach III"
+                                    : (this.desc.toLowerCase().includes("ii") ? "Pesach II"
+                                        : "Pesach I")
+                                )
+                            )
+                        )
+                    )
+                )
+            ];
+        } else if (this.desc.toLowerCase().includes("shavuot")) {
+            occassions = [...occassions, this.desc.toLowerCase().includes("ii") ? "Shavuot II" : "Shavuot I"];
+        }
+
+        const holidays: HolidayEvent[] = HebrewCalendar.getHolidaysForYearArray(this.hebYear, this.il);   
+
+        // Identifying Special Shabbatot
+        const specialShabbatot = holidays.filter((h: HolidayEvent) => h.hasFlag("SPECIAL_SHABBAT"));
+
+        for (let ev of specialShabbatot) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                // If special shabbat, shabbat will not be redundantly added as an observed occassion
+                occassions = [...occassions, ev.getDesc()].filter((o: string) => o.toLowerCase() !== "shabbat");
+            }
+        }
+        
+        // Identifying Rosh Chodesh
+        const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
+
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                occassions = [...occassions, ev.getDesc()];
+                             
+
+            }
+        }
+
+        // Identifying Machar Chodesh
+        for (let ev of roshChodesh) {
+            if (this.hebDate?.isSameDate(ev.getDate().prev())) {
+                occassions = [...occassions, "Machar Chodesh"];
+            }
+        }
+
+        // Identifying Chanukah
+        const chanukah = holidays.filter((h: HolidayEvent) => h.hasFlag("CHANUKAH_CANDLES"));
+
+        for (let ev of chanukah) {
+            if (this.hebDate?.isSameDate(ev.getDate())) {
+                occassions = [...occassions, ev.getDesc().includes("1") ? "Chanukah I"
+                : (ev.getDesc().includes("2") ? "Chanukah II"
+                    : (ev.getDesc().includes("3") ? "Chanukah III"
+                        : (ev.getDesc().includes("4") ? "Chanukah IV"
+                            : (ev.getDesc().includes("5") ? "Chanukah V"
+                                : (ev.getDesc().includes("6") ? "Chanukah VI"
+                                    : (ev.getDesc().includes("7") ? "Chanukah VII"
+                                        : "Chanukah VIII")
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ];
+            }
+        }
+
+        return occassions;
+    }
 
     formatGregDateString(date: Date): string {
         const month = String(date.getMonth()+1).padStart(2, "0");
@@ -165,13 +283,13 @@ export class Parsha {
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
-            occassion: this.getOccassion(),
+            occassions: this.findOccassions(),
+            locked: id % 2 === 0 ? true : false,//this.readingSet.getLockStatus(),
+            lockedArr: [true, false, true, false, false, true, true, true, false], //this.readingSet.getLockStatusArr(),
             psukim: this.readingSet.getPsukimArr(),
             book: this.readingSet.getBook(),
-            parshaLockStatus: this.readingSet.getLockStatus(),
-            aliyotLockStatus: this.readingSet.getLockStatusArr(),
             readers: this.readingSet.getReaderArr(),
-            searchTerms: [...this.getSearchTerms(), this.occassion],
+            searchTerms: [...this.getSearchTerms(), ...this.findOccassions()],
             dateString: this.formatGregDateString(this.gregDate ?? new Date())
         };
     }

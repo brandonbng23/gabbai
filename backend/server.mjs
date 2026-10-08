@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
+import { fileURLToPath } from "node:url";
 import { getSchedule } from "./schedule.mjs";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -22,6 +23,8 @@ app.get("/api/schedule", (req, res) => {
     res.json(schedule);
 });
 
-app.listen(PORT, () => {
+app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
+
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`Backend running at http://localhost:${PORT}`);
 });

@@ -11,7 +11,7 @@ function App() {
     const hebYear = 5787;
 
     useEffect(() => {
-        fetch(`http://localhost:3000/api/schedule?year=${hebYear}`)
+        fetch(`/api/schedule?year=${hebYear}`)
             .then(response => response.json())
             .then(data => {
                 setSchedule(data);

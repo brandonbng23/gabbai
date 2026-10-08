@@ -16,27 +16,27 @@ export class ReadingSet {
     settings: Settings;
 
     /* @field special: string repersenting name of occassion that requires special reading to occur */
-    occassion: string;
+    occassions: string[];
 
     /* @field hebYear: number repersenting active Hebrew Year */
     hebYear: number;
 
     /* @field aliyot: array of Aliyah instances repersenting all aliyot to be part of this ReadingSet */
-    aliyot: Aliyah[];
+    aliyot: Aliyah[] = [];
 
     /* @field locked: boolean repersenting if this assignments for aliot within this reading set can be
      * edited by a (general) user (false) or not (true) */
-    locked: boolean;
+    locked: boolean = false;
 
-    constructor(desc: string, a: number, settings: Settings, occassion: string, hebYear: number) {
+    constructor(desc: string, a: number, settings: Settings, occassions: string[], hebYear: number) {
         this.desc = desc;
         this.a = a;
         this.settings = settings;
         
-        if (occassion) {
-            this.occassion = occassion;
+        if (occassions) {
+            this.occassions = occassions;
         } else {
-            this.occassion = "";
+            this.occassions = ["Shabbat"];
         }
 
         if (hebYear) {
@@ -45,19 +45,9 @@ export class ReadingSet {
             this.hebYear = this.settings.getHebYear();
         }
 
-        this.aliyot = [
-                        new Aliyah(this.desc, 1, null, this.settings),
-                        new Aliyah(this.desc, 2, null, this.settings),
-                        new Aliyah(this.desc, 3, null, this.settings),
-                        new Aliyah(this.desc, 4, null, this.settings),
-                        new Aliyah(this.desc, 5, null, this.settings),
-                        new Aliyah(this.desc, 6, null, this.settings),
-                        new Aliyah(this.desc, 7, null, this.settings),
-                        new Aliyah(this.desc, 8, null, this.settings),
-                        new Aliyah(this.desc, 9, null, this.settings)        
-        ]
-
-        this.locked = false;
+        for (let i = 0; i < 9; i++) {
+            this.aliyot = [...this.aliyot, new Aliyah(this.desc, i+1, null, this.occassions, this.settings)]
+        }
     }
 
     /* Sets locked status of entire ReadingSet as true. Flags individual readings to 
@@ -140,8 +130,8 @@ export class ReadingSet {
 
         for (let i = 0; i < psukim.length - 1; i++) {
             if (!psukim[i].includes(firstBook)) {
-                if (!this.occassion.toLowerCase().includes("chanukah")) {
-                    return "Yontifs"
+                  if (this.occassions.every((o: string) => !o.toLowerCase().includes("chanukah"))) {
+                    return "Yontifs";
                 }
             }
         }
@@ -196,8 +186,8 @@ export class ReadingSet {
             
         }
 
-        if (this.occassion) {
-            console.log("                   **" + this.occassion);
+        if (this.occassions) {
+            this.occassions.map((o: string) => console.log("\n                   **" + o));
         }
     }
 }

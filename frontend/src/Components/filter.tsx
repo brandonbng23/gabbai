@@ -171,7 +171,7 @@ function AdvancedFiltersButton(
             <span 
                 className="show-advanced-link"
                 onClick={updateAdvancedFilters}>{
-                    !showAdvanced ? "Search Advanced Filters" : "Hide Advanced Filters"
+                    !showAdvanced ? "Show Advanced Filters" : "Hide Advanced Filters"
                 }</span>
         </div>
     )
@@ -182,7 +182,7 @@ function Filter(
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
     return (
-        <div className="filterBar">
+        <div className={`filterBar${showAdvanced ? "" : " filterBar-collapsed"}`}>
             <div className="default-filters">
                 <TermSearch
                     nameFilter = {nameFilter}

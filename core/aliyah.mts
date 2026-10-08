@@ -37,12 +37,17 @@ export class Aliyah {
     /* @field type: string reperenting kind of reading: aliyah, maftir, or haftarah */
     type: string;
 
+    /* Array of strings repersenting occassions to be observed that Shabbat e.g. Shabbat, Special Shabbatot, 
+     * Yontif */
+    occassions: string[];
+
     /* RO: boolean repersenting if reading occurs on special reading occassion */
     RO: boolean = false;
 
-    constructor(desc: string, a: number, reader: User | null, settings: Settings) {
+    constructor(desc: string, a: number, reader: User | null, occassions: string[], settings: Settings) {
         this.desc = desc;
         this.a = a;
+        this.occassions = occassions;
 
         if (reader) {
             this.reader = reader;
@@ -138,44 +143,81 @@ export class Aliyah {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
+    private specialReadingName(): string | null {
+        const specialShabbat =
+            this.occassions.includes("Shabbat Shuva") ? "Shabbat Shuva" :
+            this.occassions.includes("Shabbat Shirah") ? "Shabbat Shirah" :
+            this.occassions.includes("Shabbat Shekalim") ? "Shabbat Shekalim" :
+            this.occassions.includes("Shabbat Zachor") ? "Shabbat Zachor" :
+            this.occassions.includes("Shabbat Parah") ? "Shabbat Parah" :
+            this.occassions.includes("Shabbat HaChodesh") ? "Shabbat HaChodesh" :
+            this.occassions.includes("Shabbat HaGadol") ? "Shabbat HaGadol" :
+            this.occassions.includes("Shabbat Chazon") ? "Shabbat Chazon" :
+            this.occassions.includes("Shabbat Nachamu") ? "Shabbat Nachamu" :
+            null;
+
+        if (specialShabbat) {
+            return specialShabbat;
+        }
+
+        // The combined Chanukah reading already specifies its own maftir and haftarah.
+        if (this.desc === "Chanukah VII Shabbat Rosh Chodesh") {
+            return null;
+        }
+
+        if (this.occassions.some(o => o === "Shabbat Rosh Chodesh" || /^Rosh Chodesh(?:\s|$)/.test(o))) {
+            return "Shabbat Rosh Chodesh";
+        }
+
+        if (this.occassions.includes("Machar Chodesh") || this.occassions.includes("Shabbat Machar Chodesh")) {
+            return "Shabbat Machar Chodesh";
+        }
+
+        return null;
+    }
+
     /* Finds verses read for each aliyah according to schedule settings
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah 1-7, 8: maftir, 9: haftarah)
-     * @param flag: boolean indicating control flow when the method is called recusively 
+     * @param flag: boolean indicating control flow when the method is called recusively
      * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a: number, flag: boolean): string | void {
-            let __filename = fileURLToPath(import.meta.url);
-            let __dirname = path.dirname(__filename)
-            let csvPath = path.join(__dirname, "../data", "psukim.csv")
-    
-            let sheet = fs.readFileSync(csvPath, "utf8");
-            let rows = sheet.split("\n");
-    
-            for (let row of rows) {
-                let cells: string[] = row.split(",");
-    
-                if (!this.desc?.trim() || flag) {
-                    if (cells[0] == this.desc) {
-                        return cells[a]?.trim();
-                    }
-                } else {
-                    if (cells[0].trim() == this.desc) {
-                        if (a == this.settings.getAliyotCount() && 
-                            this.desc == "Chanukah VII Shabbat Rosh Chodesh" &&
-                            this.settings.getSpecialSeventh()) {
-                            a = 7;
-                        }
+        const readingName = flag
+            ? this.desc
+            : (this.specialReadingName() ?? this.desc);
 
-                    if (cells[a].trim() == "ref") {
-                        return this.tradPsukim(a, true);
-                        
-                    } else {
-                        this.RO = true;
-                        return cells[a].trim();
-                    }
-                }
+        let __filename = fileURLToPath(import.meta.url);
+        let __dirname = path.dirname(__filename);
+        let csvPath = path.join(__dirname, "../data", "psukim.csv");
+
+        let sheet = fs.readFileSync(csvPath, "utf8");
+        let rows = sheet.split("\n");
+
+        for (let row of rows) {
+            let cells: string[] = row.split(",");
+
+            if (cells[0].trim() !== readingName.trim()) {
+                continue;
             }
+
+            if (
+                !flag &&
+                a === this.settings.getAliyotCount() &&
+                this.desc === "Chanukah VII Shabbat Rosh Chodesh" &&
+                this.settings.getSpecialSeventh()
+            ) {
+                a = 7;
+            }
+
+            const psukim = cells[a]?.trim();
+
+            if (psukim === "ref") {
+                return this.tradPsukim(a, true);
+            }
+
+            this.RO = true;
+            return psukim;
         }
-    }
+}
 
     /* Helper function finding verses for double parshiyot when subscribing to the triennial
      * @param a: int 1-9 repersenting an aliyah (1-7: aliyah, 8: maftir, 9: haftarh)
@@ -342,63 +384,84 @@ export class Aliyah {
      * @returns: string repersenting verses to be read for argued aliyah
      * NOTE: refers to help function doublePsukim() when finding verses for a double parsha */
     triPsukim(a: number): string {
-        let __filename = fileURLToPath(import.meta.url);
-        let __dirname = path.dirname(__filename)
-        let csvPath = path.join(__dirname, "../data", "triennial.csv")
+    let __filename = fileURLToPath(import.meta.url);
+    let __dirname = path.dirname(__filename);
+    let csvPath = path.join(__dirname, "../data", "triennial.csv");
 
-        let sheet = fs.readFileSync(csvPath, "utf8");
-        let rows = sheet.split("\n");
-        let cycle = this.calculateTriennial();
-        let verses = "";
+    let sheet = fs.readFileSync(csvPath, "utf8");
+    let rows = sheet.split("\n");
 
-        if (a < 8) {
-            if (this.desc == "Vaetchanan" && this.settings.getVaetchanan()) {
-                this.desc = "Vaetchanan T";
-            } else if (this.desc == "Vaetchanan") {
-                this.desc = "Vaetchanan F";
-            } 
-        } else if (this.desc.toLowerCase().includes("vaetchanan")) {
-            this.desc = "Vaetchanan";
-        }
+    let cycle = this.calculateTriennial();
+    let verses = "";
 
-        for (let row of rows) {
-            let cells = row.split(",");
+    // Determine which name to use for the triennial CSV.
+    // Do not modify this.desc.
+    let readingName = this.desc;
 
-            if (this.settings.getMaftir() == "trad" && a == 8) {
-                    return this.tradPsukim(8, false) ?? "";
-                } else if (a == 9) {
-                    return this.tradPsukim(9, false) ?? "";
-                } else if (this.settings.getYitro() && this.desc == "Yitro") {
-                    return this.tradPsukim(a, false) ?? "";
-                } 
-
-                if (cells[0] == this.desc) {
-                    if (cycle == 1) {
-                        verses = cells[a];
-                    } else if (cycle == 2) {
-                        verses = cells[a+8];
-                    } else if (cycle == 3) {
-                        verses = cells[a+16];
-                    }
-
-                    break;
-                }
-        }
-
-        if (this.RO) {
-            if (verses != "double") {
-                verses = this.tradPsukim(a, false) ?? "";
-            }
-        }
-
-        if (verses == "trad") {
-            verses = this.tradPsukim(a, false) ?? "";
-        } else if (verses == "double") {
-            verses = this.doublePsukim(a);
-        } 
-
-        return verses;
+    if (a < 8 && this.desc === "Vaetchanan") {
+        readingName = this.settings.getVaetchanan()
+            ? "Vaetchanan T"
+            : "Vaetchanan F";
     }
+
+    // Traditional readings
+    // A special maftir takes precedence over the weekly triennial maftir.
+    // A "ref" maftir (such as Machar Chodesh) keeps the weekly reading.
+    const specialReading = this.specialReadingName()
+        ?? (this.desc === "Chanukah VII Shabbat Rosh Chodesh" ? this.desc : null);
+    if (a === 8 && specialReading) {
+        const traditionalRows = fs.readFileSync(path.join(__dirname, "../data", "psukim.csv"), "utf8")
+            .split("\n").map(row => row.split(",").map(cell => cell.trim()));
+        const specialMaftir = traditionalRows.find(row => row[0] === specialReading)?.[8];
+        if (specialMaftir && specialMaftir !== "ref") {
+            return specialMaftir;
+        }
+    }
+
+    if (this.settings.getMaftir() === "trad" && a === 8) {
+        return this.tradPsukim(8, false) ?? "";
+    }
+
+    if (a === 9) {
+        return this.tradPsukim(9, false) ?? "";
+    }
+
+    if (this.settings.getYitro() && this.desc === "Yitro") {
+        return this.tradPsukim(a, false) ?? "";
+    }
+
+    for (let row of rows) {
+        let cells = row.split(",");
+
+        if (cells[0].trim() !== readingName.trim()) {
+            continue;
+        }
+
+        if (cycle === 1) {
+            verses = cells[a]?.trim() ?? "";
+        } else if (cycle === 2) {
+            verses = cells[a + 8]?.trim() ?? "";
+        } else if (cycle === 3) {
+            verses = cells[a + 16]?.trim() ?? "";
+        }
+
+        break;
+    }
+
+    if (this.RO) {
+        if (verses !== "double") {
+            verses = this.tradPsukim(a, false) ?? "";
+        }
+    }
+
+    if (verses === "trad") {
+        verses = this.tradPsukim(a, false) ?? "";
+    } else if (verses === "double") {
+        verses = this.doublePsukim(a);
+    }
+
+    return verses;
+}
 
     /* Helper function to find verses for aliyah (according to fields)
      * @returns string repersenting verses
@@ -408,28 +471,6 @@ export class Aliyah {
             return this.tradPsukim(this.a, false) ?? "";
         } else {
             return this.triPsukim(this.a) ?? "";
-        }
-    }
-
-    /* Helper function to find user data (according to fields)
-     * @returns User object (if field is not null) or field default string "available" */
-    figureReaderData() {
-        if (this.reader) {
-            return this.reader;
-        } else {
-            return null;
-        }
-    }
-
-    /* @returns aliyah data as an object according to fields and figuration methods
-     * NOTE: Uses figurePsukim and figureReaderData() (figuration methods) to find respective data */
-    getAliyahData() {
-        return {
-            event: this.desc,
-            type: this.type,
-            aliyahNum: this.a,
-            psukim: this.figurePsukim(),
-            reader: this.figureReaderData()
         }
     }
 }

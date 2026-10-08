@@ -5,14 +5,16 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "postinstall": "npm --prefix frontend ci --include=dev && npm run build",
     "test": "node ./core/main.mts",
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm --prefix frontend run build",
     "preview": "vite preview",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@hebcal/core": "^6.9.2",
+    "@hebcal/core": "^6.13.1",
     "@hebcal/leyning": "^9.5.4",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
