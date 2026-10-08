@@ -93,7 +93,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                 {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
                     <div className="locked-msg">
                         <img src="/lock-solid-full.svg" alt="Locked Icon" />
-                        This parsha has been locked by your shul.
+                        This parsha has been locked by your shul
                     </div>
                 )}
                 {props.occassions.map((o: string, index) => (
