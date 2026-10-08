@@ -171,7 +171,7 @@ function AdvancedFiltersButton(
             <span 
                 className="show-advanced-link"
                 onClick={updateAdvancedFilters}>{
-                    !showAdvanced ? "Search Advanced Filters" : "Hide Advanced Filters"
+                    !showAdvanced ? "Show Advanced Filters" : "Hide Advanced Filters"
                 }</span>
         </div>
     )
