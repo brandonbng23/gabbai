@@ -182,7 +182,7 @@ function Filter(
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
     return (
-        <div className="filterBar">
+        <div className={`filterBar${showAdvanced ? "" : " filterBar-collapsed"}`}>
             <div className="default-filters">
                 <TermSearch
                     nameFilter = {nameFilter}

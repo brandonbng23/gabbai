@@ -856,6 +856,15 @@ h4 {
     border-radius: 15px;
 }
 
+.filterBar-collapsed {
+    min-height: 0;
+    padding-bottom: 15px;
+}
+
+.filterBar-collapsed > span:empty {
+    display: none;
+}
+
 .default-filters {
     display: flex;
     flex-direction: row;
