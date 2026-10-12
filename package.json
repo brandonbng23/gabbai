@@ -8,9 +8,9 @@
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",
     "test": "node ./core/main.mts",
-    "dev": "vite",
+    "dev": "npm --prefix frontend run dev --",
     "build": "npm --prefix frontend run build",
-    "preview": "vite preview",
+    "preview": "npm --prefix frontend run preview --",
     "lint": "eslint ."
   },
   "dependencies": {
