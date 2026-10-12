@@ -28,7 +28,7 @@ interface Aliyah {
 function Lockbox({locked}: {locked: boolean}): React.JSX.Element {
     return (
         <div className="lockbox">
-            {locked? "Your shul has restricted this aliyah." : "Another reader has registered for this aliyah."}
+            {locked? "Your shul has locked this aliyah." : "Another reader has registered for this aliyah."}
         </div>
     )
 }
