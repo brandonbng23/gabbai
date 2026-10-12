@@ -24,8 +24,18 @@ interface Aliyah {
     reader: string;
 }
 
+// Only to be deployed when LOCKED (true) or UNAVAILABLE (false)
+function Lockbox({locked}: {locked: boolean}): React.JSX.Element {
+    return (
+        <div className="lockbox">
+            {locked? "Your shul has restricted this aliyah." : "Another reader has registered for this aliyah."}
+        </div>
+    )
+}
+
 function Aliyah(props: Aliyah): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
+    const [microHovered, setMicroHovered] = useState<boolean>(false);
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
 
@@ -35,9 +45,10 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
                         <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
-                        <div className="locked">
+                        <div className="locked" onMouseEnter={() => setMicroHovered(true)} onMouseLeave={() => setMicroHovered(false)}>
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Locked
+                            {microHovered ? <Lockbox locked={true} /> : null}
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -60,6 +71,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         <div className="locked">
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Unavailable
+                            {microHovered ? <Lockbox locked={false} /> : null}
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
