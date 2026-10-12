@@ -68,7 +68,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                 <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
                         <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
-                        <div className="locked">
+                        <div className="locked" onMouseEnter={() => setMicroHovered(true)} onMouseLeave={() => setMicroHovered(false)}>
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Unavailable
                             {microHovered ? <Lockbox locked={false} /> : null}
