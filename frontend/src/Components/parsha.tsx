@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HoverTip from "./hoverTip.tsx"
 
 /* Identifcal to ParshaData interface (gabbai/interfaces/parshaData.mts) */
 export interface ParshaObj {
@@ -24,31 +25,34 @@ interface Aliyah {
     reader: string;
 }
 
-// Only to be deployed when LOCKED (true) or UNAVAILABLE (false)
-function Lockbox({locked}: {locked: boolean}): React.JSX.Element {
-    return (
-        <div className="lockbox">
-            {locked? "Your shul has locked this aliyah." : "Another reader has registered for this aliyah."}
-        </div>
-    )
-}
+
+
+
 
 function Aliyah(props: Aliyah): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
-    const [microHovered, setMicroHovered] = useState<boolean>(false);
+    const [lockedHover, setLockedHover] = useState<boolean>(false);
+    const [numberHover, setNumberHover] = useState<boolean>(false);
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
+    const englAliyahLabels: string[] = ["First Aliyah", "Second Aliyah", "Third Aliyah", "Fourth Aliyah", "Fifth Aliyah", "Sixth Aliyah", "Seventh Aliyah"];
+    const aliyahLabel = (
+        <div className={`aliyah-label${hovered ? "-hover" : ""}`} onMouseEnter={() => setNumberHover(true)} onMouseLeave={() => setNumberHover(false)}>
+            {aliyahLabels[props.a-1]}
+            {numberHover && englAliyahLabels[props.a-1] ? (<HoverTip message={englAliyahLabels[props.a-1]} style={{width: "max-content", whiteSpace: "nowrap"}} />) : null}
+        </div>
+    );
 
     return (
         <div>
             { props.locked ? <>
                <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
-                        <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
-                        <div className="locked" onMouseEnter={() => setMicroHovered(true)} onMouseLeave={() => setMicroHovered(false)}>
+                        {aliyahLabel}
+                        <div className="locked" onMouseEnter={() => setLockedHover(true)} onMouseLeave={() => setLockedHover(false)}>
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Locked
-                            {microHovered ? <Lockbox locked={true} /> : null}
+                            {lockedHover ? <HoverTip message={"Your shul has locked this aliyah."} style={{width: "200px"}}/> : null}
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -58,7 +62,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                 {props.available ? <>
                 <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
-                        <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
+                        {aliyahLabel}
                         <button>Register</button>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -67,11 +71,11 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                 :  <>
                 <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
-                        <div className={`aliyah-label${hovered? "-hover" : ""}`}>{aliyahLabels[props.a-1]}</div>
-                        <div className="locked" onMouseEnter={() => setMicroHovered(true)} onMouseLeave={() => setMicroHovered(false)}>
+                        {aliyahLabel}
+                        <div className="locked" onMouseEnter={() => setLockedHover(true)} onMouseLeave={() => setLockedHover(false)}>
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Unavailable
-                            {microHovered ? <Lockbox locked={false} /> : null}
+                            {lockedHover ? <HoverTip message={"Another reader has registered for this aliyah."} style={{width: "200px"}} /> : null}
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>

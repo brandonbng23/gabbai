@@ -1310,18 +1310,20 @@ h4 {
     }
 }
 
-.lockbox {
+.hover-tip {
+    font-family: Fustat;
+    font-size: 15px;
+    font-weight: 500;
     position: absolute;
     top: calc(100% - 4px);
     left: 0;
     z-index: 10;
-    width: 225px;
+    min-width: 125px;
     pointer-events: none;
 
     background-color: rgba(239, 239, 239, 0.95);
     color: black;
     padding: 7.5px 2.5px 7.5px 15px;
-    margin-left: 5px;
 
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45)
@@ -1342,6 +1344,7 @@ h4 {
 }
 
 .aliyah-label, .aliyah-label-hover {
+    position: relative;
     width: 95px;
 
     font-family: Fustat;
