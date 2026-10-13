@@ -1,6 +1,6 @@
 import React, { useId } from "react";
 
-function InfoIcon({message, style}: {message: string, style?: React.CSSProperties}): React.JSX.Element {
+function InfoIcon({message, style}: {message: string | React.JSX.Element, style?: React.CSSProperties}): React.JSX.Element {
     const tooltipId = useId();
 
     return ( 
