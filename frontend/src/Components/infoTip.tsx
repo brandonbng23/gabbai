@@ -1,21 +1,15 @@
-import React, { useState } from "react";
-
-function InfoTip({message, style}: {message: string; style?: React.CSSProperties}): React.JSX.Element {
-    return (
-        <div className="hover-tip" style={style}>
-            {message}
-        </div>
-    )
-}
+import React, { useId } from "react";
 
 function InfoIcon({message, style}: {message: string, style?: React.CSSProperties}): React.JSX.Element {
-    const [hovered, setHovered] = useState<boolean>(false);
+    const tooltipId = useId();
 
     return ( 
-        <>
-            <div className="info-icon" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>i</div>
-            {hovered ? <InfoTip message={message} style={style}></InfoTip> : null}
-        </>
+        <span className="info-tip">
+            <button type="button" className="info-icon" aria-label="More information" aria-describedby={tooltipId}>i</button>
+            <span id={tooltipId} role="tooltip" className="hover-tip" style={style}>
+                {message}
+            </span>
+        </span>
     )
 }
 

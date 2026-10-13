@@ -1231,7 +1231,7 @@ h4 {
     font-size: 15px;
     font-weight: 500;
 
-    button {
+    > button {
         border-radius: 7.5px;
         width: 125px;
         margin-left: 40px;
@@ -1272,7 +1272,7 @@ h4 {
 
     align-items: center;
 
-    button {
+    > button {
         border: 1px solid black;
         background-color: rgb(255, 255, 255, 0);
     }
@@ -1293,7 +1293,7 @@ h4 {
         color: white;
     }
 
-    button {
+    > button {
         border: 1.5px solid white;
         border-radius: 7.5px;
 
@@ -1304,10 +1304,18 @@ h4 {
         background-color: rgb(255, 255, 255, 0);
     }
 
-    button:hover {
+    > button:hover {
         background-color: white;
         color: #66B1F2;
     }
+}
+
+.info-tip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    vertical-align: middle;
 }
 
 .hover-tip {
@@ -1315,35 +1323,55 @@ h4 {
     font-size: 15px;
     font-weight: 500;
     position: absolute;
-    top: calc(100% - 4px);
-    left: 0;
+    top: calc(100% + 8px);
+    right: 0;
     z-index: 10;
     min-width: 125px;
+    max-width: calc(100vw - 32px);
     pointer-events: none;
+    visibility: hidden;
+    text-align: left;
+    line-height: 1.4;
 
     background-color: rgba(239, 239, 239, 0.95);
     color: black;
-    padding: 7.5px 2.5px 7.5px 15px;
+    padding: 8px 12px;
 
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45)
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.info-tip:hover .hover-tip,
+.info-tip:focus-within .hover-tip {
+    visibility: visible;
 }
 
 .info-icon {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;   
 
-    border: 1px solid;
-    border-radius: 100px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
     
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    color: inherit;
+    cursor: help;
 
     text-align: center;
-    font-size: 8px;
+    font-size: 10px;
     font-family: monospace;
-    font-weight: 200;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.info-icon:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
 }
 
 .pandora-box .aliyah-label,
@@ -1358,9 +1386,38 @@ h4 {
     font-weight: 700;
 }
 
-.aliyah-label, .aliyah-label-hover {
+.parsha-title {
     position: relative;
-    width: 95px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 2.5%;
+}
+
+.parsha-title > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.parsha-title .info-tip {
+    position: static;
+    margin-left: auto;
+    color: #676767;
+}
+
+.parsha-title .hover-tip {
+    max-width: 100%;
+    background-color: #efefef;
+}
+
+.aliyah-label, .aliyah-label-hover {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+
+    position: relative;
+    width: 115px;
 
     font-family: Fustat;
     font-size: 18px;

@@ -33,11 +33,9 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
-    const englAliyahLabels: string[] = ["First Aliyah", "Second Aliyah", "Third Aliyah", "Fourth Aliyah", "Fifth Aliyah", "Sixth Aliyah", "Seventh Aliyah"];
     const aliyahLabel = (
         <div className={`aliyah-label${hovered ? "-hover" : ""}`}>
             {aliyahLabels[props.a-1]}
-            <InfoIcon message={englAliyahLabels[props.a-1]} style={{width: "max-content", whiteSpace: "nowrap"}} />
         </div>
     );
 
@@ -50,7 +48,6 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         <div className="locked">
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Locked
-                            <InfoIcon message={"Your shul has locked this aliyah."} style={{width: "200px"}}/> 
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -73,7 +70,6 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         <div className="locked">
                             <img src={hovered ? "/lock-solid-full.svg" : "/lock-solid-full-blue.svg"} alt="Locked Icon"/>
                             Unavailable
-                            <InfoIcon message={"Another reader has registered for this aliyah."} style={{width: "200px"}} />
                         </div>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -118,7 +114,13 @@ function Parsha(props: ParshaObj): React.JSX.Element {
             </div>
 
             <div>
-                <h3>{props.desc}</h3>
+                <h3 className="parsha-title">
+                    <span>{props.desc}</span>
+                    <InfoIcon
+                        message={"Aliyah names\nRishon = first · Sheni = second\nShlishi = third · Revi'i = fourth\nChamishi = fifth · Shishi = sixth\nShvi'i = seventh\nMaftir = concluding Torah reading\nHaftarah = reading from the Prophets\n\nLocked: your shul has locked this aliyah.\nUnavailable: another reader has registered.\nRegister: this aliyah is open for signup."}
+                        style={{width: "280px", whiteSpace: "pre-line"}}
+                    />
+                </h3>
 
                 <div>
                     <h5>
