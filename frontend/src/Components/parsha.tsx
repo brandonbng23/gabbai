@@ -27,7 +27,26 @@ interface Aliyah {
 
 
 
-
+function AliyahInfo(): React.JSX.Element {
+    return (
+        <div>
+            <div>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Rishon:</span>First</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Sheni:</span>Second</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Shlishi:</span>Third</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Revi'i:</span>Fourth</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Chamishi:</span>Fifth</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Shishi:</span>Sixth</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Shvi'i:</span>Seventh</span><br></br>
+            </div>
+            <div className="divider"></div>
+            <div>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Locked:</span>Your shul has locked this aliyah.</span><br></br>
+                <span><span style={{ fontWeight: "700", paddingRight: "7.5px"}}>Unavailable:</span>Another reader has registered for this aliyah.</span><br></br>
+            </div>
+        </div>
+    )
+}
 
 function Aliyah(props: Aliyah): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
@@ -117,7 +136,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                 <h3 className="parsha-title">
                     <span>{props.desc}</span>
                     <InfoIcon
-                        message={"Aliyah names\nRishon = first · Sheni = second\nShlishi = third · Revi'i = fourth\nChamishi = fifth · Shishi = sixth\nShvi'i = seventh\nMaftir = concluding Torah reading\nHaftarah = reading from the Prophets\n\nLocked: your shul has locked this aliyah.\nUnavailable: another reader has registered.\nRegister: this aliyah is open for signup."}
+                        message={<AliyahInfo />}
                         style={{width: "280px", whiteSpace: "pre-line"}}
                     />
                 </h3>
