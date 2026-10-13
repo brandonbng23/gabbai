@@ -14,7 +14,7 @@ function InfoIcon({message, style}: {message: string, style?: React.CSSPropertie
     return ( 
         <>
             <div className="info-icon" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>i</div>
-            <InfoTip message={message} style={style}></InfoTip>
+            {hovered ? <InfoTip message={message} style={style}></InfoTip> : null}
         </>
     )
 }
