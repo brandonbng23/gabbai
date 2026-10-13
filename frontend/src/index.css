@@ -1327,8 +1327,23 @@ h4 {
 
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45)
-    
+}
 
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;   
+
+    border: 1px solid;
+    border-radius: 100px;
+    
+    width: 15px;
+    height: 15px;
+
+    text-align: center;
+    font-size: 8px;
+    font-family: monospace;
+    font-weight: 200;
 }
 
 .pandora-box .aliyah-label,
