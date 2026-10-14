@@ -62,7 +62,7 @@ export function createApp(database, {
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/"], (req, res) => {
+    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
     });
 
