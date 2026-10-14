@@ -70,7 +70,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
 
             {loading ? <p role="status">Loading your reading…</p>
                 : error ? <p role="alert">{error}</p>
-                : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose an aliyah from the schedule.</p>
+                : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose another aliyah from the schedule.</p>
                 : <>
                     <dl className="registration-details">
                         <h5>Aliyah Summary</h5>
@@ -127,8 +127,8 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                     </div>
                     : <div>
                         <p id="registration-status" role="status">
-                        {locked ? "Your shul has locked this aliyah."
-                            : unavailable ? "This aliyah is unavailable. Choose another reading from the schedule."
+                        {locked ? "Your shul has locked this aliyah. Choose another aliyah from the schedule"
+                            : unavailable ? "Another reader has already registered for this reading. Choose another aliyah from the schedule"
                             : "Online registration is not available yet."}
                     </p>
                     <button type="button" className="registration-confirm" disabled aria-describedby="registration-status">
