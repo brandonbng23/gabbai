@@ -766,6 +766,44 @@ h4 {
     margin-bottom: 25px;
 }
 
+.registration-names {
+    display: flex;
+    flex-direction: row;
+}
+
+.registration-item {
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px;
+}
+
+.registration-item input {
+     height: 20px;
+     outline: none;
+     background-color: #f5f8fb;
+     margin-bottom: 15px;
+     border: none;
+     border-bottom: 1px solid black;
+}
+
+.registration-item input.name[type=text] {
+    width: 295px;
+}
+
+.registration-item input.h-name {
+    width: 610px;
+}
+
+.registration-item input[type=email] {
+    width: 610px;
+}
+
+
+.registration-label {
+    font-size: 12px;
+    padding-bottom: 4px;
+}
+
 .fine-print {
     color: #525252;
     font-size: smaller;
@@ -817,6 +855,174 @@ h4 {
     .content-window {
         --content-offset: 90px;
     }
+}
+
+.aliyah-registration {
+    margin-left: var(--parsha-left-gap);
+    width: calc(100% - var(--parsha-left-gap));
+    max-width: 720px;
+    padding: clamp(20px, 3vw, 36px);
+    background: white;
+    border-radius: 15px;
+    font-family: Fustat;
+    color: #262626;
+}
+
+.registration-back {
+    color: #525252;
+    font-size: 15px;
+    font-family: Inter;
+    text-decoration: none;
+}
+
+.registration-back:hover {
+    text-decoration: underline;
+}
+
+.register-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    align-content: center;
+    justify-items: center;
+    margin-bottom: 25px;
+
+    text-align: center;
+}
+
+.register-switch {
+    position: relative;
+    isolation: isolate;
+    margin-top: 15px;
+    margin-inline: auto;
+    width: 490px;
+    height: 37.5px;
+
+    text-align: center;
+
+    background: #f5f8fb;
+;
+    border-radius: 25px;
+}
+
+.register-switch::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 50%;
+    border-radius: inherit;
+    background-color: #66B1F2;
+    pointer-events: none;
+    transform: translateX(0);
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.register-switch-guest::before {
+    transform: translateX(100%);
+}
+
+.register-switch-options {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+
+    margin-inline: auto;
+
+    align-content: center;
+    justify-items: center;
+}
+
+.register-option,
+.register-option-focus {
+    width: 245px;
+    height: 37.5px;
+    padding: 3px 7.5px 3px 7.5px;
+
+    border-radius: 25px;
+
+    text-align: center;
+
+    font-family: Fustat;
+    font-size: 20px;
+    font-weight: 500;
+    color: #262626;
+    background-color: transparent;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.register-option-focus {
+    color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .register-option,
+    .register-switch::before {
+        transition: none;
+    }
+}
+
+.register-switch-info {
+    font-family: Inter;
+    font-size: 11px;
+    color: grey;
+}
+
+.aliyah-registration h1 {
+    margin: 24px 0 12px;
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 700;
+}
+
+.aliyah-registration h2 {
+    display: block;
+    height: auto;
+    padding: 0;
+    margin: 0 0 24px;
+    border: none;
+    color: #525252;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.registration-details {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f5f8fb;
+    overflow-wrap: anywhere;
+}
+
+.registration-details h5 {
+    font-weight: 700;
+}
+
+.registration-details dt {
+    font-size: 14px;
+    color: #676767;
+}
+
+.registration-details dd {
+    margin: 4px 0 0;
+    font-size: 18px;
+}
+
+.aliyah-registration p {
+    margin: 20px 0;
+    color: #525252;
+    font-size: 16px;
+}
+
+.registration-confirm {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #e5e5e5;
+    color: #676767;
+    cursor: not-allowed;
 }
 
 .welcomeBar {
@@ -950,7 +1156,7 @@ h4 {
 
 .filter {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     margin-left: 20px
 }
 
@@ -971,10 +1177,6 @@ h4 {
     background-size: 20px 20px;
 }
 
-.filter {
-    display: flex;
-    flex-direction: column;
-}
 
 .filter-label {
     font-size: 12px;
