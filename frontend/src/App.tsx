@@ -7,6 +7,7 @@ import AliyahRegistration from "./Pages/aliyahRegistration.tsx"
 import type { ParshaObj } from "./Components/parsha.tsx"
 import { useEffect, useState } from "react"
 import MyShul from "./Pages/myShul.js"
+import ShulSettings from "./Pages/shulSettings.js"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
 
@@ -18,6 +19,7 @@ function App() {
     const [user, setUser] = useState<User | null>(null);
     const isRegistrationPage = window.location.pathname.replace(/\/$/, "") === "/registration";
     const isShulPage = window.location.pathname.replace(/\/$/, "") === "/shul";
+    const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
 
     useEffect(() => {
         const controller = new AbortController();
@@ -52,14 +54,17 @@ function App() {
         <div>
             <div className="app-layout">
               <Navbar></Navbar>
-              <Aside></Aside>
+              <Aside user={user}></Aside>
             <div className="content-window">
               {isRegistrationPage ? (
                 <AliyahRegistration schedule={schedule} loading={loading} error={error} user={user} />
               ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your shul is not available yet.</p>
-              : isShulPage ? <MyShul shul={shul} /> : <>
+              : isShulSettingsPage ? (
+                user?.role === 'admin' ? <ShulSettings shul={shul} />
+                : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
+              ) : isShulPage ? <MyShul shul={shul} /> : <>
               <WelcomeBar fName={user?.firstName}></WelcomeBar>
               <Schedule
                 parshiyot = {schedule}>
