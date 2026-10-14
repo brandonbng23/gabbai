@@ -2,11 +2,17 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
+import { ensureDemoUser } from "./database/demo.mjs";
 
-export function createApp(database = openDatabase(), {
+export function createApp(database, {
     development = process.env.NODE_ENV === "development",
     devUserId = process.env.GABBAI_DEV_USER_ID,
+    preview = process.env.GABBAI_PREVIEW_MODE === "true",
 } = {}) {
+    database ??= openDatabase(process.env.GABBAI_DATABASE_PATH || (preview
+        ? fileURLToPath(new URL('../data/gabbai.preview.sqlite', import.meta.url))
+        : undefined));
+    const currentUserId = preview ? ensureDemoUser(database).id : development ? devUserId : undefined;
     const app = express();
     app.locals.database = database;
 
@@ -22,14 +28,14 @@ export function createApp(database = openDatabase(), {
         return res.json(shul);
     });
 
-    // Local development identity only. Production will use an authenticated session.
+    // Previews share a sample identity; regular deployments will use an authenticated session.
     app.get("/api/me", (_req, res) => {
         res.set("Cache-Control", "no-store");
-        if (!development || !devUserId) {
+        if (!currentUserId) {
             return res.status(401).json({ error: "Sign in to view your profile" });
         }
-        const user = app.locals.database.getUser(devUserId);
-        if (!user) return res.status(404).json({ error: "Development user not found" });
+        const user = app.locals.database.getUser(currentUserId);
+        if (!user) return res.status(404).json({ error: "Current user not found" });
         return res.json(user);
     });
 

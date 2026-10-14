@@ -42,7 +42,7 @@ GABBAI_DATABASE_PATH=./data/gabbai.sqlite npm run dev
 
 An explicit database path is never seeded. Optionally set `GABBAI_DEV_USER_ID`
 to an existing user UUID to load that profile during local development. This is
-a local development identity, not login. `/api/me` is disabled outside development
+a local development identity, not login. `/api/me` is disabled outside development unless preview mode is explicitly enabled,
 and user IDs cannot be selected through query parameters. Development binds the
 backend to loopback; browser API requests use the same-origin Vite proxy.
 
@@ -56,6 +56,45 @@ user's first name appears in the greeting and their details prefill the guest
 form. Profiles/settings are read-only in the frontend for now; editing and real
 login need authenticated write endpoints. Registration submission remains a
 separate feature.
+
+## Render preview
+
+The repository's `render.yaml` defines a free Node web service that serves the
+built React app and API together. Create a Render Blueprint from this repository
+to use it. For an existing Render web service, set these values manually:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | Repository root (leave blank) |
+| Build command | `npm ci` (postinstall installs and builds the frontend) |
+| Start command | `npm start` |
+| Health check path | `/api/test` |
+| `NODE_VERSION` | `24.18.0` |
+| `NODE_ENV` | `production` |
+| `GABBAI_PREVIEW_MODE` | `true` |
+| `GABBAI_DATABASE_PATH` | `./data/gabbai.preview.sqlite` |
+
+Preview mode supplies a shared Demo User and Demo Shul so the frontend works
+before login is built. Records are created at server startup if missing; existing
+demo settings are preserved on subsequent starts when the database survives.
+The demo user belongs to its own demo shul; unrelated users are never selected.
+The frontend still derives its shul only from that user's membership, with no
+shul selector or shul/year banner.
+
+The preview database is separate from the normal application database. Free
+Render services have ephemeral storage, so demo data resets after restarts or
+redeploys and is recreated automatically. No persistent disk is needed for this
+preview. Preview mode is opt-in; ordinary deployments still require login.
+All preview visitors see the same sample profile.
+
+To test this mode locally after `npm run build`:
+
+```sh
+NODE_ENV=production GABBAI_PREVIEW_MODE=true npm start
+```
+
+Open `http://localhost:3000`. Render supplies its own `PORT`, which the server
+already uses while binding to `0.0.0.0`.
 
 ## Relationships
 

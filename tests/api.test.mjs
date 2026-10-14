@@ -4,11 +4,11 @@ import { test } from 'node:test';
 import { createApp } from '../backend/app.mjs';
 import { openDatabase } from '../backend/database/index.mjs';
 
-async function setup(t, development) {
+async function setup(t, development, options = {}) {
     const db = openDatabase(':memory:');
     const shul = db.createShul({ name: 'API Shul', settings: { hebYear: 5788, il: true, a: 3 } });
     const user = db.createUser({ shulId: shul.id, firstName: 'Test', lastName: 'User', email: 'test@example.com', settings: { language: 'en' } });
-    const app = createApp(db, { development, devUserId: user.id });
+    const app = createApp(db, { development, devUserId: user.id, preview: false, ...options });
     const server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     t.after(async () => {
@@ -46,4 +46,40 @@ test('production never exposes development user profiles or member lists', async
     assert.equal((await request('/api/me')).status, 401);
     assert.equal((await request(`/api/users/${user.id}`)).status, 404);
     assert.equal((await request(`/api/shuls/${shul.id}/users`)).status, 404);
+});
+
+test('explicit preview mode works with production NODE_ENV and selects only the demo identity', async t => {
+    const { request, user, db } = await setup(t, false, { preview: true });
+    const response = await request('/api/me');
+    assert.equal(response.status, 200);
+    const demo = await response.json();
+    assert.equal(demo.email, 'demo@example.com');
+    assert.notEqual(demo.id, user.id);
+    assert.notEqual(demo.shulId, user.shulId);
+    const shul = await (await request(`/api/shuls/${demo.shulId}`)).json();
+    assert.equal(shul.name, 'Demo Shul');
+    const readings = await (await request(`/api/schedule?shul=${demo.shulId}`)).json();
+    assert.ok(readings.length > 0);
+    assert.ok(readings.every(reading => reading.hDate.includes('5787')));
+    db.updateShulSettings(demo.shulId, { a: 3 });
+    createApp(db, { development: false, preview: true });
+    assert.equal(db.getUserByEmail('demo@example.com').id, demo.id);
+    assert.equal(db.getShul(demo.shulId).settings.a, 3);
+    assert.equal(db.listShuls().length, 2);
+    assert.equal(db.listShulUsers(demo.shulId).length, 1);
+});
+
+test('preview startup recreates its sample data in an empty database', t => {
+    for (let restart = 0; restart < 2; restart++) {
+        const db = openDatabase(':memory:');
+        try {
+            createApp(db, { development: false, preview: true });
+            const demo = db.getUserByEmail('demo@example.com');
+            assert.ok(demo);
+            assert.equal(db.getShul(demo.shulId).name, 'Demo Shul');
+            assert.equal(db.listShuls().length, 1);
+        } finally {
+            db.close();
+        }
+    }
 });

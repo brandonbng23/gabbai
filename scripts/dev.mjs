@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../backend/database/index.mjs';
+import { ensureDemoUser } from '../backend/database/demo.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const databasePath = process.env.GABBAI_DATABASE_PATH
@@ -10,14 +11,7 @@ let userId = process.env.GABBAI_DEV_USER_ID;
 if (!process.env.GABBAI_DATABASE_PATH) {
     const database = openDatabase(databasePath);
     try {
-        let user = database.getUserByEmail('demo@example.com');
-        if (!user) {
-            const shul = database.listShuls()[0] ?? database.createShul({
-                name: 'Demo Shul', settings: { hebYear: 5787 },
-            });
-            user = database.createUser({ shulId: shul.id, firstName: 'Demo', lastName: 'User', email: 'demo@example.com' });
-        }
-        userId ??= user.id;
+        userId ??= ensureDemoUser(database).id;
     } finally {
         database.close();
     }

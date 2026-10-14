@@ -6,9 +6,9 @@ import Schedule from "./Components/schedule.tsx"
 import AliyahRegistration from "./Pages/aliyahRegistration.tsx"
 import type { ParshaObj } from "./Components/parsha.tsx"
 import { useEffect, useState } from "react"
-import MyShul from "./Pages/myShul"
-import { getCurrentUser, getJson } from "./api"
-import type { Shul, User } from "./api"
+import MyShul from "./Pages/myShul.js"
+import { getCurrentUser, getJson } from "./api.js"
+import type { Shul, User } from "./api.js"
 
 function App() {
     const [schedule, setSchedule] = useState<ParshaObj[]>([]);
