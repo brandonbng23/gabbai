@@ -996,6 +996,37 @@ h4 {
     overflow-wrap: anywhere;
 }
 
+.registration-details-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.registration-details-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    transform: translateX(-100%);
+    animation: registration-shimmer 1.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.registration-details-loading > * {
+    visibility: hidden;
+}
+
+@keyframes registration-shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .registration-details-loading::after {
+        animation: none;
+    }
+}
+
 .registration-details h5 {
     font-weight: 700;
 }

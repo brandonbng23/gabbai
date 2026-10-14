@@ -71,7 +71,13 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                 </div> : null}
             
 
-            {loading ? <p role="status">Loading your reading…</p>
+            {loading ? <dl className="registration-details registration-details-loading" role="status" aria-label="Loading registration details">
+                    <h5 aria-hidden="true">Aliyah Summary</h5>
+                    <div aria-hidden="true"><dt>Date</dt><dd>&nbsp;</dd></div>
+                    <div aria-hidden="true"><dt>Parsha</dt><dd>&nbsp;</dd></div>
+                    <div aria-hidden="true"><dt>Aliyah</dt><dd>&nbsp;</dd></div>
+                    <div aria-hidden="true"><dt>Psukim</dt><dd>&nbsp;</dd></div>
+                </dl>
                 : error ? <p role="alert">{error}</p>
                 : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose another aliyah from the schedule.</p>
                 : <>
