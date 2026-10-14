@@ -2,14 +2,16 @@ import { useEffect } from "react";
 import { useState } from "react";
 import type { ParshaObj } from "../Components/parsha.tsx";
 import InfoIcon from "../Components/infoTip.tsx"
+import type { User } from "../api.js"
 
 interface RegistrationProps {
     schedule: ParshaObj[];
     loading: boolean;
     error: string | null;
+    user: User | null;
 }
 
-function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
+function AliyahRegistration({ schedule, loading, error, user }: RegistrationProps) {
 
     // If a user is signing up
     const [guest, setGuest] = useState<boolean>(false);
@@ -31,8 +33,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
     const validSelection = parsha && Number.isInteger(aliyah) && aliyah >= 1 && aliyah <= labels.length
         && Boolean(parsha.psukim[aliyah - 1]) && parsha.psukim[aliyah - 1] !== "null";
     const locked = parsha?.locked || parsha?.lockedArr[aliyah - 1];
-    // Match the schedule's current placeholder availability rules.
-    const unavailable = (aliyah - 1) % 2 === 0;
+    const unavailable = Boolean(parsha?.readers[aliyah - 1]);
 
     useEffect(() => {
         const previousTitle = document.title;
@@ -42,9 +43,10 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
 
     return (
         <main className="aliyah-registration">
-            <a className="registration-back" href="/">← Back to schedule</a>    
+            <a className="registration-back" href="/">← Back to schedule</a>
 
-            {!locked && !unavailable && validSelection ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
+            {loading ? <h1>Loading registration…</h1>
+            : !locked && !unavailable && validSelection ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
             : (!validSelection ? <h1>Oy Gevalt!</h1>
             : <h1>Registration has Closed</h1>)} 
 
@@ -100,6 +102,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                                             className="name"
                                             type="text"
                                             name="firstNameRegister"
+                                            defaultValue={user?.firstName ?? ''}
                                             placeholder="i.e. Josh">
                                         </input>
                                     </div>
@@ -110,6 +113,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                                             className="name"
                                             type="text"
                                             name="lastNameRegister"
+                                            defaultValue={user?.lastName ?? ''}
                                             placeholder="i.e. Cohen">
                                         </input>
                                     </div>
@@ -121,6 +125,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                                         className="h-name"
                                         type="text"
                                         name="hebrewNameRegister"
+                                        defaultValue={user?.hebrewName ?? ''}
                                         placeholder="i.e. Moishe ben Shlomo v'et Devorah">
                                     </input>
                                 </div>
@@ -130,6 +135,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                                     <input
                                         type="email"
                                         name="emailRegister"
+                                        defaultValue={user?.email ?? ''}
                                         placeholder="i.e. iheartleyning@gabbai.com">
                                     </input>  
                                 </div>

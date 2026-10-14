@@ -80,7 +80,10 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         {aliyahLabel}
                         <button
                             type="button"
-                            onClick={() => window.location.assign(`/registration?parsha=${props.parshaId}&aliyah=${props.a}`)}
+                            onClick={() => {
+                                const params = new URLSearchParams({ parsha: String(props.parshaId), aliyah: String(props.a) });
+                                window.location.assign(`/registration?${params}`);
+                            }}
                         >Register</button>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
@@ -174,7 +177,7 @@ export default function Parsha(props: ParshaObj): React.JSX.Element {
                                     a={index + 1}
                                     psukim={p}
                                     locked={props.lockedArr[index]}
-                                    available={index % 2 === 0 ? false : true}
+                                    available={!props.readers[index]}
                                     reader={props.readers[index]}
                                 />
                             ))

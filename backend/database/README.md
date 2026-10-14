@@ -6,6 +6,8 @@ there is no separate database server or additional package to install.
 ```sh
 npm run db:init
 npm run test:db
+npm run test:api
+npm run test:dev
 ```
 
 The server also initializes the database on startup. The default file is
@@ -13,6 +15,47 @@ The server also initializes the database on startup. The default file is
 `GABBAI_DATABASE_PATH` to use a different location. Database files and SQLite
 journal files are ignored by Git. Hosting must provide a persistent writable
 directory for this file; an ephemeral filesystem will lose saved data.
+
+## Frontend development
+
+```sh
+npm run dev
+```
+
+This starts the backend on `http://localhost:3000` and Vite on
+`http://localhost:5173`. Open the Vite URL. Ctrl+C stops both processes; if either
+server exits, the other is stopped too. Frontend changes reload through Vite;
+restart the combined command after backend changes. Use `npm run dev:frontend`
+or `npm run dev:backend` to run either server separately.
+
+The combined command uses `data/gabbai.dev.sqlite` and creates a Demo Shul and
+Demo User on its first run. Subsequent runs keep their saved settings. The normal
+`npm start` command continues to use `data/gabbai.sqlite` and serves the built
+frontend. `PORT` changes the backend port and the combined command adjusts the
+Vite proxy automatically. Frontend flags can be passed as `npm run dev -- --port 5174`.
+
+To use your existing database instead of demo data:
+
+```sh
+GABBAI_DATABASE_PATH=./data/gabbai.sqlite npm run dev
+```
+
+An explicit database path is never seeded. Optionally set `GABBAI_DEV_USER_ID`
+to an existing user UUID to load that profile during local development. This is
+a local development identity, not login. `/api/me` is disabled outside development
+and user IDs cannot be selected through query parameters. Development binds the
+backend to loopback; browser API requests use the same-origin Vite proxy.
+
+The frontend loads the current user from `/api/me`, reads their assigned shul
+from `/api/shuls/:id`, and generates its schedule from saved settings. The user's
+membership is the only source of the active shul; URL parameters and browser
+storage cannot override it. Shul changes will belong in the future user settings
+page. Without a current user, the frontend prompts for sign-in.
+My Shul displays the saved profile and reading preferences. The development
+user's first name appears in the greeting and their details prefill the guest
+form. Profiles/settings are read-only in the frontend for now; editing and real
+login need authenticated write endpoints. Registration submission remains a
+separate feature.
 
 ## Relationships
 
