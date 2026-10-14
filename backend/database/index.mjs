@@ -1,0 +1,169 @@
+import { DatabaseSync } from 'node:sqlite';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { defaultShulSettings, mergeShulSettings, serializeUserSettings, validateKeys } from './settings.mjs';
+
+export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
+const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
+const userFields = ['shulId', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'role', 'title'];
+
+function text(value, name, required = false) {
+    if (typeof value !== 'string' || (required && !value.trim())) {
+        throw new TypeError(`${name} must be ${required ? 'a nonempty' : 'a'} string`);
+    }
+    return value.trim();
+}
+
+function email(value) {
+    const normalized = text(value, 'email', true).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new TypeError('Invalid email');
+    return normalized;
+}
+
+function shulValues(input) {
+    return shulFields.map(key => text(input[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
+}
+
+function userValues(input) {
+    const role = input.role ?? 'member';
+    if (!['member', 'admin'].includes(role)) throw new TypeError('role must be member or admin');
+    return [text(input.shulId, 'shulId', true), text(input.firstName, 'firstName', true),
+        text(input.lastName, 'lastName', true), text(input.hebrewName ?? '', 'hebrewName'),
+        email(input.email), text(input.phone ?? '', 'phone'), role, text(input.title ?? '', 'title')];
+}
+
+function decodeShul(row) {
+    if (!row) return null;
+    return { id: row.id, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
+        email: row.email, phone: row.phone, address: row.address,
+        settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
+}
+
+function decodeUser(row) {
+    if (!row) return null;
+    return { id: row.id, shulId: row.shul_id, firstName: row.first_name, lastName: row.last_name,
+        hebrewName: row.hebrew_name, email: row.email, phone: row.phone, role: row.role, title: row.title,
+        settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
+}
+
+export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defaultDatabasePath) {
+    const path = filename === ':memory:' ? filename : resolve(filename);
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+    const db = new DatabaseSync(path);
+    function transaction(work) {
+        db.exec('BEGIN IMMEDIATE');
+        try {
+            const result = work();
+            db.exec('COMMIT');
+            return result;
+        } catch (error) {
+            db.exec('ROLLBACK');
+            throw error;
+        }
+    }
+    try {
+        db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL;');
+        db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+            version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) STRICT`);
+        transaction(() => {
+            const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
+            if (version > 1) throw new Error('Database schema is newer than this application');
+            if (version < 1) {
+                db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
+            }
+        });
+    } catch (error) {
+        db.close();
+        throw error;
+    }
+
+    const shulQuery = 'SELECT s.*, p.settings_json FROM shuls s JOIN shul_settings p ON p.shul_id = s.id';
+    const userQuery = 'SELECT u.*, p.settings_json FROM users u JOIN user_settings p ON p.user_id = u.id';
+    const getShul = id => decodeShul(db.prepare(`${shulQuery} WHERE s.id = ?`).get(id));
+    const getUser = id => decodeUser(db.prepare(`${userQuery} WHERE u.id = ?`).get(id));
+    function requireRecord(record, name) {
+        if (!record) throw new Error(`${name} not found`);
+        return record;
+    }
+
+    return {
+        path,
+        close: () => db.close(),
+        getShul,
+        getUser,
+        getUserByEmail: value => decodeUser(db.prepare(`${userQuery} WHERE u.email = ?`).get(email(value))),
+        listShuls: () => db.prepare(`${shulQuery} ORDER BY s.name, s.id`).all().map(decodeShul),
+        listShulUsers: shulId => db.prepare(`${userQuery} WHERE u.shul_id = ? ORDER BY u.last_name, u.first_name, u.id`).all(shulId).map(decodeUser),
+        getUserShul: userId => {
+            const user = getUser(userId);
+            return user ? getShul(user.shulId) : null;
+        },
+        createShul(input) {
+            validateKeys(input, [...shulFields, 'settings'], 'shul');
+            const values = shulValues(input);
+            const settings = mergeShulSettings(defaultShulSettings(input.settings?.hebYear), input.settings ?? {});
+            const id = randomUUID();
+            return transaction(() => {
+                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
+                return getShul(id);
+            });
+        },
+        createUser(input) {
+            validateKeys(input, [...userFields, 'settings'], 'user');
+            const values = userValues(input);
+            const settings = serializeUserSettings(input.settings ?? {});
+            const id = randomUUID();
+            return transaction(() => {
+                db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare('INSERT INTO user_settings (user_id, settings_json) VALUES (?, ?)').run(id, settings);
+                return getUser(id);
+            });
+        },
+        updateShul(id, patch) {
+            validateKeys(patch, shulFields, 'shul');
+            return transaction(() => {
+                const current = requireRecord(getShul(id), 'Shul');
+                const values = shulValues({ ...current, ...patch });
+                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
+                return getShul(id);
+            });
+        },
+        updateUser(id, patch) {
+            validateKeys(patch, userFields, 'user');
+            return transaction(() => {
+                const current = requireRecord(getUser(id), 'User');
+                const values = userValues({ ...current, ...patch });
+                db.prepare(`UPDATE users SET shul_id = ?, first_name = ?, last_name = ?, hebrew_name = ?, email = ?, phone = ?, role = ?, title = ?,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
+                return getUser(id);
+            });
+        },
+        updateShulSettings(id, patch) {
+            return transaction(() => {
+                const current = requireRecord(getShul(id), 'Shul');
+                const settings = mergeShulSettings(current.settings, patch);
+                db.prepare(`UPDATE shul_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE shul_id = ?`).run(JSON.stringify(settings), id);
+                return getShul(id);
+            });
+        },
+        // Replace the whole preferences object; shul settings use partial updates.
+        setUserSettings(id, settings) {
+            const json = serializeUserSettings(settings);
+            return transaction(() => {
+                requireRecord(getUser(id), 'User');
+                db.prepare(`UPDATE user_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE user_id = ?`).run(json, id);
+                return getUser(id);
+            });
+        },
+    };
+}

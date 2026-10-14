@@ -5,6 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "db:init": "node backend/database/init.mjs",
+    "test:db": "node --test tests/database.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",
     "test": "node ./core/main.mts",
@@ -54,5 +56,8 @@
   "allowScripts": {
     "react-bootstrap@2.10.10": true,
     "cors@2.8.6": true
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
