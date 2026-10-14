@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { openDatabase } from '../backend/database/index.mjs';
+import { ensureDemoUser } from '../backend/database/demo.mjs';
 import { settingsForSchedule } from '../backend/database/settings.mjs';
 import { getShulSchedule } from '../backend/schedule.mjs';
 import { Schedule } from '../core/schedule.mts';
@@ -18,6 +19,31 @@ function setup(t) {
 }
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
+
+test('demo startup refreshes existing shul information while preserving settings and memberships', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    const expected = db.getShul(demo.shulId);
+    db.updateShul(demo.shulId, {
+        name: 'Old Demo Name', websiteUrl: '', donationUrl: '', email: '', phone: '', address: '',
+    });
+    db.updateShulSettings(demo.shulId, { hebYear: 5788, a: 3, il: true });
+    db.setUserSettings(demo.id, { language: 'he' });
+    const savedSettings = db.getShul(demo.shulId).settings;
+    assert.equal(ensureDemoUser(db).id, demo.id);
+    const refreshed = db.getShul(demo.shulId);
+    for (const field of ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address']) {
+        assert.equal(refreshed[field], expected[field]);
+    }
+    assert.deepEqual(refreshed.settings, savedSettings);
+    assert.deepEqual(db.getUser(demo.id).settings, { language: 'he' });
+    assert.equal(db.getUserShul(demo.id).id, demo.shulId);
+    assert.deepEqual(db.getShul(unrelated.id), unrelated);
+    assert.equal(db.listShuls().length, 2);
+    assert.equal(db.listShulUsers(demo.shulId).length, 1);
+    ensureDemoUser(db);
+    assert.deepEqual(db.getShul(demo.shulId), refreshed);
+});
 
 test('profiles, membership, and independent preferences survive reopening and migration reruns', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-database-'));
