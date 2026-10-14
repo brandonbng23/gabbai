@@ -39,6 +39,8 @@ test('frontend APIs return saved profiles and shul schedules', async t => {
     assert.equal((await request('/api/schedule?year=invalid')).status, 400);
     assert.equal((await request(`/registration?shul=${shul.id}&parsha=1&aliyah=1`)).status, 200);
     assert.equal((await request(`/shul?shul=${shul.id}`)).status, 200);
+    assert.equal((await request('/shulSettings')).status, 200);
+    assert.equal((await request('/shulSettings/')).status, 200);
 });
 
 test('production never exposes development user profiles or member lists', async t => {
@@ -54,6 +56,7 @@ test('explicit preview mode works with production NODE_ENV and selects only the 
     assert.equal(response.status, 200);
     const demo = await response.json();
     assert.equal(demo.email, 'demo@example.com');
+    assert.equal(demo.role, 'admin');
     assert.notEqual(demo.id, user.id);
     assert.notEqual(demo.shulId, user.shulId);
     const shul = await (await request(`/api/shuls/${demo.shulId}`)).json();
