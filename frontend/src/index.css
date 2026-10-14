@@ -833,6 +833,12 @@ h4 {
 .registration-back {
     color: #525252;
     font-size: 15px;
+    font-family: Inter;
+    text-decoration: none;
+}
+
+.registration-back:hover {
+    text-decoration: underline;
 }
 
 .register-identity {
