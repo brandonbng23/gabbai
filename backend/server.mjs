@@ -25,6 +25,11 @@ app.get("/api/schedule", (req, res) => {
 
 app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
 
+// The registration URL renders a page in the React app, including on refresh.
+app.get(["/registration", "/registration/"], (req, res) => {
+    res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
+});
+
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`Backend running at http://localhost:${PORT}`);
 });

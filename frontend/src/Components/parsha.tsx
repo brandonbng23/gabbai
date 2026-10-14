@@ -18,6 +18,7 @@ export interface ParshaObj {
 }
 
 interface Aliyah {
+    parshaId: number;
     a: number;
     psukim: string;
     available: boolean;
@@ -77,7 +78,10 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                 <div className={`aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                     <div className={`pandora-box${hovered ? "-hover" : ""}`}>
                         {aliyahLabel}
-                        <button>Register</button>
+                        <button
+                            type="button"
+                            onClick={() => window.location.assign(`/registration?parsha=${props.parshaId}&aliyah=${props.a}`)}
+                        >Register</button>
                     </div>
                     <div className={`psukim-text${hovered ? "-hover" : ""}`}>{props.psukim}</div>
                 </div>
@@ -156,6 +160,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                             (props.locked ? (
                                 <Aliyah
                                     key={index}
+                                    parshaId={props.id}
                                     a={index + 1}
                                     psukim={p}
                                     locked={props.locked}
@@ -165,6 +170,7 @@ function Parsha(props: ParshaObj): React.JSX.Element {
                             ) : (
                                 <Aliyah
                                     key={index}
+                                    parshaId={props.id}
                                     a={index + 1}
                                     psukim={p}
                                     locked={props.lockedArr[index]}
