@@ -835,6 +835,96 @@ h4 {
     font-size: 15px;
 }
 
+.register-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    align-content: center;
+    justify-items: center;
+
+    text-align: center;
+}
+
+.register-switch {
+    position: relative;
+    isolation: isolate;
+    margin-top: 15px;
+    margin-inline: auto;
+    width: 490px;
+    height: 37.5px;
+
+    text-align: center;
+
+    background: #f5f8fb;
+;
+    border-radius: 25px;
+}
+
+.register-switch::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 50%;
+    border-radius: inherit;
+    background-color: #66B1F2;
+    pointer-events: none;
+    transform: translateX(0);
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.register-switch-guest::before {
+    transform: translateX(100%);
+}
+
+.register-switch-options {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+
+    margin-inline: auto;
+
+    align-content: center;
+    justify-items: center;
+}
+
+.register-option,
+.register-option-focus {
+    width: 245px;
+    height: 37.5px;
+    padding: 3px 7.5px 3px 7.5px;
+
+    border-radius: 25px;
+
+    text-align: center;
+
+    font-family: Fustat;
+    font-size: 20px;
+    font-weight: 500;
+    color: #262626;
+    background-color: transparent;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.register-option-focus {
+    color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .register-option,
+    .register-switch::before {
+        transition: none;
+    }
+}
+
+.register-switch-info {
+    font-family: Inter;
+    font-size: 11px;
+    color: grey;
+}
+
 .aliyah-registration h1 {
     margin: 24px 0 12px;
     font-size: clamp(26px, 3vw, 36px);

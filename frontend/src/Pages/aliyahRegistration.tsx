@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useState } from "react";
 import type { ParshaObj } from "../Components/parsha.tsx";
 
 interface RegistrationProps {
@@ -7,7 +8,17 @@ interface RegistrationProps {
     error: string | null;
 }
 
-export default function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
+function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
+
+    // If a user is signing up
+    const [guest, setGuest] = useState<boolean>(false);
+    const [focus, setFocus] = useState<boolean>(true);
+
+    function updateStates() {
+        setFocus((current: boolean) => !current);
+        setGuest((current: boolean) => !current);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const parshaId = Number(params.get("parsha"));
     const aliyah = Number(params.get("aliyah"));
@@ -29,7 +40,31 @@ export default function AliyahRegistration({ schedule, loading, error }: Registr
 
     return (
         <main className="aliyah-registration">
-            <a className="registration-back" href="/">← Back to schedule</a>
+            <a className="registration-back" href="/">← Back to schedule</a>              
+
+            <div className="register-identity">           
+                <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
+                    <div className="register-switch-options">
+                        <div
+                            className={`register-option${focus ? " register-option-focus" : ""}`}
+                            onClick={() => { if (!focus) updateStates(); }}
+                        >
+                            Register with Profile
+                        </div>
+                        <div
+                            className={`register-option${focus ? "" : " register-option-focus"}`}
+                            onClick={() => { if (focus) updateStates(); }}
+                        >
+                            Register as Guest
+                        </div>
+                    </div>
+                </div>
+                <div className="register-switch-info">
+                    Use your Gabbai profile to register with your saved details, or register as a guest.
+                </div>
+            </div>
+
+                
             <h1>Register for a reading</h1>
             {loading ? <p role="status">Loading your reading…</p>
                 : error ? <p role="alert">{error}</p>
@@ -39,8 +74,14 @@ export default function AliyahRegistration({ schedule, loading, error }: Registr
                     <dl className="registration-details">
                         <div><dt>Date</dt><dd>{parsha.gregDate} · {parsha.hDate}</dd></div>
                         <div><dt>Aliyah</dt><dd>{labels[aliyah - 1]}</dd></div>
-                        <div><dt>Reading</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
+                        <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                     </dl>
+
+                    {guest ? <div>
+                        test
+                    </div>
+                    : null}
+
                     <p id="registration-status" role="status">
                         {locked ? "Your shul has locked this aliyah."
                             : unavailable ? "This aliyah is unavailable. Choose another reading from the schedule."
@@ -53,3 +94,5 @@ export default function AliyahRegistration({ schedule, loading, error }: Registr
         </main>
     );
 }
+
+export default AliyahRegistration;
