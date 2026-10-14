@@ -40,7 +40,9 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
 
     return (
         <main className="aliyah-registration">
-            <a className="registration-back" href="/">← Back to schedule</a>              
+            <a className="registration-back" href="/">← Back to schedule</a>    
+
+            <h1>Register for {parsha?.desc ?? "a Reading"}</h1>
 
             <div className="register-identity">           
                 <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
@@ -64,8 +66,6 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                 </div>
             </div>
 
-                
-            <h1>Register for a Reading</h1>
             {loading ? <p role="status">Loading your reading…</p>
                 : error ? <p role="alert">{error}</p>
                 : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose an aliyah from the schedule.</p>
@@ -78,7 +78,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                         <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                     </dl>
 
-                    {guest ? <div className="registration-details">
+                    {!locked && !unavailable && guest ? <div className="registration-details">
                         <h5>Register as Guest</h5>
                         <form>
                             <div className="registration-names">
@@ -123,16 +123,18 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                             </div>
                         </form>
                     </div>
-                    : null}
-
-                    <p id="registration-status" role="status">
+                    : <div>
+                        <p id="registration-status" role="status">
                         {locked ? "Your shul has locked this aliyah."
                             : unavailable ? "This aliyah is unavailable. Choose another reading from the schedule."
                             : "Online registration is not available yet."}
                     </p>
                     <button type="button" className="registration-confirm" disabled aria-describedby="registration-status">
-                        Confirm registration
+                        Confirm Registration
                     </button>
+                    </div>}
+
+                   
                 </>}
         </main>
     );
