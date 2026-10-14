@@ -14,7 +14,8 @@ export function ensureDemoUser(database) {
         const changes = Object.fromEntries(Object.entries(profile)
             .filter(([field, value]) => shul[field] !== value));
         if (Object.keys(changes).length) database.updateShul(existing.shulId, changes);
-        return existing;
+        // Keep existing demo accounts in sync with the demo's administrator role.
+        return existing.role === 'admin' ? existing : database.updateUser(existing.id, { role: 'admin' });
     }
     const shul = database.createShul({ ...profile, settings: { hebYear: 5787 } });
     return database.createUser({
@@ -22,6 +23,6 @@ export function ensureDemoUser(database) {
         firstName: 'Demo',
         lastName: 'User',
         email: 'demo@example.com',
-        role: "admin"
+        role: 'admin',
     });
 }
