@@ -44,29 +44,31 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
         <main className="aliyah-registration">
             <a className="registration-back" href="/">← Back to schedule</a>    
 
-            <h1>Register for {parsha?.desc ?? "a Reading"}</h1>
+            {!locked && !unavailable ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
+            : <h1>Registration is Closed</h1>} 
 
-            <div className="register-identity">           
-                <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
-                    <div className="register-switch-options">
-                        <div
-                            className={`register-option${focus ? " register-option-focus" : ""}`}
-                            onClick={() => { if (!focus) updateStates(); }}
-                        >
-                            Register with Profile
-                        </div>
-                        <div
-                            className={`register-option${focus ? "" : " register-option-focus"}`}
-                            onClick={() => { if (focus) updateStates(); }}
-                        >
-                            Register as Guest
+            {!locked && !unavailable ? <div className="register-identity">           
+                    <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
+                        <div className="register-switch-options">
+                            <div
+                                className={`register-option${focus ? " register-option-focus" : ""}`}
+                                onClick={() => { if (!focus) updateStates(); }}
+                            >
+                                Register with Profile
+                            </div>
+                            <div
+                                className={`register-option${focus ? "" : " register-option-focus"}`}
+                                onClick={() => { if (focus) updateStates(); }}
+                            >
+                                Register as Guest
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="register-switch-info">
-                    Use your Gabbai profile to register with your saved details, or register as a guest.
-                </div>
-            </div>
+                    <div className="register-switch-info">
+                        Use your Gabbai profile to register with your saved details, or register as a guest.
+                    </div>
+                </div> : null}
+            
 
             {loading ? <p role="status">Loading your reading…</p>
                 : error ? <p role="alert">{error}</p>
