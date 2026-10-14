@@ -29,8 +29,10 @@ test('demo startup refreshes existing shul information while preserving settings
     });
     db.updateShulSettings(demo.shulId, { hebYear: 5788, a: 3, il: true });
     db.setUserSettings(demo.id, { language: 'he' });
+    db.updateUser(demo.id, { role: 'member' });
     const savedSettings = db.getShul(demo.shulId).settings;
     assert.equal(ensureDemoUser(db).id, demo.id);
+    assert.equal(db.getUser(demo.id).role, 'admin');
     const refreshed = db.getShul(demo.shulId);
     for (const field of ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address']) {
         assert.equal(refreshed[field], expected[field]);
