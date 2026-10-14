@@ -44,10 +44,11 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
         <main className="aliyah-registration">
             <a className="registration-back" href="/">← Back to schedule</a>    
 
-            {!locked && !unavailable ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
-            : <h1>Registration has Closed</h1>} 
+            {!locked && !unavailable && validSelection ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
+            : (!validSelection ? <h1>Oy Gevalt!</h1>
+            : <h1>Registration has Closed</h1>)} 
 
-            {!locked && !unavailable ? <div className="register-identity">           
+            {!locked && !unavailable && validSelection ? <div className="register-identity">           
                     <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
                         <div className="register-switch-options">
                             <div
