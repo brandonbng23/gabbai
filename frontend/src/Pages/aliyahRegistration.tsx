@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useState } from "react";
 import type { ParshaObj } from "../Components/parsha.tsx";
+import InfoIcon from "../Components/infoTip.tsx"
 
 interface RegistrationProps {
     schedule: ParshaObj[];
@@ -26,6 +27,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
         ? schedule.find(reading => reading.id === parshaId)
         : undefined;
     const labels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
+    const englLabels = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"];
     const validSelection = parsha && Number.isInteger(aliyah) && aliyah >= 1 && aliyah <= labels.length
         && Boolean(parsha.psukim[aliyah - 1]) && parsha.psukim[aliyah - 1] !== "null";
     const locked = parsha?.locked || parsha?.lockedArr[aliyah - 1];
@@ -74,7 +76,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                         <h5>Aliyah Summary</h5>
                         <div><dt>Date</dt><dd>{parsha.gregDate} · {parsha.hDate}</dd></div>
                         <div><dt>Parsha</dt><dd>{parsha.desc}</dd></div>
-                        <div><dt>Aliyah</dt><dd>{labels[aliyah - 1]}</dd></div>
+                        <div><dt>Aliyah</dt><dd><span style={{ marginRight: "8px"}}>{labels[aliyah - 1]}</span>{englLabels[aliyah - 1] ? <InfoIcon message={englLabels[aliyah - 1]}></InfoIcon> : null}</dd></div>
                         <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                     </dl>
 
@@ -109,7 +111,7 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                                     className="h-name"
                                     type="text"
                                     name="hebrewNameRegister"
-                                    placeholder="i.e. Yehoshua ben Noach v'et Devorah">
+                                    placeholder="i.e. Moishe ben Shlomo v'et Devorah">
                                 </input>
                             </div>
 
