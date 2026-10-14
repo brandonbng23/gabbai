@@ -28,7 +28,7 @@ interface Aliyah {
 
 
 
-function AliyahInfo(): React.JSX.Element {
+export function AliyahInfo(): React.JSX.Element {
     return (
         <div>
             <div>
@@ -103,7 +103,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-function Parsha(props: ParshaObj): React.JSX.Element {
+export default function Parsha(props: ParshaObj): React.JSX.Element {
     function formatOccassionView(o: string): string {
         const lowerCase_o: string = o.toLowerCase();
 
@@ -186,5 +186,3 @@ function Parsha(props: ParshaObj): React.JSX.Element {
         </div>
     )
 }
-
-export default Parsha;
