@@ -77,6 +77,12 @@ to use it. For an existing Render web service, set these values manually:
 Preview mode supplies a shared Demo User and Demo Shul so the frontend works
 before login is built. Records are created at server startup if missing; existing
 demo settings are preserved on subsequent starts when the database survives.
+Demo contact information is synchronized from `backend/database/demo.mjs` on
+startup, including for existing demo records. This synchronization is limited to
+the demo user's shul and does not change saved reading settings or user preferences.
+The frontend fetches the saved shul profile on page load, so refresh the page
+after updating a profile in the database. Editing the demo seed requires a server
+restart (or a Render redeploy) to apply its updated information.
 The demo user belongs to its own demo shul; unrelated users are never selected.
 The frontend still derives its shul only from that user's membership, with no
 shul selector or shul/year banner.
