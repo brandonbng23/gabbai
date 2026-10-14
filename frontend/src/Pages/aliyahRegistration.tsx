@@ -44,33 +44,36 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
         <main className="aliyah-registration">
             <a className="registration-back" href="/">← Back to schedule</a>    
 
-            <h1>Register for {parsha?.desc ?? "a Reading"}</h1>
+            {!locked && !unavailable && validSelection ? <h1>Register for {parsha?.desc ?? "a reading"}</h1>
+            : (!validSelection ? <h1>Oy Gevalt!</h1>
+            : <h1>Registration has Closed</h1>)} 
 
-            <div className="register-identity">           
-                <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
-                    <div className="register-switch-options">
-                        <div
-                            className={`register-option${focus ? " register-option-focus" : ""}`}
-                            onClick={() => { if (!focus) updateStates(); }}
-                        >
-                            Register with Profile
-                        </div>
-                        <div
-                            className={`register-option${focus ? "" : " register-option-focus"}`}
-                            onClick={() => { if (focus) updateStates(); }}
-                        >
-                            Register as Guest
+            {!locked && !unavailable && validSelection ? <div className="register-identity">           
+                    <div className={`register-switch${focus ? "" : " register-switch-guest"}`}>
+                        <div className="register-switch-options">
+                            <div
+                                className={`register-option${focus ? " register-option-focus" : ""}`}
+                                onClick={() => { if (!focus) updateStates(); }}
+                            >
+                                Register with Profile
+                            </div>
+                            <div
+                                className={`register-option${focus ? "" : " register-option-focus"}`}
+                                onClick={() => { if (focus) updateStates(); }}
+                            >
+                                Register as Guest
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="register-switch-info">
-                    Use your Gabbai profile to register with your saved details, or register as a guest.
-                </div>
-            </div>
+                    <div className="register-switch-info">
+                        Use your Gabbai profile to register with your saved details, or register as a guest.
+                    </div>
+                </div> : null}
+            
 
             {loading ? <p role="status">Loading your reading…</p>
                 : error ? <p role="alert">{error}</p>
-                : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose an aliyah from the schedule.</p>
+                : !validSelection || !parsha ? <p role="alert">This reading could not be found. Choose another aliyah from the schedule.</p>
                 : <>
                     <dl className="registration-details">
                         <h5>Aliyah Summary</h5>
@@ -80,55 +83,69 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                         <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                     </dl>
 
-                    {!locked && !unavailable && guest ? <div className="registration-details">
-                        <h5>Register as Guest</h5>
-                        <form>
-                            <div className="registration-names">
+                    {!locked && !unavailable && guest ? <>
+                        <div className="registration-details">
+                            <h5>Register as Guest</h5>
+                            <form>
+                                <div className="registration-names">
+                                    <div className="registration-item">
+                                        <dt className="registration-label">First Name</dt>
+                                        <input
+                                            className="name"
+                                            type="text"
+                                            name="firstNameRegister"
+                                            placeholder="i.e. Josh">
+                                        </input>
+                                    </div>
+
+                                    <div className="registration-item">
+                                        <dt className="registration-label">Last Name</dt>
+                                        <input
+                                            className="name"
+                                            type="text"
+                                            name="lastNameRegister"
+                                            placeholder="i.e. Cohen">
+                                        </input>
+                                    </div>
+                                </div>
+
                                 <div className="registration-item">
-                                    <dt className="registration-label">First Name</dt>
+                                    <dt className="registration-label">Hebrew Name</dt>
                                     <input
-                                        className="name"
+                                        className="h-name"
                                         type="text"
-                                        name="firstNameRegister"
-                                        placeholder="i.e. Josh">
+                                        name="hebrewNameRegister"
+                                        placeholder="i.e. Moishe ben Shlomo v'et Devorah">
                                     </input>
                                 </div>
 
                                 <div className="registration-item">
-                                    <dt className="registration-label">Last Name</dt>
+                                    <dt className="registration-label">Email</dt>
                                     <input
-                                        className="name"
-                                        type="text"
-                                        name="lastNameRegister"
-                                        placeholder="i.e. Cohen">
-                                    </input>
+                                        type="email"
+                                        name="emailRegister"
+                                        placeholder="i.e. iheartleyning@gabbai.com">
+                                    </input>  
                                 </div>
-                            </div>
+                            </form>
+                        </div>
 
-                            <div className="registration-item">
-                                <dt className="registration-label">Hebrew Name</dt>
-                                <input
-                                    className="h-name"
-                                    type="text"
-                                    name="hebrewNameRegister"
-                                    placeholder="i.e. Moishe ben Shlomo v'et Devorah">
-                                </input>
-                            </div>
+                    
+                        <div>
+                            <p id="registration-status" role="status">
+                                Online registration is not available yet.
+                            </p>
 
-                            <div className="registration-item">
-                                <dt className="registration-label">Email</dt>
-                                <input
-                                    type="email"
-                                    name="emailRegister"
-                                    placeholder="i.e. iheartleyning@gabbai.com">
-                                </input>  
-                            </div>
-                        </form>
-                    </div>
+                            <button type="button" className="registration-confirm" disabled aria-describedby="registration-status">
+                                Confirm Registration
+                            </button>
+                        </div>
+                    </>
+                    
                     : <div>
                         <p id="registration-status" role="status">
-                        {locked ? "Your shul has locked this aliyah."
-                            : unavailable ? "This aliyah is unavailable. Choose another reading from the schedule."
+                        {locked ? "Your shul has locked this aliyah. Choose another aliyah from the schedule"
+                            : unavailable ? "Another reader has already registered for this reading. Choose another aliyah from the schedule"
                             : "Online registration is not available yet."}
                     </p>
                     <button type="button" className="registration-confirm" disabled aria-describedby="registration-status">
