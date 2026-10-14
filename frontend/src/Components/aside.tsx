@@ -8,15 +8,15 @@ function Aside(): React.JSX.Element {
          icon: (
             <svg className="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M224 64C241.7 64 256 78.3 256 96L256 128L384 128L384 96C384 78.3 398.3 64 416 64C433.7 64 448 78.3 448 96L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 96C192 78.3 206.3 64 224 64zM224 320C206.3 320 192 334.3 192 352L192 416C192 433.7 206.3 448 224 448L288 448C305.7 448 320 433.7 320 416L320 352C320 334.3 305.7 320 288 320L224 320z"/></svg>
          ),
-         link: "#",
-         active: true,
+         link: '/',
+         active: window.location.pathname === '/',
         },
         {text: "My Shul",
          icon: (
             <svg className="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M16 80c0-35.3 28.7-64 64-64s64 28.7 64 64l0 32-128 0 0-32zm0 368l0-288 128 0 126.2-84.2c10.7-7.2 24.8-7.2 35.5 0l126.2 84.2 128 0 0 288c0 35.3-28.7 64-64 64L80 512c-35.3 0-64-28.7-64-64zM560 112l-128 0 0-32c0-35.3 28.7-64 64-64s64 28.7 64 64l0 32zM224 384l0 80 128 0 0-80c0-35.3-28.7-64-64-64s-64 28.7-64 64zm64-152a40 40 0 1 0 0-80 40 40 0 1 0 0 80z"/></svg>
          ),
-         link: "#",
-         active: false,
+         link: '/shul',
+         active: window.location.pathname.replace(/\/$/, '') === '/shul',
         },
         {text: "My Readings",
          icon: (

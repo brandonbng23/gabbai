@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: gabbai-preview
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/test
+    envVars:
+      - key: NODE_VERSION
+        value: "24.18.0"
+      - key: NODE_ENV
+        value: production
+      - key: GABBAI_PREVIEW_MODE
+        value: "true"
+      - key: GABBAI_DATABASE_PATH
+        value: ./data/gabbai.preview.sqlite

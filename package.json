@@ -5,10 +5,16 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "db:init": "node backend/database/init.mjs",
+    "test:db": "node --test tests/database.test.mjs",
+    "test:api": "node --test tests/api.test.mjs",
+    "test:dev": "node --test tests/dev.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",
     "test": "node ./core/main.mts",
-    "dev": "npm --prefix frontend run dev --",
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "npm --prefix frontend run dev --",
+    "dev:backend": "node --watch index.js",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview --",
     "lint": "eslint ."
@@ -54,5 +60,8 @@
   "allowScripts": {
     "react-bootstrap@2.10.10": true,
     "cors@2.8.6": true
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

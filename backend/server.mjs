@@ -1,35 +1,17 @@
-import express from "express";
-import cors from "cors";
-import { fileURLToPath } from "node:url";
-import { getSchedule } from "./schedule.mjs";
+import { createApp } from './app.mjs';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app = createApp();
+const port = process.env.PORT || 3000;
+const host = process.env.NODE_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
+const server = app.listen(port, host, () => {
+    console.log(`Backend running at http://localhost:${port}`);
+});
 
-app.use(cors());
-app.use(express.json());
-
-app.get("/api/test", (req, res) => {
-    res.json({
-        message: "Backend is working"
+function shutdown() {
+    server.close(() => {
+        app.locals.database.close();
     });
-});
-
-app.get("/api/schedule", (req, res) => {
-    const year = Number(req.query.year);
-
-    const schedule = getSchedule(year);
-
-    res.json(schedule);
-});
-
-app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
-
-// The registration URL renders a page in the React app, including on refresh.
-app.get(["/registration", "/registration/"], (req, res) => {
-    res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Backend running at http://localhost:${PORT}`);
-});
+    setTimeout(() => process.exit(1), 3000).unref();
+}
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);

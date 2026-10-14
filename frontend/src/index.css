@@ -996,6 +996,16 @@ h4 {
     overflow-wrap: anywhere;
 }
 
+.shul-context {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 24px;
+    color: #525252;
+    font-family: Inter;
+}
+
 .registration-details-loading {
     position: relative;
     overflow: hidden;

@@ -1,4 +1,4 @@
-function WelcomeBar({fName}: {fName: string}) {
+function WelcomeBar({fName}: {fName?: string}) {
     let hour = new Date().getHours();
     let greeting = "";
 
@@ -12,7 +12,7 @@ function WelcomeBar({fName}: {fName: string}) {
 
     return (
         <div className="welcomeBar">
-            <h4>{greeting}, {fName}!</h4>
+            <h4>{greeting}{fName ? `, ${fName}` : ''}!</h4>
         </div>
     )
 }
