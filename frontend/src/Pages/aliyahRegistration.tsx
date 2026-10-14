@@ -80,51 +80,65 @@ function AliyahRegistration({ schedule, loading, error }: RegistrationProps) {
                         <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                     </dl>
 
-                    {!locked && !unavailable && guest ? <div className="registration-details">
-                        <h5>Register as Guest</h5>
-                        <form>
-                            <div className="registration-names">
+                    {!locked && !unavailable && guest ? <>
+                        <div className="registration-details">
+                            <h5>Register as Guest</h5>
+                            <form>
+                                <div className="registration-names">
+                                    <div className="registration-item">
+                                        <dt className="registration-label">First Name</dt>
+                                        <input
+                                            className="name"
+                                            type="text"
+                                            name="firstNameRegister"
+                                            placeholder="i.e. Josh">
+                                        </input>
+                                    </div>
+
+                                    <div className="registration-item">
+                                        <dt className="registration-label">Last Name</dt>
+                                        <input
+                                            className="name"
+                                            type="text"
+                                            name="lastNameRegister"
+                                            placeholder="i.e. Cohen">
+                                        </input>
+                                    </div>
+                                </div>
+
                                 <div className="registration-item">
-                                    <dt className="registration-label">First Name</dt>
+                                    <dt className="registration-label">Hebrew Name</dt>
                                     <input
-                                        className="name"
+                                        className="h-name"
                                         type="text"
-                                        name="firstNameRegister"
-                                        placeholder="i.e. Josh">
+                                        name="hebrewNameRegister"
+                                        placeholder="i.e. Moishe ben Shlomo v'et Devorah">
                                     </input>
                                 </div>
 
                                 <div className="registration-item">
-                                    <dt className="registration-label">Last Name</dt>
+                                    <dt className="registration-label">Email</dt>
                                     <input
-                                        className="name"
-                                        type="text"
-                                        name="lastNameRegister"
-                                        placeholder="i.e. Cohen">
-                                    </input>
+                                        type="email"
+                                        name="emailRegister"
+                                        placeholder="i.e. iheartleyning@gabbai.com">
+                                    </input>  
                                 </div>
-                            </div>
+                            </form>
+                        </div>
 
-                            <div className="registration-item">
-                                <dt className="registration-label">Hebrew Name</dt>
-                                <input
-                                    className="h-name"
-                                    type="text"
-                                    name="hebrewNameRegister"
-                                    placeholder="i.e. Moishe ben Shlomo v'et Devorah">
-                                </input>
-                            </div>
+                    
+                        <div>
+                            <p id="registration-status" role="status">
+                                Online registration is not available yet.
+                            </p>
 
-                            <div className="registration-item">
-                                <dt className="registration-label">Email</dt>
-                                <input
-                                    type="email"
-                                    name="emailRegister"
-                                    placeholder="i.e. iheartleyning@gabbai.com">
-                                </input>  
-                            </div>
-                        </form>
-                    </div>
+                            <button type="button" className="registration-confirm" disabled aria-describedby="registration-status">
+                                Confirm Registration
+                            </button>
+                        </div>
+                    </>
+                    
                     : <div>
                         <p id="registration-status" role="status">
                         {locked ? "Your shul has locked this aliyah. Choose another aliyah from the schedule"
