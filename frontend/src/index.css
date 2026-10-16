@@ -1789,6 +1789,25 @@ h4 {
     background-color: #66B1F2;
 }
 
+.shul-edit {
+    display: flex;
+    flex-direction: row;
+}
+
+.shul-edit dd {
+    padding-bottom: 10px;
+}
+
+.shul-edit input {
+    background-color: #e4e7eac4;
+    width: 600px;
+    padding: 5px 15px;
+
+    border-radius: 5px;
+    border: 1px solid grey;
+    outline: none;
+}
+
 .footer {
     bottom: 0;
     height: 60px;
