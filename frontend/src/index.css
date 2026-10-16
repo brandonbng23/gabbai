@@ -1789,9 +1789,118 @@ h4 {
     background-color: #66B1F2;
 }
 
-.shul-edit {
+.content-window-settings {
+    --settings-sidebar-width: 250px;
+    margin-left: var(--settings-sidebar-width);
+    width: calc(100% - var(--settings-sidebar-width));
+    min-width: 0;
+    min-height: calc(100dvh - 65px);
+    padding-top: 0;
+    background: #f5f8fb;
+}
+
+@media (max-width: 1200px) {
+    .content-window-settings {
+        --settings-sidebar-width: 150px;
+    }
+}
+
+@media (max-width: 715px) {
+    .content-window-settings {
+        --settings-sidebar-width: 80px;
+    }
+}
+
+.shul-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5px;
+
+    width: 49.5%;
+    min-height: 190px;
+    margin-top: 15px;
+    margin-left: 2%;
+
+    
+    border-radius: 25px;    
+    background-color: #636060;
+
+    color: #d5d5d5;
+}
+
+.shul-card-item {
     display: flex;
     flex-direction: row;
+    justify-items: center;
+
+}
+
+.shul-card-item svg {
+    margin-left: 25px;
+    margin-right: 5px;
+    margin-top: 4px;
+
+    width: 15px;
+    height: 15px;
+
+    fill: #d5d5d5;
+}
+
+.shul-card h1 {
+    margin-left: 25px;
+    padding-top: 15px;
+    font-size: 25px;
+}
+
+.shul-card span {
+    font-size: 15px;
+}
+
+.shul-settings {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    width: 100%;
+    padding: clamp(20px, 3vw, 36px);
+    overflow-wrap: anywhere;
+
+    color: white;
+}
+
+.shul-settings aside {
+    width: 20%;
+}
+
+.shul-settings .settings-view {
+    width: 80%;
+}
+
+.shul-settings-details {
+    margin: 24px 0 0;
+}
+
+.shul-settings-details h5 {
+    margin-bottom: 20px;
+}
+
+.shul-settings-details dt {
+    color: #4f4c4c;
+    font-size: 14px;
+}
+
+.shul-settings-details dd {
+    margin: 0;
+}
+
+.shul-edit {
+    width: 100%;
+}
+
+.shul-edit fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
 }
 
 .shul-edit dd {
@@ -1799,13 +1908,13 @@ h4 {
 }
 
 .shul-edit input {
-    background-color: #e4e7eac4;
-    width: 600px;
+    background-color: #636060;
+    width: 85%;
     padding: 5px 15px;
 
     border-radius: 5px;
     border: 1px solid grey;
-    outline: none;
+    color: #d5d5d5;
 }
 
 .footer {

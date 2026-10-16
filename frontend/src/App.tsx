@@ -55,7 +55,7 @@ function App() {
             <div className="app-layout">
               <Navbar></Navbar>
               <Aside user={user}></Aside>
-            <div className="content-window">
+            <div className={`content-window${isShulSettingsPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration schedule={schedule} loading={loading} error={error} user={user} />
               ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
