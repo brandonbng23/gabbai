@@ -1,5 +1,7 @@
 import type { Shul } from '../api.js';
-import react, { useState } from "react";
+import { updateShul } from '../api.js';
+import { useState } from "react";
+import type { SubmitEvent } from "react";
 
 function EditField( { field }: { field: string } ): React.JSX.Element {
     const [clicked, setClicked] = useState<boolean>(false)
@@ -21,15 +23,41 @@ function EditField( { field }: { field: string } ): React.JSX.Element {
     )
 }
 
-export default function ShulSettings({ shul }: { shul: Shul }): React.JSX.Element {
-    const settings = shul.settings;
-
+export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (shul: Shul) => void }): React.JSX.Element {
     const [name, setName] = useState<string>(shul.name);
     const [address, setAddress] = useState<string>(shul.address);
     const [phone, setPhone] = useState<string>(shul.phone);
     const [email, setEmail] = useState<string>(shul.email);
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [saved, setSaved] = useState(false);
+
+    async function updateShulInfo(event: SubmitEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (saving) return;
+        setSaving(true);
+        setError(null);
+        setSaved(false);
+        try {
+            const updated = await updateShul(shul.id, {
+                name, address, phone, email, websiteUrl: website, donationUrl: donation,
+            });
+            setName(updated.name);
+            setAddress(updated.address);
+            setPhone(updated.phone);
+            setEmail(updated.email);
+            setWebsite(updated.websiteUrl);
+            setDonation(updated.donationUrl);
+            onSaved(updated);
+            setSaved(true);
+        } catch (failure) {
+            setError(failure instanceof Error ? failure.message : 'Unable to save your shul.');
+        } finally {
+            setSaving(false);
+        }
+    }
 
     return (
         <main className="shul-settings">
@@ -38,12 +66,15 @@ export default function ShulSettings({ shul }: { shul: Shul }): React.JSX.Elemen
             <dl className="registration-details">
                 <h5>Shul Information</h5>
                 <div className="shul-edit">
-                    <form>
+                    <form onSubmit={updateShulInfo} onChange={() => setSaved(false)}>
+                        <fieldset disabled={saving}>
                         <dt>Shul Name</dt>
                         <dd>
                             <input
                                 type="text"
                                 value={name}
+                                required
+                                pattern=".*\S.*"
                                 onChange={(e) => setName(e.target.value)}
                             ></input>
                         </dd>
@@ -93,9 +124,10 @@ export default function ShulSettings({ shul }: { shul: Shul }): React.JSX.Elemen
                             ></input>
                         </dd>
 
-                        <input
-                            type="submit"
-                        ></input>
+                        <button type="submit">{saving ? 'Saving…' : 'Save changes'}</button>
+                        </fieldset>
+                        {error && <p role="alert">{error}</p>}
+                        {saved && <p role="status">Shul information saved.</p>}
                     </form>
                 </div>
             </dl>

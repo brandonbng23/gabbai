@@ -16,8 +16,57 @@ async function setup(t, development, options = {}) {
         db.close();
     });
     const base = `http://127.0.0.1:${server.address().port}`;
-    return { shul, user, db, request: path => fetch(base + path) };
+    return { shul, user, db, request: (path, options) => fetch(base + path, options) };
 }
+
+const patchShul = body => ({
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+});
+
+test('shul admins can save contact information without changing reading settings', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const changes = {
+        name: 'Updated Shul', address: '123 Main St', phone: '555-1234',
+        email: 'office@example.com', websiteUrl: 'https://example.com', donationUrl: 'https://example.com/donate',
+    };
+    const response = await request(`/api/shuls/${shul.id}`, patchShul(changes));
+    assert.equal(response.status, 200);
+    const saved = await response.json();
+    for (const [key, value] of Object.entries(changes)) assert.equal(saved[key], value);
+    assert.deepEqual(saved.settings, shul.settings);
+    assert.deepEqual(db.getShul(shul.id), saved);
+    assert.deepEqual(await (await request(`/api/shuls/${shul.id}`)).json(), saved);
+    const cleared = await request(`/api/shuls/${shul.id}`, patchShul({ phone: '' }));
+    assert.equal(cleared.status, 200);
+    assert.equal(db.getShul(shul.id).phone, '');
+    assert.equal(db.getShul(shul.id).name, changes.name);
+});
+
+test('shul updates reject members and administrators from other shuls', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    assert.equal((await request(`/api/shuls/${shul.id}`, patchShul({ name: 'Forbidden' }))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    const other = db.createShul({ name: 'Other Shul', settings: { hebYear: 5787 } });
+    assert.equal((await request(`/api/shuls/${other.id}`, patchShul({ name: 'Forbidden' }))).status, 403);
+    assert.deepEqual(db.getShul(shul.id), shul);
+    assert.deepEqual(db.getShul(other.id), other);
+});
+
+test('shul updates require a current identity and reject invalid fields atomically', async t => {
+    const production = await setup(t, false);
+    assert.equal((await production.request(`/api/shuls/${production.shul.id}`, patchShul({ name: 'Forbidden' }))).status, 401);
+    assert.deepEqual(production.db.getShul(production.shul.id), production.shul);
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    for (const body of [{ name: ' ' }, { phone: 123 }, { name: 'Changed', settings: {} }, null, []]) {
+        const response = await request(`/api/shuls/${shul.id}`, patchShul(body));
+        assert.equal(response.status, 400);
+        assert.deepEqual(db.getShul(shul.id), shul);
+    }
+});
 
 test('frontend APIs return saved profiles and shul schedules', async t => {
     const { request, shul, user, db } = await setup(t, true);

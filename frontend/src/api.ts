@@ -34,6 +34,21 @@ export interface User {
     settings: Record<string, unknown>;
 }
 
+export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
+
+export async function updateShul(id: string, info: ShulInfo): Promise<Shul> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(info),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save your shul. Please try again.');
+    }
+    return response.json();
+}
+
 export async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
     const response = await fetch(path, { signal });
     if (!response.ok) throw new Error('Unable to load your shul. Please try again.');

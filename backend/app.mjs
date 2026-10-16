@@ -28,6 +28,24 @@ export function createApp(database, {
         return res.json(shul);
     });
 
+    app.patch("/api/shuls/:id", (req, res, next) => {
+        res.set("Cache-Control", "no-store");
+        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        if (!user) return res.status(401).json({ error: "Sign in to update your shul" });
+        if (user.role !== 'admin' || user.shulId !== req.params.id) {
+            return res.status(403).json({ error: "Only this shul's administrators can update its information" });
+        }
+        if (!app.locals.database.getShul(req.params.id)) {
+            return res.status(404).json({ error: "Shul not found" });
+        }
+        try {
+            return res.json(app.locals.database.updateShul(req.params.id, req.body));
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     // Previews share a sample identity; regular deployments will use an authenticated session.
     app.get("/api/me", (_req, res) => {
         res.set("Cache-Control", "no-store");
