@@ -22,7 +22,7 @@ const env = { ...process.env, NODE_ENV: 'development', GABBAI_DATABASE_PATH: dat
     GABBAI_API_TARGET: `http://127.0.0.1:${port}`, ...(userId ? { GABBAI_DEV_USER_ID: userId } : {}) };
 console.log(`Development database: ${databasePath}`);
 const children = [
-    spawn(process.execPath, ['index.js'], { cwd: root, env, stdio: 'inherit' }),
+    spawn(process.execPath, ['--watch', 'index.js'], { cwd: root, env, stdio: 'inherit' }),
     spawn(process.execPath, ['node_modules/vite/bin/vite.js', ...process.argv.slice(2)], {
         cwd: fileURLToPath(new URL('../frontend/', import.meta.url)), env, stdio: 'inherit',
     }),

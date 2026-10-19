@@ -82,6 +82,7 @@ export function createApp(database, {
     });
 
     app.get("/api/schedule", (req, res) => {
+        res.set("Cache-Control", "no-store");
         const year = req.query.year === undefined ? undefined : Number(req.query.year);
         if (year !== undefined && (!Number.isInteger(year) || year < 1 || year > 9999)) {
             return res.status(400).json({ error: "Invalid Hebrew year" });

@@ -143,6 +143,11 @@ export class Aliyah {
         return ((this.settings.getHebYear() + 1) % 3) + 1;
     }
 
+    private readingTableName(): string {
+        // The calendar includes the festival day; the shared Shabbat reading does not.
+        return this.desc.replace(/^(Pesach|Sukkot) [IVX]+ (Chol HaMoed Shabbat)$/, '$1 $2');
+    }
+
     private specialReadingName(): string | null {
         const specialShabbat =
             this.occassions.includes("Shabbat Shuva") ? "Shabbat Shuva" :
@@ -182,8 +187,8 @@ export class Aliyah {
      * @returns: string repersenting verses to be read for argued aliyah */
     tradPsukim(a: number, flag: boolean): string | void {
         const readingName = flag
-            ? this.desc
-            : (this.specialReadingName() ?? this.desc);
+            ? this.readingTableName()
+            : (this.specialReadingName() ?? this.readingTableName());
 
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename);
@@ -396,7 +401,7 @@ export class Aliyah {
 
     // Determine which name to use for the triennial CSV.
     // Do not modify this.desc.
-    let readingName = this.desc;
+    let readingName = this.readingTableName();
 
     if (a < 8 && this.desc === "Vaetchanan") {
         readingName = this.settings.getVaetchanan()

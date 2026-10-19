@@ -121,7 +121,7 @@ export class Parsha {
                     )
                 )
             ];
-        } else if (this.desc.toLowerCase().includes("shmini")) {
+        } else if (/^shmini atzeret(?:\s|$)/i.test(this.desc)) {
             occassions = [...occassions, "Shmini Atzeret"];
         } else if (this.desc.toLowerCase().includes("simchat")) {
             occassions = [...occassions, "Simchat Torah"];

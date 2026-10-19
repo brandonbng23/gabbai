@@ -35,11 +35,11 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                          "Yom Kippur", 
                          "Sukkot Day I", 
                          "Sukkot Day II", 
-                         "Sukkot Day VII", 
                          "Shmini Atzeret", 
                          "Simchat Torah",
                          "Pesach Day I",
                          "Pesach Day II",
+                         "Pesach Day VII",
                          "Pesach Day VIII",
                          "Shavuot Day I",
                          "Shavuot Day II"];
@@ -67,6 +67,11 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
             setTriMaftir(false);
             setTradMaftir(true);
         }
+    }
+
+    function updateTenCommandments(tri: boolean): void {
+        setYitro(tri);
+        setVaetchanan(tri);
     }
 
     async function updateShulInfo(event: SubmitEvent<HTMLFormElement>) {
@@ -238,7 +243,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                             <fieldset className="shul-edit" disabled={saving}>
                                 <legend className="visually-hidden">Schedule settings</legend>
                                 <div className="settings-preference-row">
-                                    <div><label htmlFor="shul-aliyot">Shabbat aliyot</label><p>Number of aliyot to be read each Shabbat.</p></div>
+                                    <div><label htmlFor="shul-aliyot">Shabbat Aliyot</label><p>Number of aliyot to be read each Shabbat.</p></div>
                                     <div className="settings-aliyot-control">
                                         <input id="shul-aliyot" type="number" min="1" max="7" step="1" value={a}
                                             onChange={(event) => updateAliyot(+event.target.value )} />
@@ -253,7 +258,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="hhRespect-label" className="settings-field-label">High Holiday aliyot</span><p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p></div>
+                                    <div><span id="hhRespect-label" className="settings-field-label">High Holiday Aliyot</span><p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p></div>
                                     <div className="settings-bi-radio-options" role="group" aria-labelledby="hhRespect-label">
                                         <label className={hhRespect ? 'is-selected' : ''}>
                                             <input
@@ -280,7 +285,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="yRespect-label" className="settings-field-label">Yontif aliyot</span><p>On Yontifs, follow traditional aliyot count for Sukkot, Shmini Atzeret,<br></br>Pesach, Shavuot (5), and Simchat Torah (6), or your congregation's<br></br>Shabbat aliyot count.</p></div>
+                                    <div><span id="yRespect-label" className="settings-field-label">Yontif Aliyot</span><p>On Yontifs, follow traditional aliyot count for Sukkot, Shmini Atzeret,<br></br>Pesach, Shavuot (5), and Simchat Torah (7), or your congregation's<br></br>Shabbat aliyot count.</p></div>
                                     <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
                                         <label className={yRespect ? 'is-selected' : ''}>
                                             <input
@@ -304,6 +309,10 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                             <span>Shabbat</span>
                                         </label>
                                     </div>
+                                </div>
+
+                                <div className="settings-preference-row">
+                                    <div><span id="special-seven-label" className="settings-field-label">Special Seven</span><p>Rarely, the seventh aliyot is replaced by a special reading.<br></br>When reading less than seve</p></div>
                                 </div>
 
                                 <div className="settings-preference-row">
@@ -419,7 +428,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                                     checked={tradMaftir}
                                                     onChange={() => updateMaftir("trad")}
                                                 ></input>
-                                                <span>Traditional Maftir</span>
+                                                <span>Annual Maftir</span>
                                             </label>
 
                                             <label className={!triMaftir && !tradMaftir ? 'is-slected' : ''}>
@@ -433,6 +442,33 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                                 <span>No Maftir</span>
                                             </label>
                                         </div>
+                                    </div>
+
+                                    <div className="settings-preference-row">
+                                        <div><span id="ten-commandments-label" className="settings-field-label">Ten Commandments</span><p>For parashat that include the Ten Commandments, Yitro<br></br>and Vaetchanan, choose to apply the traditional or triennial<br></br>schedule.</p></div>
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="ten-commendments-label">
+                                        <label className={!yitro ? 'is-selected' : ''}>
+                                            <input
+                                                name="ten-commandments"
+                                                type="radio"
+                                                value="traditional"
+                                                checked={!yitro}
+                                                onChange={() => updateTenCommandments(false)}
+                                            ></input>
+                                            <span>Traditional Schedule</span>
+                                        </label>
+
+                                        <label className={yitro ? 'is-selected' : ''}>
+                                            <input 
+                                                name="ten-commandments"
+                                                type="radio"
+                                                value="triennial"
+                                                checked={yitro}
+                                                onChange={() => updateTenCommandments(true)}
+                                            ></input>
+                                            <span>Triennial Schedule</span>
+                                        </label>
+                                    </div>
                                     </div>
                                 </>
                                 : null}

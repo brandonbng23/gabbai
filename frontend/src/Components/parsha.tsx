@@ -159,7 +159,7 @@ export default function Parsha(props: ParshaObj): React.JSX.Element {
 
                 <div className="aliyot">
                     {props.psukim.map((p: string, index) =>
-                        p !== "null" ? (
+                        p.trim() !== "" && p !== "null" ? (
                             (props.locked ? (
                                 <Aliyah
                                     key={index}

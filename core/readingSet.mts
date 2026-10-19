@@ -113,30 +113,24 @@ export class ReadingSet {
     /* Maps and returns array of psukim (chapter:verse range) for all aliyot in reading set
      * @returns: array of strings repersenting psukim each in a human-readable format */
     getPsukimArr(): string[] {
-        return this.aliyot.map((a: Aliyah): string => a.figurePsukim());
+        // Keep the fixed positions of maftir and haftarah (8 and 9).
+        return this.aliyot.map((aliyah: Aliyah, index): string =>
+            index >= this.a && index < 7 ? "null" : aliyah.figurePsukim());
     }
 
-    /* Returns book of Torah of parsha. If reading set contains aliyot from multiple books of Torah
-     * and occassion is not Shabbat, 'Yontif' is returned instead */
+    /* Classify holidays separately; weekly readings keep their main Torah book,
+     * including when their special maftir comes from another book. */
     getBook(): string {
-        const firstVerse: string = this.getPsukim(1);
-        const psukim: string[] = this.getPsukimArr();
-
-        const firstBook: string = firstVerse.includes("Genesis") ? "Genesis"
-        : (firstVerse.includes("Exodus") ? "Exodus"
-            : (firstVerse.includes("Leviticus") ? "Leviticus"
-                : (firstVerse.includes("Numbers") ? "Numbers"
-                    : "Deuteronomy")));
-
-        for (let i = 0; i < psukim.length - 1; i++) {
-            if (!psukim[i].includes(firstBook)) {
-                  if (this.occassions.every((o: string) => !o.toLowerCase().includes("chanukah"))) {
-                    return "Yontifs";
-                }
-            }
+        if (/^(Rosh Hashana|Yom Kippur|Sukkot|Shmini Atzeret|Simchat Torah|Pesach|Shavuot)(?:\s|$)/.test(this.desc)) {
+            return "Yontifs";
         }
 
-        return firstBook;
+        const readings = this.getPsukimArr().slice(0, 7);
+        for (const verses of readings) {
+            const book = /^(Genesis|Exodus|Leviticus|Numbers|Deuteronomy)\b/.exec(verses.trim());
+            if (book) return book[1];
+        }
+        return "";
     }
 
     /* Formats and prints and instance of Reading

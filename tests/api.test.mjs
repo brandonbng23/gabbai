@@ -91,6 +91,33 @@ test('admins can patch reading settings, preserving profile and other nested set
     assert.ok(readings.every(reading => reading.hDate.includes('5787')));
 });
 
+test('saved schedule preferences change only the selected shul readings', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    db.updateShulSettings(shul.id, { hebYear: 5787, il: false, a: 7 });
+    const other = db.createShul({ name: 'Other congregation', settings: { hebYear: 5787 } });
+    const schedulePath = id => `/api/schedule?shul=${id}`;
+    const before = await (await request(schedulePath(shul.id))).json();
+    const otherBefore = await (await request(schedulePath(other.id))).json();
+    assert.ok(before.some(reading => reading.desc === 'Rosh Hashana II'));
+    const weeklyBefore = before.find(reading => reading.desc === "Ha'azinu");
+    assert.ok(weeklyBefore.psukim.slice(0, 7).every(verses => verses !== 'null'));
+
+    const saved = await request(`/api/shuls/${shul.id}/settings`, patchShul({
+        a: 3, yontifs: { rh2: false },
+    }));
+    assert.equal(saved.status, 200);
+    const response = await request(schedulePath(shul.id));
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const after = await response.json();
+    assert.ok(!after.some(reading => reading.desc === 'Rosh Hashana II'));
+    const weeklyAfter = after.find(reading => reading.desc === "Ha'azinu");
+    assert.deepEqual(weeklyAfter.psukim.slice(3, 7), ['null', 'null', 'null', 'null']);
+    assert.deepEqual(weeklyAfter.psukim.slice(0, 3), weeklyBefore.psukim.slice(0, 3));
+    assert.deepEqual(weeklyAfter.psukim.slice(7), weeklyBefore.psukim.slice(7));
+    assert.deepEqual(await (await request(schedulePath(other.id))).json(), otherBefore);
+});
+
 test('reading settings require an admin of the same shul', async t => {
     const production = await setup(t, false);
     assert.equal((await production.request(`/api/shuls/${production.shul.id}/settings`, patchShul({ a: 5 }))).status, 401);
