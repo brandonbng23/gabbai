@@ -68,6 +68,56 @@ test('shul updates require a current identity and reject invalid fields atomical
     }
 });
 
+test('admins can patch reading settings, preserving profile and other nested settings', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const response = await request(`/api/shuls/${shul.id}/settings`, patchShul({
+        hebYear: 5787, a: 5, yontifs: { rh2: false }, triennial: { yitro: false },
+    }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const saved = await response.json();
+    assert.deepEqual(saved, {
+        ...shul,
+        settings: {
+            ...shul.settings, hebYear: 5787, a: 5,
+            yontifs: { ...shul.settings.yontifs, rh2: false },
+            triennial: { ...shul.settings.triennial, yitro: false },
+        },
+    });
+    assert.deepEqual(db.getShul(shul.id), saved);
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    assert.ok(readings.length > 0);
+    assert.ok(readings.every(reading => reading.hDate.includes('5787')));
+});
+
+test('reading settings require an admin of the same shul', async t => {
+    const production = await setup(t, false);
+    assert.equal((await production.request(`/api/shuls/${production.shul.id}/settings`, patchShul({ a: 5 }))).status, 401);
+    assert.deepEqual(production.db.getShul(production.shul.id), production.shul);
+    const { request, shul, user, db } = await setup(t, true);
+    assert.equal((await request(`/api/shuls/${shul.id}/settings`, patchShul({ a: 5 }))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    const other = db.createShul({ name: 'Other', settings: { hebYear: 5787 } });
+    assert.equal((await request(`/api/shuls/${other.id}/settings`, patchShul({ a: 5 }))).status, 403);
+    assert.deepEqual(db.getShul(shul.id), shul);
+    assert.deepEqual(db.getShul(other.id), other);
+});
+
+test('invalid reading settings fail atomically', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    for (const body of [
+        { a: 8 }, { il: 'true' }, { a: 5, yontifs: { typo: true } },
+        { triennial: { triMaftir: true, tradMaftir: true } },
+        { tri: true }, { name: 'Changed' }, null, [],
+    ]) {
+        const response = await request(`/api/shuls/${shul.id}/settings`, patchShul(body));
+        assert.equal(response.status, 400);
+        assert.deepEqual(db.getShul(shul.id), shul);
+    }
+});
+
 test('frontend APIs return saved profiles and shul schedules', async t => {
     const { request, shul, user, db } = await setup(t, true);
     assert.deepEqual(await (await request('/api/shuls')).json(), [{ id: shul.id, name: shul.name }]);

@@ -1,3 +1,5 @@
+import type { Yontifs } from '../../interfaces/yontifs.mts';
+
 export interface ShulSummary {
     id: string;
     name: string;
@@ -16,9 +18,28 @@ export interface Shul extends ShulSummary {
         hhRespect: boolean;
         yRespect: boolean;
         specialSeventh: boolean;
-        yontifs: Record<string, boolean>;
+        yontifs: Yontifs;
         triennial: { tri: boolean; triMaftir: boolean; tradMaftir: boolean; yitro: boolean; vaetchanan: boolean };
     };
+}
+
+export type Settings = Shul['settings'];
+export type SettingsPatch = Partial<Omit<Settings, 'yontifs' | 'triennial'>> & {
+    yontifs?: Partial<Settings['yontifs']>;
+    triennial?: Partial<Settings['triennial']>;
+};
+
+export async function updateShulSettings(id: string, settings: SettingsPatch): Promise<Shul> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save reading settings. Please try again.');
+    }
+    return response.json();
 }
 
 export interface User {
