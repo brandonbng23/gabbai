@@ -46,13 +46,26 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
 
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
-    function updateAliyot({ aliyot }: { aliyot: number}): void {
+    function updateAliyot(aliyot: number): void {
         if (aliyot < 1) {
             setA(1);
         } else if (aliyot > 7) {
             setA(7);
         } else {
             setA(aliyot);
+        }
+    }
+
+    function updateMaftir(maftir: string): void {
+        if (maftir === "none") {
+            setTriMaftir(false);
+            setTradMaftir(false);
+        } else if (maftir === "tri") {
+            setTriMaftir(true);
+            setTradMaftir(false);
+        } else if (maftir === "trad") {
+            setTriMaftir(false);
+            setTradMaftir(true);
         }
     }
 
@@ -228,10 +241,10 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                     <div><label htmlFor="shul-aliyot">Shabbat aliyot</label><p>Number of aliyot to be read each Shabbat.</p></div>
                                     <div className="settings-aliyot-control">
                                         <input id="shul-aliyot" type="number" min="1" max="7" step="1" value={a}
-                                            onChange={(event) => updateAliyot({ aliyot: +event.target.value })} />
+                                            onChange={(event) => updateAliyot(+event.target.value )} />
                                         <div className="slide-container">
                                             <input type="range" min="1" max="7" step="1" value={a} className="slider" aria-label="Shabbat aliyot"
-                                                onChange={(event) => updateAliyot({ aliyot: +event.target.value })} />
+                                                onChange={(event) => updateAliyot(+event.target.value )} />
                                             <div className="slider-labels" aria-hidden="true">
                                                 {[1, 2, 3, 4, 5, 6, 7].map((value) => <span className="slider-tick" key={value}><span>{value}</span></span>)}
                                             </div>
@@ -354,6 +367,75 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                         </button>
                                     </div>
                                 </div>
+
+                                <div className="settings-preference-row">
+                                    <div><span id="triennial-label" className="settings-field-label">Triennial</span><p>Subscribe to the triennial or traditional reading schedule.</p></div>
+                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="triennial-label">
+                                        <label className={!tri ? 'is-selected' : ''}>
+                                            <input
+                                                name="triennial"
+                                                type="radio"
+                                                value="traditional"
+                                                checked={!tri}
+                                                onChange={() => setTri(false)}
+                                            ></input>
+                                            <span>Traditional Schedule</span>
+                                        </label>
+
+                                        <label className={tri ? 'is-selected' : ''}>
+                                            <input 
+                                                name="triennial"
+                                                type="radio"
+                                                value="triennial"
+                                                checked={tri}
+                                                onChange={() => setTri(true)}
+                                            ></input>
+                                            <span>Triennial Schedule</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {tri? <>
+                                    <div className="settings-preference-row">
+                                        <div><span id="maftir-label" className="settings-field-label">Maftir</span><p>Select the maftir to be read each week.</p></div>
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="maftir-label">
+                                            <label className={triMaftir ? 'is-selected' : ''}>
+                                                <input
+                                                    name="maftir"
+                                                    type="radio"
+                                                    value="tri"
+                                                    checked={triMaftir}
+                                                    onChange={() => updateMaftir("tri")}
+                                                ></input>
+                                                <span>Triennial Maftir</span>
+                                            </label>
+                                            
+
+                                            <label className={tradMaftir ? 'is-selected' : ''}>
+                                                <input 
+                                                    name="maftir"
+                                                    type="radio"
+                                                    value="trad"
+                                                    checked={tradMaftir}
+                                                    onChange={() => updateMaftir("trad")}
+                                                ></input>
+                                                <span>Traditional Maftir</span>
+                                            </label>
+
+                                            <label className={!triMaftir && !tradMaftir ? 'is-slected' : ''}>
+                                                <input 
+                                                    name="maftir"
+                                                    type="radio"
+                                                    value="tri"
+                                                    checked={!triMaftir && !tradMaftir}
+                                                    onChange = {() => updateMaftir("none")}
+                                                ></input>
+                                                <span>No Maftir</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </>
+                                : null}
 
                                 <div className="settings-form-footer">
                                     <span>Apply these preferences to your reading schedule.</span>
