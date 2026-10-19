@@ -1,10 +1,15 @@
 import type { Shul } from '../api.js';
+import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
 import { updateShul, updateShulSettings } from '../api.js';
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 
-export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (shul: Shul) => void }): React.JSX.Element {
+export default function ShulSettings({ shul, onSaved, schedule }: {
+    shul: Shul;
+    onSaved: (shul: Shul) => void;
+    schedule: ParshaObj[];
+}): React.JSX.Element {
     const settings = shul.settings;
 
     const [name, setName] = useState<string>(shul.name);
@@ -176,8 +181,6 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                             </div>
                         </div>
                     </aside>
-
-                    
 
                     <section className="settings-panel" aria-labelledby="shul-info-heading">
                         <div className="settings-section-header">

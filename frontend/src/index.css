@@ -2138,6 +2138,29 @@ body:has(.content-window-settings) {
     font-size: 14px;
 }
 
+.settings-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+.settings-nav button {
+    border: 1px solid white;
+    border-radius: 9px;
+    padding: 5px 15px 5px 15px;
+    background-color: rgb(48, 47, 48);
+
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.settings-nav button:hover {
+    color: white;
+    border: none;
+    background-color: #8bc8ff;
+}
+
 .settings-success { color: #a3e4bc; }
 .settings-error { color: #ffb4b4; }
 
