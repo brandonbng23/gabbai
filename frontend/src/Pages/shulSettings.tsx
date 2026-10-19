@@ -177,6 +177,8 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                         </div>
                     </aside>
 
+                    
+
                     <section className="settings-panel" aria-labelledby="shul-info-heading">
                         <div className="settings-section-header">
                             <div><h2 id="shul-info-heading">Shul information</h2><p>Keep your congregation’s contact details up to date.</p></div>
@@ -235,9 +237,15 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                         </form>
                     </section>
 
+                    <section className="settings-panel" aria-labelledby="restrictions-heading">
+                        <div className="settings-section-header">
+                            <div><h2 id="restrictions-heading">Schedule Restrictions</h2><p>Lock readings and their aliyot to manually orchestrate Torah readers.</p></div>
+                        </div>
+                    </section>
+
                     <section className="settings-panel" aria-labelledby="schedule-heading">
                         <div className="settings-section-header">
-                            <div><h2 id="schedule-heading">Schedule settings</h2><p>Set reading preferences to reflect your congregation’s traditions.</p></div>
+                            <div><h2 id="schedule-heading">Schedule Settings</h2><p>Set reading preferences to reflect your congregation’s traditions.</p></div>
                         </div>
                         <form className="shul-settings-edit" onSubmit={updateShulSchedule} onChange={() => setSaved(null)}>
                             <fieldset className="shul-edit" disabled={saving}>
@@ -256,6 +264,45 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                         </div>
                                     </div>
                                 </div>
+
+                                {a < 7 ? <>
+                                    <div className="settings-preference-row">
+                                        <div><span id="special-seven-label" className="settings-field-label">Special Seven</span><p>Rarely, the seventh aliyot is replaced by a special reading. When<br></br>reading less than seven aliyot, choose to read the special seventh<br></br>aliyah in place of the last aliyah.</p></div>
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
+                                            <label className={specialSeventh ? 'is-selected' : ''}>
+                                                <input
+                                                    name="special-seventh"
+                                                    type="radio"
+                                                    value="traditional"
+                                                    checked={specialSeventh}
+                                                    onChange={() => setSpecialSeventh(true)}
+                                                />
+                                                <span>Special Final Aliyah</span>
+                                            </label>
+
+                                            <label className={!specialSeventh ? 'is-selected' : ''}>
+                                                <input
+                                                    name="special-seventh"
+                                                    type="radio"
+                                                    value="scheduled"
+                                                    checked={!specialSeventh}
+                                                    onChange={() => setSpecialSeventh(false)}
+                                                />
+                                                <span>Traditional{a === 1 ? " First "
+                                                            : (a === 2 ? " Second "
+                                                                : (a === 3 ? " Third "
+                                                                    : (a === 4 ? " Fourth  "
+                                                                        : (a === 5 ? " Fifth "
+                                                                            : " Sixth "
+                                                                        )
+                                                                    )
+                                                                )   
+                                                            )
+                                                    }Aliyah</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </> : null}
 
                                 <div className="settings-preference-row">
                                     <div><span id="hhRespect-label" className="settings-field-label">High Holiday Aliyot</span><p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p></div>
@@ -312,10 +359,6 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="special-seven-label" className="settings-field-label">Special Seven</span><p>Rarely, the seventh aliyot is replaced by a special reading.<br></br>When reading less than seve</p></div>
-                                </div>
-
-                                <div className="settings-preference-row">
                                     <div><span id="calendar-label" className="settings-field-label">Calendar</span><p>The geographical calendar your shul follows.</p></div>
                                     <div className="settings-bi-radio-options" role="group" aria-labelledby="calendar-label">
                                         <label className={!il ? 'is-selected' : ''}>
@@ -342,7 +385,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                 </div>
 
                                 <div className="settings-preference-row settings-preference-row-top">
-                                    <div><span id="yontifs-label" className="settings-field-label">Observed Yontifs</span><p>The Yontifs your shul observes with a Torah reading.</p></div>
+                                    <div><span id="yontifs-label" className="settings-field-label">Observed Yontifs</span><p>Select the Yontifs your shul observes with a Torah reading.</p></div>
                                     <div className="settings-check-options" role="group" aria-labelledby="yontifs-label">
                                         {yontifNames.map((y: string, index) => {
                                             const abbreviation = yontifAbr[index];
@@ -445,7 +488,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                     </div>
 
                                     <div className="settings-preference-row">
-                                        <div><span id="ten-commandments-label" className="settings-field-label">Ten Commandments</span><p>For parashat that include the Ten Commandments, Yitro<br></br>and Vaetchanan, choose to apply the traditional or triennial<br></br>schedule.</p></div>
+                                        <div><span id="ten-commandments-label" className="settings-field-label">Ten Commandments</span><p>For parshiyot that include the Ten Commandments, Yitro<br></br>and Vaetchanan, choose to apply the traditional or triennial<br></br>schedule.</p></div>
                                         <div className="settings-bi-radio-options" role="group" aria-labelledby="ten-commendments-label">
                                         <label className={!yitro ? 'is-selected' : ''}>
                                             <input
