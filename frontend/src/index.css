@@ -2076,7 +2076,8 @@ body:has(.content-window-settings) {
 }
 
 .shul-admin-page :is(input, textarea, button):focus-visible,
-.settings-calendar-options label:has(input:focus-visible) {
+.settings-bi-radio-options label:has(input:focus-visible),
+.settings-check-options label:has(input:focus-visible) {
     outline: 2px solid var(--settings-accent);
     outline-offset: 3px;
 }
@@ -2245,12 +2246,24 @@ input[type="number"] {
     transform: translateX(-50%);
 }
 
-.settings-calendar-options {
+.settings-bi-radio-options {
     display: flex;
     gap: 10px;
 }
 
-.shul-admin-page .settings-calendar-options > label {
+.settings-check-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    gap: 10px;
+}
+
+.settings-preference-row.settings-preference-row-top {
+    align-items: start;
+}
+
+.shul-admin-page .settings-bi-radio-options > label {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -2263,17 +2276,103 @@ input[type="number"] {
     cursor: pointer;
 }
 
-.settings-calendar-options label.is-selected {
+.shul-admin-page .settings-check-options > label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0;
+    gap: 16px;
+    padding: 12px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.settings-select-all {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--settings-accent);
+    border-radius: 9px;
+    background: var(--settings-accent);
+    color: #152b40;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.settings-select-all:hover {
+    background: #b5ddff;
+}
+
+.settings-bi-radio-options label.is-selected {
     border-color: var(--settings-accent);
     background: #8bc8ff10;
     color: #c3e3ff;
 }
 
-.settings-calendar-options input {
-    accent-color: var(--settings-accent);
+.settings-check-options label.is-selected {
+    border-color: var(--settings-accent);
+    background: #8bc8ff10;
+    color: #c3e3ff;
+}
+
+.settings-bi-radio-options input {
+    appearance: none;
+    flex: 0 0 16px;
     width: 16px;
     height: 16px;
     margin: 0;
+    border: 1px solid #929097;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.settings-bi-radio-options input:checked {
+    border-color: var(--settings-accent);
+    padding: 3px;
+    background: var(--settings-accent);
+    background-clip: content-box;
+}
+
+.settings-bi-radio-options input:enabled:hover {
+    border-color: #b5ddff;
+}
+
+.settings-bi-radio-options input:checked:enabled:hover {
+    background-color: #b5ddff;
+}
+
+.settings-check-options input {
+    appearance: none;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 1px solid #929097;
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.settings-check-options input:checked {
+    border-color: var(--settings-accent);
+    background: var(--settings-accent);
+    padding: 2px;
+    background-clip: content-box;
+}
+
+.settings-check-options input:enabled:hover {
+    border-color: #b5ddff;
+    background-color: #8bc8ff20;
+}
+
+.settings-check-options input:checked:enabled:hover {
+    background-color: #b5ddff;
 }
 
 @media (max-width: 1000px) {
@@ -2284,6 +2383,7 @@ input[type="number"] {
     }
     .settings-contact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .settings-preference-row { grid-template-columns: 1fr; gap: 16px; }
+    .settings-check-options { width: 100%; }
 }
 
 @media (max-width: 650px) {
@@ -2297,8 +2397,10 @@ input[type="number"] {
     .settings-preview-value { min-height: 0; padding: 0; }
     .settings-form-footer { align-items: stretch; flex-direction: column; }
     .settings-section-header { align-items: flex-start; }
-    .settings-calendar-options { flex-wrap: wrap; }
-    .settings-calendar-options label { min-width: 90px; }
+    .settings-bi-radio-options { flex-wrap: wrap; }
+    .settings-bi-radio-options label { min-width: 90px; }
+    .settings-check-options { width: 100%; grid-template-columns: 1fr; }
+    .settings-check-options label { min-width: 0; }
 }
 
 .footer {

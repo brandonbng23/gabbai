@@ -29,6 +29,22 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
     const [tradMaftir, setTradMaftir] = useState<boolean>(settings.triennial.tradMaftir);
     const [yitro, setYitro] = useState<boolean>(settings.triennial.yitro);
     const [vaetchanan, setVaetchanan] = useState<boolean>(settings.triennial.vaetchanan);
+    const yontifAbr: (keyof Yontifs)[] = ["rh1", "rh2", "yk", "sukkot1", "sukkot2", "sukkotSA", "sukkotST", "pesach1", "pesach2", "pesach7", "pesach8", "shavuot1", "shavuot2"]
+    const yontifNames = ["Rosh Hashana Day I", 
+                         "Rosh Hashana Day II", 
+                         "Yom Kippur", 
+                         "Sukkot Day I", 
+                         "Sukkot Day II", 
+                         "Sukkot Day VII", 
+                         "Shmini Atzeret", 
+                         "Simchat Torah",
+                         "Pesach Day I",
+                         "Pesach Day II",
+                         "Pesach Day VIII",
+                         "Shavuot Day I",
+                         "Shavuot Day II"];
+
+    const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
     function updateAliyot({ aliyot }: { aliyot: number}): void {
         if (aliyot < 1) {
@@ -225,7 +241,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
 
                                 <div className="settings-preference-row">
                                     <div><span id="hhRespect-label" className="settings-field-label">High Holiday aliyot</span><p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p></div>
-                                    <div className="settings-calendar-options" role="group" aria-labelledby="hhRespect-label">
+                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="hhRespect-label">
                                         <label className={hhRespect ? 'is-selected' : ''}>
                                             <input
                                                 name="hhRespect"
@@ -252,7 +268,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
 
                                 <div className="settings-preference-row">
                                     <div><span id="yRespect-label" className="settings-field-label">Yontif aliyot</span><p>On Yontifs, follow traditional aliyot count for Sukkot, Shmini Atzeret,<br></br>Pesach, Shavuot (5), and Simchat Torah (6), or your congregation's<br></br>Shabbat aliyot count.</p></div>
-                                    <div className="settings-calendar-options" role="group" aria-labelledby="yRespect-label">
+                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
                                         <label className={yRespect ? 'is-selected' : ''}>
                                             <input
                                                 name="yRespect"
@@ -279,7 +295,7 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
 
                                 <div className="settings-preference-row">
                                     <div><span id="calendar-label" className="settings-field-label">Calendar</span><p>The geographical calendar your shul follows.</p></div>
-                                    <div className="settings-calendar-options" role="group" aria-labelledby="calendar-label">
+                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="calendar-label">
                                         <label className={!il ? 'is-selected' : ''}>
                                             <input 
                                                 name="calendar" 
@@ -300,6 +316,42 @@ export default function ShulSettings({ shul, onSaved }: { shul: Shul; onSaved: (
                                             />
                                             <span>Israel</span>
                                         </label>
+                                    </div>
+                                </div>
+
+                                <div className="settings-preference-row settings-preference-row-top">
+                                    <div><span id="yontifs-label" className="settings-field-label">Observed Yontifs</span><p>The Yontifs your shul observes with a Torah reading.</p></div>
+                                    <div className="settings-check-options" role="group" aria-labelledby="yontifs-label">
+                                        {yontifNames.map((y: string, index) => {
+                                            const abbreviation = yontifAbr[index];
+                                            return (
+                                                <label key={abbreviation} className={yontifs[abbreviation] ? 'is-selected' : ''}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={yontifs[abbreviation]}
+                                                        onChange={(event) => setYontifs({ ...yontifs, [abbreviation]: event.target.checked })}
+                                                    />
+                                                    <span>{y}</span>
+                                                </label>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            className="settings-select-all"
+                                            onClick={() => {
+                                                setSaved(null);
+                                                setYontifs((previous) => {
+                                                    const checked = !yontifAbr.every((abbreviation) => previous[abbreviation]);
+                                                    const updated = { ...previous };
+                                                    yontifAbr.forEach((abbreviation) => {
+                                                        updated[abbreviation] = checked;
+                                                    });
+                                                    return updated;
+                                                });
+                                            }}
+                                        >
+                                            {allYontifsSelected ? 'Unselect all' : 'Select all'}
+                                        </button>
                                     </div>
                                 </div>
 
