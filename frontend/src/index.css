@@ -1789,6 +1789,12 @@ h4 {
     background-color: #66B1F2;
 }
 
+/* Match the viewport background during overscroll on Shul Settings. */
+html:has(.content-window-settings),
+body:has(.content-window-settings) {
+    background: #464545;
+}
+
 .content-window-settings {
     --settings-sidebar-width: 250px;
     margin-left: var(--settings-sidebar-width);
@@ -1796,7 +1802,7 @@ h4 {
     min-width: 0;
     min-height: calc(100dvh - 65px);
     padding-top: 0;
-    background: #f5f8fb;
+    background: #464545;
 }
 
 @media (max-width: 1200px) {
@@ -1811,110 +1817,488 @@ h4 {
     }
 }
 
-.shul-card {
+/* Shul administration */
+.shul-admin-page {
+    --settings-surface: #302f30;
+    --settings-border: #504f52;
+    --settings-muted: #bdbcc4;
+    --settings-accent: #8bc8ff;
+    padding: clamp(20px, 3vw, 44px);
+    color: #f6f5f7;
+    font-family: Fustat, sans-serif;
+}
+
+.settings-page-header,
+.shul-settings {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+}
+
+.settings-page-header {
     display: flex;
-    flex-direction: column;
-    gap: 1.5px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 28px;
+}
 
-    width: 49.5%;
-    min-height: 190px;
-    margin-top: 15px;
-    margin-left: 2%;
+.settings-eyebrow {
+    display: block;
+    color: var(--settings-accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    margin-bottom: 8px;
+}
 
-    
-    border-radius: 25px;    
-    background-color: #636060;
+.settings-page-header h1 {
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -.035em;
+    margin: 0 0 8px;
+}
 
-    color: #d5d5d5;
+.settings-page-header p,
+.settings-section-header p,
+.settings-preference-row p {
+    color: var(--settings-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.settings-admin-badge,
+.settings-published-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border: 1px solid var(--settings-border);
+    border-radius: 30px;
+    color: #dddce3;
+    font-size: 12px;
+}
+
+.settings-admin-badge > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9ad9b6;
+}
+
+.settings-view {
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+}
+
+.settings-view h2 {
+    border: none;
+
+    padding-left: 0;
+    padding-bottom: 0;
+}
+
+.shul-card,
+.settings-panel {
+    min-width: 0;
+    border: 1px solid var(--settings-border);
+    border-radius: 18px;
+    background: var(--settings-surface);
+    box-shadow: 0 6px 20px #0000000d;
+    overflow-wrap: anywhere;
+}
+
+.shul-card {
+    padding: clamp(20px, 3vw, 30px);
+    background: linear-gradient(115deg, #303c48, #302f30 75%);
+}
+
+.settings-summary-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--settings-border);
+}
+
+.settings-summary-heading h2 {
+    font-size: 25px;
+    font-weight: 650;
+    margin: 0;
+}
+
+.settings-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px 28px;
 }
 
 .shul-card-item {
     display: flex;
-    flex-direction: row;
-    justify-items: center;
-
-}
-
-.shul-card-item svg {
-    margin-left: 25px;
-    margin-right: 5px;
-    margin-top: 4px;
-
-    width: 15px;
-    height: 15px;
-
-    fill: #d5d5d5;
-}
-
-.shul-card h1 {
-    margin-left: 25px;
-    padding-top: 15px;
-    font-size: 25px;
-}
-
-.shul-card span {
-    font-size: 15px;
-}
-
-.shul-settings {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    width: 100%;
-    padding: clamp(20px, 3vw, 36px);
-    overflow-wrap: anywhere;
-
-    color: white;
-}
-
-.shul-settings aside {
-    width: 20%;
-}
-
-.shul-settings .settings-view {
-    width: 80%;
-}
-
-.shul-settings-details {
-    margin: 24px 0 0;
-}
-
-.shul-settings-details h5 {
-    margin-bottom: 20px;
-}
-
-.shul-settings-details dt {
-    color: #4f4c4c;
+    align-items: flex-start;
+    min-width: 0;
+    gap: 12px;
     font-size: 14px;
 }
 
-.shul-settings-details dd {
-    margin: 0;
+.shul-card-item svg {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin-top: 3px;
+    color: var(--settings-accent);
+}
+
+.settings-contact-label {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--settings-muted);
+    font-size: 12px;
+}
+
+.settings-panel {
+    padding: clamp(20px, 3vw, 30px);
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--settings-border);
+}
+
+.settings-section-number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    height: 38px;
+    border: 1px solid #8bc8ff30;
+    border-radius: 12px;
+    color: var(--settings-accent);
+    background: #8bc8ff0d;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.settings-section-header h2 {
+    font-size: 21px;
+    font-weight: 650;
+    margin: 0 0 4px;
+}
+
+.shul-settings-edit {
+    margin-top: 24px;
 }
 
 .shul-edit {
     width: 100%;
-}
-
-.shul-edit fieldset {
     min-width: 0;
     margin: 0;
     padding: 0;
     border: 0;
 }
 
-.shul-edit dd {
-    padding-bottom: 10px;
+.settings-field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    margin-bottom: 20px;
 }
 
-.shul-edit input {
-    background-color: #636060;
-    width: 85%;
-    padding: 5px 15px;
+.settings-column-headings {
+    color: var(--settings-accent);
+    font-size: 13px;
+    font-weight: 650;
+    margin-bottom: 18px;
+}
 
-    border-radius: 5px;
-    border: 1px solid grey;
-    color: #d5d5d5;
+.settings-column-headings small {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    color: var(--settings-muted);
+    font-weight: 400;
+}
+
+.settings-field-edit,
+.settings-field-preview {
+    min-width: 0;
+}
+
+.settings-field-edit label,
+.settings-field-label,
+.settings-preference-row > div > label {
+    display: block;
+    margin-bottom: 7px;
+    color: #eeedf2;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.settings-field-preview {
+    padding-left: 24px;
+    border-left: 1px solid var(--settings-border);
+}
+
+.settings-column-headings > span:last-child {
+    padding-left: 24px;
+}
+
+.shul-admin-page .settings-field-edit input,
+.shul-admin-page .settings-field-edit textarea,
+.shul-admin-page input[type="number"] {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 13px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: #3d3b3f;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 14px;
+    transition: border-color .15s, background-color .15s;
+}
+
+.settings-field-edit textarea {
+    resize: vertical;
+}
+
+.shul-admin-page input:hover,
+.shul-admin-page textarea:hover {
+    border-color: #929097;
+}
+
+.shul-admin-page :is(input, textarea, button):focus-visible,
+.settings-calendar-options label:has(input:focus-visible) {
+    outline: 2px solid var(--settings-accent);
+    outline-offset: 3px;
+}
+
+.settings-preview-value {
+    padding-block: 10px;
+    min-height: 44px;
+    font-size: 14px;
+    color: #d2d0d9;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.settings-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--settings-border);
+}
+
+.settings-form-footer > span {
+    color: var(--settings-muted);
+    font-size: 12px;
+}
+
+.shul-admin-page .submit-btn {
+    flex-shrink: 0;
+    min-height: 42px;
+    padding: 10px 20px;
+    border: 1px solid #8bc8ff;
+    border-radius: 9px;
+    background: #8bc8ff;
+    color: #152b40;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: background-color .15s;
+}
+
+.shul-admin-page .submit-btn:hover {
+    background: #b5ddff;
+}
+
+.shul-admin-page fieldset:disabled {
+    opacity: .6;
+}
+
+.shul-admin-page fieldset:disabled .submit-btn {
+    cursor: wait;
+}
+
+.shul-admin-page .submission-msg:not(:empty) {
+    padding-top: 16px;
+    font-size: 14px;
+}
+
+.settings-success { color: #a3e4bc; }
+.settings-error { color: #ffb4b4; }
+
+.settings-preference-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 28px;
+    padding-block: 8px 24px;
+}
+
+.settings-preference-row + .settings-preference-row {
+    padding-top: 24px;
+    border-top: 1px solid var(--settings-border);
+}
+
+.settings-aliyot-control {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+    min-width: 0;
+}
+
+.shul-admin-page input[type="number"] {
+    flex: 0 0 64px;
+    width: 64px;
+    text-align: center;
+}
+
+/* Preserve number inputs while hiding browser spinner controls. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.shul-admin-page .slide-container {
+    flex: 1;
+    min-width: 0;
+    padding-top: 10px;
+}
+
+.shul-admin-page .slider {
+    display: block;
+    appearance: none;
+    width: 100%;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    accent-color: var(--settings-accent);
+}
+
+.shul-admin-page .slider::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #7c8791;
+    border-radius: 4px;
+}
+
+.shul-admin-page .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 17px;
+    height: 17px;
+    margin-top: -6.5px;
+    border: 3px solid #dcefff;
+    border-radius: 50%;
+    background: #8bc8ff;
+}
+
+.shul-admin-page .slider::-moz-range-track {
+    height: 4px;
+    background: #7c8791;
+    border-radius: 4px;
+}
+
+.shul-admin-page .slider::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border: 3px solid #dcefff;
+    border-radius: 50%;
+    background: #8bc8ff;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    padding-inline: 8px;
+    color: var(--settings-muted);
+    font-size: 11px;
+}
+
+.slider-tick {
+    width: 0;
+}
+
+.slider-tick > span {
+    display: block;
+    width: max-content;
+    transform: translateX(-50%);
+}
+
+.settings-calendar-options {
+    display: flex;
+    gap: 10px;
+}
+
+.shul-admin-page .settings-calendar-options > label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1;
+    gap: 16px;
+    padding: 12px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.settings-calendar-options label.is-selected {
+    border-color: var(--settings-accent);
+    background: #8bc8ff10;
+    color: #c3e3ff;
+}
+
+.settings-calendar-options input {
+    accent-color: var(--settings-accent);
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+@media (max-width: 1000px) {
+    .settings-page-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .settings-contact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .settings-preference-row { grid-template-columns: 1fr; gap: 16px; }
+}
+
+@media (max-width: 650px) {
+    .shul-admin-page { padding: 20px 14px; }
+    .settings-summary-heading { align-items: flex-start; flex-direction: column; }
+    .settings-contact-grid { grid-template-columns: 1fr; }
+    .settings-field-row { grid-template-columns: 1fr; gap: 12px; }
+    .settings-column-headings { display: none; }
+    .settings-field-preview { padding: 8px 12px; border-left: 2px solid #8bc8ff55; background: #8bc8ff06; }
+    .settings-field-preview .settings-field-label { font-size: 11px; color: var(--settings-muted); }
+    .settings-preview-value { min-height: 0; padding: 0; }
+    .settings-form-footer { align-items: stretch; flex-direction: column; }
+    .settings-section-header { align-items: flex-start; }
+    .settings-calendar-options { flex-wrap: wrap; }
+    .settings-calendar-options label { min-width: 90px; }
 }
 
 .footer {
