@@ -17,7 +17,7 @@ export interface ParshaObj {
     dateString: string;
 }
 
-interface Aliyah {
+export interface Aliyah {
     parshaId: number;
     a: number;
     psukim: string;
