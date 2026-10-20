@@ -28,6 +28,18 @@ export function createApp(database, {
         return res.json(shul);
     });
 
+    app.get("/api/shuls/:id/initial-version", (req, res) => {
+        res.set("Cache-Control", "no-store");
+        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        if (!user) return res.status(401).json({ error: "Sign in to restore your shul" });
+        if (user.role !== 'admin' || user.shulId !== req.params.id) {
+            return res.status(403).json({ error: "Only this shul's administrators can restore its saved version" });
+        }
+        const version = app.locals.database.getInitialShulVersion(req.params.id);
+        if (!version) return res.status(404).json({ error: "Saved version not found" });
+        return res.json(version);
+    });
+
     app.patch("/api/shuls/:id", (req, res, next) => {
         res.set("Cache-Control", "no-store");
         const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;

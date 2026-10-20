@@ -1,11 +1,55 @@
-import type { Shul } from '../api.js';
+import type { Shul, ShulInfo, Settings } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
-import { updateShul, updateShulSettings } from '../api.js';
+import { getInitialShulVersion, updateShul, updateShulSettings } from '../api.js';
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx"
+
+type SettingsSection = 'info' | 'schedule';
+type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
+
+function SubmissionMessage({ message }: { message: SubmissionFeedback | null }) {
+    return (
+        <div className={`submission-msg${message ? ` submission-msg-${message.tone}` : ''}`}
+            role={message?.tone === 'error' ? 'alert' : 'status'} aria-atomic="true">
+            {message?.text}
+        </div>
+    );
+}
+
+function FieldReset({ label, changed, onReset }: { label: string; changed: boolean; onReset: () => void }) {
+    return (
+        <div className="settings-field-reset-row">
+            <button type="button" className="settings-field-reset" disabled={!changed}
+                aria-label={`Reset ${label} to its last saved value`} title="Reset to last saved value" onClick={onReset}>Reset</button>
+        </div>
+    );
+}
+
+function RestoreMenu({ section, disabled, onRestore }: { section: string; disabled: boolean; onRestore: () => void }) {
+    return (
+        <details className="settings-restore-menu" onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+            }
+        }}>
+            <summary aria-label={`${section} actions`} aria-disabled={disabled}
+                onClick={(event) => { if (disabled) event.preventDefault(); }}>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+            </summary>
+            <div className="settings-restore-popover">
+                <button type="button" disabled={disabled} onClick={(event) => {
+                    event.currentTarget.closest('details')?.removeAttribute('open');
+                    onRestore();
+                }}>Restore first saved version</button>
+                <span>Review the changes, then save to apply.</span>
+            </div>
+        </details>
+    );
+}
 
 export default function ShulSettings({ shul, onSaved, schedule }: {
     shul: Shul;
@@ -13,9 +57,9 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
     schedule: ParshaObj[];
 }): React.JSX.Element {
     const settings = shul.settings;
+    const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
+    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null });
 
-    const [contactChangeLog, setContactChangeLog] = useState<string[]>([]);
-    const [scheduleChangeLog, setScheduleChangeLog] = useState<string[]>([]);
     const [readingAdjustmentChangeLog, setReadingAdjustmentChangeLog] = useState<string[]>([]);
     const [permissionsChangeLog, setPermissionsChangeLog] = useState<string[]>([]);
 
@@ -26,10 +70,9 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [saved, setSaved] = useState<'info' | 'schedule' | null>(null);
     const [activeForm, setActiveForm] = useState<'info' | 'schedule'>('info');
 
+    const [hebYear, setHebYear] = useState(settings.hebYear);
     const [a, setA] = useState<number>(settings.a);
     const [il, setIl] = useState<boolean>(settings.il);
     const [hhRespect, setHhRespect] = useState<boolean>(settings.hhRespect);
@@ -42,12 +85,12 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
     const [yitro, setYitro] = useState<boolean>(settings.triennial.yitro);
     const [vaetchanan, setVaetchanan] = useState<boolean>(settings.triennial.vaetchanan);
     const yontifAbr: (keyof Yontifs)[] = ["rh1", "rh2", "yk", "sukkot1", "sukkot2", "sukkotSA", "sukkotST", "pesach1", "pesach2", "pesach7", "pesach8", "shavuot1", "shavuot2"]
-    const yontifNames = ["Rosh Hashana Day I", 
-                         "Rosh Hashana Day II", 
-                         "Yom Kippur", 
-                         "Sukkot Day I", 
-                         "Sukkot Day II", 
-                         "Shmini Atzeret", 
+    const yontifNames = ["Rosh Hashana Day I",
+                         "Rosh Hashana Day II",
+                         "Yom Kippur",
+                         "Sukkot Day I",
+                         "Sukkot Day II",
+                         "Shmini Atzeret",
                          "Simchat Torah",
                          "Pesach Day I",
                          "Pesach Day II",
@@ -56,9 +99,108 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                          "Shavuot Day I",
                          "Shavuot Day II"];
 
+    const contactFields = [
+        { id: 'name', label: 'Shul Name', value: name, savedValue: shul.name, setValue: setName, multiline: true },
+        { id: 'address', label: 'Shul Address', value: address, savedValue: shul.address, setValue: setAddress, multiline: true },
+        { id: 'phone', label: 'Phone', value: phone, savedValue: shul.phone, setValue: setPhone, type: 'tel' },
+        { id: 'email', label: 'Email', value: email, savedValue: shul.email, setValue: setEmail, type: 'email' },
+        { id: 'website', label: 'Website URL', value: website, savedValue: shul.websiteUrl, setValue: setWebsite, type: 'url' },
+        { id: 'donation', label: 'Donation URL', value: donation, savedValue: shul.donationUrl, setValue: setDonation, type: 'url' },
+    ];
+    const contactChangeLog = contactFields
+        .filter((field) => field.value !== field.savedValue)
+        .map((field) => `Changed ${field.label} to ${field.value ? `“${field.value}”` : '(empty)'}.`);
+
+    const scheduleChanges = [
+        { label: 'Schedule Hebrew year', value: hebYear, savedValue: settings.hebYear },
+        { label: 'Shabbat aliyot', value: a, savedValue: settings.a },
+        { label: 'Calendar', value: il ? 'Israel' : 'Diaspora', savedValue: settings.il ? 'Israel' : 'Diaspora' },
+        { label: 'High Holiday aliyot', value: hhRespect ? 'Traditional' : 'Shabbat', savedValue: settings.hhRespect ? 'Traditional' : 'Shabbat' },
+        { label: 'Yontif aliyot', value: yRespect ? 'Traditional' : 'Shabbat', savedValue: settings.yRespect ? 'Traditional' : 'Shabbat' },
+        { label: 'Special final aliyah', value: specialSeventh, savedValue: settings.specialSeventh },
+        { label: 'Triennial schedule', value: tri, savedValue: settings.triennial.tri },
+        { label: 'Maftir', value: triMaftir ? 'Triennial' : tradMaftir ? 'Traditional' : 'None', savedValue: settings.triennial.triMaftir ? 'Triennial' : settings.triennial.tradMaftir ? 'Traditional' : 'None' },
+        { label: 'Yitro triennial reading', value: yitro, savedValue: settings.triennial.yitro },
+        { label: 'Vaetchanan triennial reading', value: vaetchanan, savedValue: settings.triennial.vaetchanan },
+        ...yontifAbr.map((abbreviation, index) => ({
+            label: `Observe ${yontifNames[index]}`,
+            value: yontifs[abbreviation],
+            savedValue: settings.yontifs[abbreviation],
+        })),
+    ];
+    const scheduleChangeLog = scheduleChanges
+        .filter((field) => field.value !== field.savedValue)
+        .map((field) => `Changed ${field.label} to ${typeof field.value === 'boolean' ? (field.value ? 'enabled' : 'disabled') : field.value}.`);
+
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
     const [search, setSearch] = useState<string>("");
+
+    const busy = saving || restoring !== null;
+
+    function showFeedback(section: SettingsSection, tone: SubmissionFeedback['tone'], text: string): void {
+        setMessages((previous) => ({ ...previous, [section]: { tone, text } }));
+    }
+
+    function clearFeedback(section: SettingsSection): void {
+        setMessages((previous) => previous[section] ? { ...previous, [section]: null } : previous);
+    }
+
+    function applyContactValues(values: ShulInfo): void {
+        setName(values.name);
+        setAddress(values.address);
+        setPhone(values.phone);
+        setEmail(values.email);
+        setWebsite(values.websiteUrl);
+        setDonation(values.donationUrl);
+    }
+
+    function applyScheduleValues(values: Settings): void {
+        setHebYear(values.hebYear);
+        setA(values.a);
+        setIl(values.il);
+        setHhRespect(values.hhRespect);
+        setYRespect(values.yRespect);
+        setYontifs({ ...values.yontifs });
+        setSpecialSeventh(values.specialSeventh);
+        setTri(values.triennial.tri);
+        setTriMaftir(values.triennial.triMaftir);
+        setTradMaftir(values.triennial.tradMaftir);
+        setYitro(values.triennial.yitro);
+        setVaetchanan(values.triennial.vaetchanan);
+    }
+
+    function resetContactChanges(): void {
+        applyContactValues(shul);
+        showFeedback('info', 'info', 'Unsaved changes reset.');
+    }
+
+    function resetScheduleChanges(): void {
+        applyScheduleValues(settings);
+        showFeedback('schedule', 'info', 'Unsaved changes reset.');
+    }
+
+    function resetField(action: () => void, section: 'info' | 'schedule' = 'schedule'): void {
+        action();
+        clearFeedback(section);
+    }
+
+    async function restoreFirstVersion(section: 'info' | 'schedule'): Promise<void> {
+        if (busy) return;
+        showFeedback(section, 'progress', 'Loading first saved version…');
+        setActiveForm(section);
+        setRestoring(section);
+        try {
+            const initial = await getInitialShulVersion(shul.id);
+            if (section === 'info') applyContactValues(initial.info);
+            else applyScheduleValues(initial.settings);
+            clearFeedback(section);
+        } catch (failure) {
+            showFeedback(section, 'error', failure instanceof Error ? failure.message : 'Could not load the first saved version. Please try again.');
+        } finally {
+            setRestoring(null);
+        }
+    }
 
     function updateAliyot(aliyot: number): void {
         if (aliyot < 1) {
@@ -90,11 +232,10 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
 
     async function updateShulInfo(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (saving) return;
+        if (busy) return;
         setActiveForm('info');
         setSaving(true);
-        setError(null);
-        setSaved(null);
+        showFeedback('info', 'progress', 'Publishing changes…');
         try {
             const updated = await updateShul(shul.id, {
                 name, address, phone, email, websiteUrl: website, donationUrl: donation,
@@ -106,26 +247,37 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
             setWebsite(updated.websiteUrl);
             setDonation(updated.donationUrl);
             onSaved(updated);
-            setSaved('info');
+            showFeedback('info', 'success', 'Shul information published.');
         } catch (failure) {
-            setError(failure instanceof Error ? failure.message : 'Unable to save your shul.');
+            showFeedback('info', 'error', failure instanceof Error ? failure.message : 'Could not publish changes. Please try again.');
         } finally {
             setSaving(false);
         }
     }
 
+    function ChangeLog({ changes }: { changes: string[] }): React.JSX.Element {
+        return (
+            <div className="change-log">
+                <h5>Section Change Log</h5>
+                {changes.length > 0 ? (
+                    <ul>{changes.map((change) => <li key={change}>{change}</li>)}</ul>
+                ) : <i>Your changes will be summarized here.</i>}
+            </div>
+        )
+    }
+
     async function updateShulSchedule(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (saving) return;
+        if (busy) return;
         setActiveForm('schedule');
         setSaving(true);
-        setError(null);
-        setSaved(null);
+        showFeedback('schedule', 'progress', 'Saving schedule settings…');
         try {
             const updated = await updateShulSettings(shul.id, {
-                a, il, hhRespect, yRespect, yontifs, specialSeventh, triennial: {tri, triMaftir, tradMaftir, yitro, vaetchanan}
+                hebYear, a, il, hhRespect, yRespect, yontifs, specialSeventh, triennial: {tri, triMaftir, tradMaftir, yitro, vaetchanan}
 
             });
+            setHebYear(updated.settings.hebYear);
             setA(updated.settings.a);
             setIl(updated.settings.il);
             setHhRespect(updated.settings.hhRespect);
@@ -138,9 +290,9 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
             setYitro(updated.settings.triennial.yitro);
             setVaetchanan(updated.settings.triennial.vaetchanan);
             onSaved(updated);
-            setSaved('schedule');
+            showFeedback('schedule', 'success', 'Schedule settings saved.');
         } catch (failure) {
-            setError(failure instanceof Error ? failure.message : 'Unable to save your schedule.');
+            showFeedback('schedule', 'error', failure instanceof Error ? failure.message : 'Could not save schedule settings. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -154,7 +306,9 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                     <h1>Administration Settings</h1>
                     <p>Manage your shul’s details and shape your congregation’s reading schedule.</p>
                 </div>
-                <span className="settings-admin-badge"><span aria-hidden="true" />Administrator access</span>
+                <div className="settings-page-actions">
+                    <span className="settings-admin-badge"><span aria-hidden="true" />Administrator access</span>
+                </div>
             </header>
 
             <main className="shul-settings">
@@ -194,25 +348,21 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                     <section className="settings-panel" aria-labelledby="shul-info-heading">
                         <div className="settings-section-header">
                             <div><h2 id="shul-info-heading">Shul Information</h2><p>Keep your congregation’s contact details up to date.</p></div>
+                            <RestoreMenu section="Shul information" disabled={busy} onRestore={() => { void restoreFirstVersion('info'); }} />
                         </div>
-                        <form className="shul-settings-edit" onSubmit={updateShulInfo} onChange={() => setSaved(null)}>
-                            <fieldset className="shul-edit" disabled={saving}>
+                        <form className="shul-settings-edit" onSubmit={updateShulInfo} onChange={() => clearFeedback('info')}>
+                            <fieldset className="shul-edit" disabled={busy}>
                                 <legend className="visually-hidden">Shul information</legend>
                                 <div className="settings-field-row settings-column-headings">
                                     <span>Edit details</span>
                                     <span>Preview <small>Visible to your congregation after publishing.</small></span>
                                 </div>
-                                {[
-                                    { id: 'name', label: 'Shul Name', value: name, setValue: setName, multiline: true },
-                                    { id: 'address', label: 'Shul Address', value: address, setValue: setAddress, multiline: true },
-                                    { id: 'phone', label: 'Phone', value: phone, setValue: setPhone, type: 'tel' },
-                                    { id: 'email', label: 'Email', value: email, setValue: setEmail, type: 'email' },
-                                    { id: 'website', label: 'Website URL', value: website, setValue: setWebsite, type: 'url' },
-                                    { id: 'donation', label: 'Donation URL', value: donation, setValue: setDonation, type: 'url' },
-                                ].map((field) => (
+                                {contactFields.map((field) => (
                                     <div className="settings-field-row" key={field.id}>
                                         <div className="settings-field-edit">
-                                            <label htmlFor={`shul-${field.id}`}>{field.label}</label>
+                                            <div className="settings-field-heading">
+                                                <label htmlFor={`shul-${field.id}`}>{field.label}</label>
+                                            </div>
                                             {field.multiline ? (
                                                 <textarea
                                                     id={`shul-${field.id}`}
@@ -230,6 +380,8 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                                                     onChange={(event) => field.setValue(event.target.value)}
                                                 />
                                             )}
+                                            <FieldReset label={field.label} changed={field.value !== field.savedValue}
+                                                    onReset={() => resetField(() => field.setValue(field.savedValue), 'info')} />
                                         </div>
                                         <div className="settings-field-preview">
                                             <span className="settings-field-label">{field.label}</span>
@@ -238,14 +390,17 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                                     </div>
                                 ))}
                                 <div className="settings-form-footer">
-                                    <span>Your changes appear after publishing.</span>
-                                    <button className="submit-btn" type="submit">{saving && activeForm === 'info' ? 'Publishing…' : 'Publish changes'}</button>
+                                    <ChangeLog changes={contactChangeLog} />
+                                    <div className="settings-footer-actions">
+                                        <span>Your changes appear after publishing.</span>
+                                        <div className="settings-footer-buttons">
+                                            <button className="settings-reset-btn" type="button" onClick={resetContactChanges} disabled={contactChangeLog.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit">{saving && activeForm === 'info' ? 'Publishing…' : 'Publish changes'}</button>
+                                        </div>
+                                        <SubmissionMessage message={messages.info} />
+                                    </div>
                                 </div>
                             </fieldset>
-                            <div className="submission-msg" aria-live="polite">
-                                {error && activeForm === 'info' && <span className="settings-error" role="alert">{error}</span>}
-                                {saved === 'info' && <span className="settings-success" role="status">Shul information saved.</span>}
-                            </div>
                         </form>
                     </section>
 
@@ -254,7 +409,7 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
                         </div>
                         <div className="reading-search">
-                            <input 
+                            <input
                                 id="reading-search"
                                 type="text"
                                 placeholder="Search by Parsha or Yontif name, e.g. 'Pinchas' or 'Pesach'"
@@ -281,285 +436,361 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                     <section className="settings-panel" aria-labelledby="schedule-heading">
                         <div className="settings-section-header">
                             <div><h2 id="schedule-heading">Schedule Settings</h2><p>Set reading preferences to reflect your congregation’s traditions.</p></div>
+                            <RestoreMenu section="Schedule settings" disabled={busy} onRestore={() => { void restoreFirstVersion('schedule'); }} />
                         </div>
-                        <form className="shul-settings-edit" onSubmit={updateShulSchedule} onChange={() => setSaved(null)}>
-                            <fieldset className="shul-edit" disabled={saving}>
+                        <form className="shul-settings-edit" onSubmit={updateShulSchedule} onChange={() => clearFeedback('schedule')}>
+                            <fieldset className="shul-edit" disabled={busy}>
                                 <legend className="visually-hidden">Schedule settings</legend>
                                 <div className="settings-preference-row">
-                                    <div><label htmlFor="shul-aliyot">Shabbat Aliyot</label><p>Number of aliyot to be read each Shabbat.</p></div>
-                                    <div className="settings-aliyot-control">
-                                        <input id="shul-aliyot" type="number" min="1" max="7" step="1" value={a}
-                                            onChange={(event) => updateAliyot(+event.target.value )} />
-                                        <div className="slide-container">
-                                            <input type="range" min="1" max="7" step="1" value={a} className="slider" aria-label="Shabbat aliyot"
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <label htmlFor="shul-aliyot">Shabbat Aliyot</label>
+                                        </div>
+                                        <p>Number of aliyot to be read each Shabbat.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-aliyot-control">
+                                            <input id="shul-aliyot" type="number" min="1" max="7" step="1" value={a}
                                                 onChange={(event) => updateAliyot(+event.target.value )} />
-                                            <div className="slider-labels" aria-hidden="true">
-                                                {[1, 2, 3, 4, 5, 6, 7].map((value) => <span className="slider-tick" key={value}><span>{value}</span></span>)}
+                                            <div className="slide-container">
+                                                <input type="range" min="1" max="7" step="1" value={a} className="slider" aria-label="Shabbat aliyot"
+                                                    onChange={(event) => updateAliyot(+event.target.value )} />
+                                                <div className="slider-labels" aria-hidden="true">
+                                                    {[1, 2, 3, 4, 5, 6, 7].map((value) => <span className="slider-tick" key={value}><span>{value}</span></span>)}
+                                                </div>
                                             </div>
                                         </div>
+                                        <FieldReset label="Shabbat aliyot" changed={a !== settings.a} onReset={() => resetField(() => setA(settings.a))} />
                                     </div>
                                 </div>
 
                                 {a < 7 ? <>
                                     <div className="settings-preference-row">
-                                        <div><span id="special-seven-label" className="settings-field-label">Special Seven</span><p>Rarely, the seventh aliyot is replaced by a special reading. When<br></br>reading less than seven aliyot, choose to read the special seventh<br></br>aliyah in place of the last aliyah.</p></div>
-                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
-                                            <label className={specialSeventh ? 'is-selected' : ''}>
-                                                <input
-                                                    name="special-seventh"
-                                                    type="radio"
-                                                    value="traditional"
-                                                    checked={specialSeventh}
-                                                    onChange={() => setSpecialSeventh(true)}
-                                                />
-                                                <span>Special Final Aliyah</span>
-                                            </label>
+                                        <div>
+                                            <div className="settings-field-heading">
+                                                <span id="special-seven-label" className="settings-field-label">Special Seven</span>
+                                            </div>
+                                            <p>Rarely, the seventh aliyot is replaced by a special reading. When<br></br>reading less than seven aliyot, choose to read the special seventh<br></br>aliyah in place of the last aliyah.</p>
+                                        </div>
+                                        <div className="settings-field-controls">
+                                            <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
+                                                <label className={specialSeventh ? 'is-selected' : ''}>
+                                                    <input
+                                                        name="special-seventh"
+                                                        type="radio"
+                                                        value="traditional"
+                                                        checked={specialSeventh}
+                                                        onChange={() => setSpecialSeventh(true)}
+                                                    />
+                                                    <span>Special Final Aliyah</span>
+                                                </label>
 
-                                            <label className={!specialSeventh ? 'is-selected' : ''}>
-                                                <input
-                                                    name="special-seventh"
-                                                    type="radio"
-                                                    value="scheduled"
-                                                    checked={!specialSeventh}
-                                                    onChange={() => setSpecialSeventh(false)}
-                                                />
-                                                <span>Traditional{a === 1 ? " First "
-                                                            : (a === 2 ? " Second "
-                                                                : (a === 3 ? " Third "
-                                                                    : (a === 4 ? " Fourth  "
-                                                                        : (a === 5 ? " Fifth "
-                                                                            : " Sixth "
+                                                <label className={!specialSeventh ? 'is-selected' : ''}>
+                                                    <input
+                                                        name="special-seventh"
+                                                        type="radio"
+                                                        value="scheduled"
+                                                        checked={!specialSeventh}
+                                                        onChange={() => setSpecialSeventh(false)}
+                                                    />
+                                                    <span>Traditional{a === 1 ? " First "
+                                                                : (a === 2 ? " Second "
+                                                                    : (a === 3 ? " Third "
+                                                                        : (a === 4 ? " Fourth  "
+                                                                            : (a === 5 ? " Fifth "
+                                                                                : " Sixth "
+                                                                            )
                                                                         )
                                                                     )
-                                                                )   
-                                                            )
-                                                    }Aliyah</span>
-                                            </label>
+                                                                )
+                                                        }Aliyah</span>
+                                                </label>
+                                            </div>
+                                            <FieldReset label="Special final aliyah" changed={specialSeventh !== settings.specialSeventh} onReset={() => resetField(() => setSpecialSeventh(settings.specialSeventh))} />
                                         </div>
                                     </div>
                                 </> : null}
 
                                 <div className="settings-preference-row">
-                                    <div><span id="hhRespect-label" className="settings-field-label">High Holiday Aliyot</span><p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p></div>
-                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="hhRespect-label">
-                                        <label className={hhRespect ? 'is-selected' : ''}>
-                                            <input
-                                                name="hhRespect"
-                                                type="radio"
-                                                value="traditional"
-                                                checked={hhRespect}
-                                                onChange={() => setHhRespect(true)}
-                                            />
-                                            <span>Traditional High Holiday</span>
-                                        </label>
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <span id="hhRespect-label" className="settings-field-label">High Holiday Aliyot</span>
+                                        </div>
+                                        <p>On High Holidays, follow traditional aliyot count for Rosh Hashana (5)<br></br>and Yom Kippur (6), or your congregation's Shabbat aliyot count.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="hhRespect-label">
+                                            <label className={hhRespect ? 'is-selected' : ''}>
+                                                <input
+                                                    name="hhRespect"
+                                                    type="radio"
+                                                    value="traditional"
+                                                    checked={hhRespect}
+                                                    onChange={() => setHhRespect(true)}
+                                                />
+                                                <span>Traditional High Holiday</span>
+                                            </label>
 
-                                        <label className={!hhRespect ? 'is-selected' : ''}>
-                                            <input  
-                                                name="hhRespect"
-                                                type="radio"
-                                                value="shabbat"
-                                                checked={!hhRespect}
-                                                onChange={() => setHhRespect(false)}
-                                            />
-                                            <span>Shabbat</span>
-                                        </label>
+                                            <label className={!hhRespect ? 'is-selected' : ''}>
+                                                <input
+                                                    name="hhRespect"
+                                                    type="radio"
+                                                    value="shabbat"
+                                                    checked={!hhRespect}
+                                                    onChange={() => setHhRespect(false)}
+                                                />
+                                                <span>Shabbat</span>
+                                            </label>
+                                        </div>
+                                        <FieldReset label="High Holiday aliyot" changed={hhRespect !== settings.hhRespect} onReset={() => resetField(() => setHhRespect(settings.hhRespect))} />
                                     </div>
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="yRespect-label" className="settings-field-label">Yontif Aliyot</span><p>On Yontifs, follow traditional aliyot count for Sukkot, Shmini Atzeret,<br></br>Pesach, Shavuot (5), and Simchat Torah (7), or your congregation's<br></br>Shabbat aliyot count.</p></div>
-                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
-                                        <label className={yRespect ? 'is-selected' : ''}>
-                                            <input
-                                                name="yRespect"
-                                                type="radio"
-                                                value="yontif"
-                                                checked={yRespect}
-                                                onChange={() => setYRespect(true)}
-                                            />
-                                            <span>Traditional Yontif</span>
-                                        </label>
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <span id="yRespect-label" className="settings-field-label">Yontif Aliyot</span>
+                                        </div>
+                                        <p>On Yontifs, follow traditional aliyot count for Sukkot, Shmini Atzeret,<br></br>Pesach, Shavuot (5), and Simchat Torah (7), or your congregation's<br></br>Shabbat aliyot count.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="yRespect-label">
+                                            <label className={yRespect ? 'is-selected' : ''}>
+                                                <input
+                                                    name="yRespect"
+                                                    type="radio"
+                                                    value="yontif"
+                                                    checked={yRespect}
+                                                    onChange={() => setYRespect(true)}
+                                                />
+                                                <span>Traditional Yontif</span>
+                                            </label>
 
-                                        <label className={!yRespect ? 'is-selected' : ''}>
-                                            <input
-                                                name="yRespect"
-                                                type="radio"
-                                                value="shabbat"
-                                                checked={!yRespect}
-                                                onChange={() => setYRespect(false)}
-                                            />
-                                            <span>Shabbat</span>
-                                        </label>
+                                            <label className={!yRespect ? 'is-selected' : ''}>
+                                                <input
+                                                    name="yRespect"
+                                                    type="radio"
+                                                    value="shabbat"
+                                                    checked={!yRespect}
+                                                    onChange={() => setYRespect(false)}
+                                                />
+                                                <span>Shabbat</span>
+                                            </label>
+                                        </div>
+                                        <FieldReset label="Yontif aliyot" changed={yRespect !== settings.yRespect} onReset={() => resetField(() => setYRespect(settings.yRespect))} />
                                     </div>
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="calendar-label" className="settings-field-label">Calendar</span><p>The geographical calendar your shul follows.</p></div>
-                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="calendar-label">
-                                        <label className={!il ? 'is-selected' : ''}>
-                                            <input 
-                                                name="calendar" 
-                                                type="radio" 
-                                                value="diaspora" 
-                                                checked={!il} 
-                                                onChange={() => setIl(false)} 
-                                            />
-                                            <span>Diaspora</span>
-                                        </label>
-                                        <label className={il ? 'is-selected' : ''}>
-                                            <input 
-                                                name="calendar" 
-                                                type="radio" 
-                                                value="israel" 
-                                                checked={il} 
-                                                onChange={() => setIl(true)} 
-                                            />
-                                            <span>Israel</span>
-                                        </label>
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <span id="calendar-label" className="settings-field-label">Calendar</span>
+                                        </div>
+                                        <p>The geographical calendar your shul follows.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="calendar-label">
+                                            <label className={!il ? 'is-selected' : ''}>
+                                                <input
+                                                    name="calendar"
+                                                    type="radio"
+                                                    value="diaspora"
+                                                    checked={!il}
+                                                    onChange={() => setIl(false)}
+                                                />
+                                                <span>Diaspora</span>
+                                            </label>
+                                            <label className={il ? 'is-selected' : ''}>
+                                                <input
+                                                    name="calendar"
+                                                    type="radio"
+                                                    value="israel"
+                                                    checked={il}
+                                                    onChange={() => setIl(true)}
+                                                />
+                                                <span>Israel</span>
+                                            </label>
+                                        </div>
+                                        <FieldReset label="Calendar" changed={il !== settings.il} onReset={() => resetField(() => setIl(settings.il))} />
                                     </div>
                                 </div>
 
                                 <div className="settings-preference-row settings-preference-row-top">
-                                    <div><span id="yontifs-label" className="settings-field-label">Observed Yontifs</span><p>Select all Yontifs your shul observes with a Torah reading.</p></div>
-                                    <div className="settings-check-options" role="group" aria-labelledby="yontifs-label">
-                                        {yontifNames.map((y: string, index) => {
-                                            const abbreviation = yontifAbr[index];
-                                            return (
-                                                <label key={abbreviation} className={yontifs[abbreviation] ? 'is-selected' : ''}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={yontifs[abbreviation]}
-                                                        onChange={(event) => setYontifs({ ...yontifs, [abbreviation]: event.target.checked })}
-                                                    />
-                                                    <span>{y}</span>
-                                                </label>
-                                            );
-                                        })}
-                                        <button
-                                            type="button"
-                                            className="settings-select-all"
-                                            onClick={() => {
-                                                setSaved(null);
-                                                setYontifs((previous) => {
-                                                    const checked = !yontifAbr.every((abbreviation) => previous[abbreviation]);
-                                                    const updated = { ...previous };
-                                                    yontifAbr.forEach((abbreviation) => {
-                                                        updated[abbreviation] = checked;
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <span id="yontifs-label" className="settings-field-label">Observed Yontifs</span>
+                                        </div>
+                                        <p>Select all Yontifs your shul observes with a Torah reading.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-check-options" role="group" aria-labelledby="yontifs-label">
+                                            {yontifNames.map((y: string, index) => {
+                                                const abbreviation = yontifAbr[index];
+                                                return (
+                                                    <label key={abbreviation} className={yontifs[abbreviation] ? 'is-selected' : ''}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={yontifs[abbreviation]}
+                                                                onChange={(event) => setYontifs({ ...yontifs, [abbreviation]: event.target.checked })}
+                                                            />
+                                                            <span>{y}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                            <button
+                                                type="button"
+                                                className="settings-select-all"
+                                                onClick={() => {
+                                                    clearFeedback('schedule');
+                                                    setYontifs((previous) => {
+                                                        const checked = !yontifAbr.every((abbreviation) => previous[abbreviation]);
+                                                        const updated = { ...previous };
+                                                        yontifAbr.forEach((abbreviation) => {
+                                                            updated[abbreviation] = checked;
+                                                        });
+                                                        return updated;
                                                     });
-                                                    return updated;
-                                                });
-                                            }}
-                                        >
-                                            {allYontifsSelected ? 'Unselect all' : 'Select all'}
-                                        </button>
+                                                }}
+                                            >
+                                                {allYontifsSelected ? 'Unselect all' : 'Select all'}
+                                            </button>
+                                        </div>
+                                        <FieldReset label="Observed Yontifs" changed={yontifAbr.some((key) => yontifs[key] !== settings.yontifs[key])} onReset={() => resetField(() => setYontifs({ ...settings.yontifs }))} />
                                     </div>
                                 </div>
 
                                 <div className="settings-preference-row">
-                                    <div><span id="triennial-label" className="settings-field-label">Triennial</span><p>Subscribe to the triennial or traditional reading schedule.</p></div>
-                                    <div className="settings-bi-radio-options" role="group" aria-labelledby="triennial-label">
-                                        <label className={!tri ? 'is-selected' : ''}>
-                                            <input
-                                                name="triennial"
-                                                type="radio"
-                                                value="traditional"
-                                                checked={!tri}
-                                                onChange={() => setTri(false)}
-                                            ></input>
-                                            <span>Traditional Schedule</span>
-                                        </label>
+                                    <div>
+                                        <div className="settings-field-heading">
+                                            <span id="triennial-label" className="settings-field-label">Triennial</span>
+                                        </div>
+                                        <p>Subscribe to the triennial or traditional reading schedule.</p>
+                                    </div>
+                                    <div className="settings-field-controls">
+                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="triennial-label">
+                                            <label className={!tri ? 'is-selected' : ''}>
+                                                <input
+                                                    name="triennial"
+                                                    type="radio"
+                                                    value="traditional"
+                                                    checked={!tri}
+                                                    onChange={() => setTri(false)}
+                                                ></input>
+                                                <span>Traditional Schedule</span>
+                                            </label>
 
-                                        <label className={tri ? 'is-selected' : ''}>
-                                            <input 
-                                                name="triennial"
-                                                type="radio"
-                                                value="triennial"
-                                                checked={tri}
-                                                onChange={() => setTri(true)}
-                                            ></input>
-                                            <span>Triennial Schedule</span>
-                                        </label>
+                                            <label className={tri ? 'is-selected' : ''}>
+                                                <input
+                                                    name="triennial"
+                                                    type="radio"
+                                                    value="triennial"
+                                                    checked={tri}
+                                                    onChange={() => setTri(true)}
+                                                ></input>
+                                                <span>Triennial Schedule</span>
+                                            </label>
+                                        </div>
+                                        <FieldReset label="Triennial" changed={tri !== settings.triennial.tri} onReset={() => resetField(() => setTri(settings.triennial.tri))} />
                                     </div>
                                 </div>
 
                                 {tri? <>
                                     <div className="settings-preference-row">
-                                        <div><span id="maftir-label" className="settings-field-label">Maftir</span><p>Select the maftir to be read each week.</p></div>
-                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="maftir-label">
-                                            <label className={triMaftir ? 'is-selected' : ''}>
-                                                <input
-                                                    name="maftir"
-                                                    type="radio"
-                                                    value="tri"
-                                                    checked={triMaftir}
-                                                    onChange={() => updateMaftir("tri")}
-                                                ></input>
-                                                <span>Triennial Maftir</span>
-                                            </label>
-                                            
+                                        <div>
+                                            <div className="settings-field-heading">
+                                                <span id="maftir-label" className="settings-field-label">Maftir</span>
+                                            </div>
+                                            <p>Select the maftir to be read each week.</p>
+                                        </div>
+                                        <div className="settings-field-controls">
+                                            <div className="settings-bi-radio-options" role="group" aria-labelledby="maftir-label">
+                                                <label className={triMaftir ? 'is-selected' : ''}>
+                                                    <input
+                                                        name="maftir"
+                                                        type="radio"
+                                                        value="tri"
+                                                        checked={triMaftir}
+                                                        onChange={() => updateMaftir("tri")}
+                                                    ></input>
+                                                    <span>Triennial Maftir</span>
+                                                </label>
 
-                                            <label className={tradMaftir ? 'is-selected' : ''}>
-                                                <input 
-                                                    name="maftir"
-                                                    type="radio"
-                                                    value="trad"
-                                                    checked={tradMaftir}
-                                                    onChange={() => updateMaftir("trad")}
-                                                ></input>
-                                                <span>Annual Maftir</span>
-                                            </label>
 
-                                            <label className={!triMaftir && !tradMaftir ? 'is-slected' : ''}>
-                                                <input 
-                                                    name="maftir"
-                                                    type="radio"
-                                                    value="tri"
-                                                    checked={!triMaftir && !tradMaftir}
-                                                    onChange = {() => updateMaftir("none")}
-                                                ></input>
-                                                <span>No Maftir</span>
-                                            </label>
+                                                <label className={tradMaftir ? 'is-selected' : ''}>
+                                                    <input
+                                                        name="maftir"
+                                                        type="radio"
+                                                        value="trad"
+                                                        checked={tradMaftir}
+                                                        onChange={() => updateMaftir("trad")}
+                                                    ></input>
+                                                    <span>Annual Maftir</span>
+                                                </label>
+
+                                                <label className={!triMaftir && !tradMaftir ? 'is-slected' : ''}>
+                                                    <input
+                                                        name="maftir"
+                                                        type="radio"
+                                                        value="tri"
+                                                        checked={!triMaftir && !tradMaftir}
+                                                        onChange = {() => updateMaftir("none")}
+                                                    ></input>
+                                                    <span>No Maftir</span>
+                                                </label>
+                                            </div>
+                                            <FieldReset label="Maftir" changed={triMaftir !== settings.triennial.triMaftir || tradMaftir !== settings.triennial.tradMaftir} onReset={() => resetField(() => { setTriMaftir(settings.triennial.triMaftir); setTradMaftir(settings.triennial.tradMaftir); })} />
                                         </div>
                                     </div>
 
                                     <div className="settings-preference-row">
-                                        <div><span id="ten-commandments-label" className="settings-field-label">Ten Commandments</span><p>For parshiyot that include the Ten Commandments, Yitro<br></br>and Vaetchanan, choose to apply the traditional or triennial<br></br>schedule.</p></div>
-                                        <div className="settings-bi-radio-options" role="group" aria-labelledby="ten-commendments-label">
-                                        <label className={!yitro ? 'is-selected' : ''}>
-                                            <input
-                                                name="ten-commandments"
-                                                type="radio"
-                                                value="traditional"
-                                                checked={!yitro}
-                                                onChange={() => updateTenCommandments(false)}
-                                            ></input>
-                                            <span>Traditional Schedule</span>
-                                        </label>
+                                        <div>
+                                            <div className="settings-field-heading">
+                                                <span id="ten-commandments-label" className="settings-field-label">Ten Commandments</span>
+                                            </div>
+                                            <p>For parshiyot that include the Ten Commandments, Yitro<br></br>and Vaetchanan, choose to apply the traditional or triennial<br></br>schedule.</p>
+                                        </div>
+                                        <div className="settings-field-controls">
+                                            <div className="settings-bi-radio-options" role="group" aria-labelledby="ten-commendments-label">
+                                            <label className={!yitro ? 'is-selected' : ''}>
+                                                <input
+                                                    name="ten-commandments"
+                                                    type="radio"
+                                                    value="traditional"
+                                                    checked={!yitro}
+                                                    onChange={() => updateTenCommandments(false)}
+                                                ></input>
+                                                <span>Traditional Schedule</span>
+                                            </label>
 
-                                        <label className={yitro ? 'is-selected' : ''}>
-                                            <input 
-                                                name="ten-commandments"
-                                                type="radio"
-                                                value="triennial"
-                                                checked={yitro}
-                                                onChange={() => updateTenCommandments(true)}
-                                            ></input>
-                                            <span>Triennial Schedule</span>
-                                        </label>
-                                    </div>
+                                            <label className={yitro ? 'is-selected' : ''}>
+                                                <input
+                                                    name="ten-commandments"
+                                                    type="radio"
+                                                    value="triennial"
+                                                    checked={yitro}
+                                                    onChange={() => updateTenCommandments(true)}
+                                                ></input>
+                                                <span>Triennial Schedule</span>
+                                            </label>
+                                        </div>
+                                            <FieldReset label="Ten Commandments" changed={yitro !== settings.triennial.yitro || vaetchanan !== settings.triennial.vaetchanan} onReset={() => resetField(() => { setYitro(settings.triennial.yitro); setVaetchanan(settings.triennial.vaetchanan); })} />
+                                        </div>
                                     </div>
                                 </>
                                 : null}
 
                                 <div className="settings-form-footer">
-                                    <span>Apply these preferences to your reading schedule.</span>
-                                    <button className="submit-btn" type="submit">{saving && activeForm === 'schedule' ? 'Saving…' : 'Save schedule'}</button>
+                                    <ChangeLog changes={scheduleChangeLog} />
+                                    <div className="settings-footer-actions">
+                                        <span>Apply these preferences to your reading schedule.</span>
+                                        <div className="settings-footer-buttons">
+                                            <button className="settings-reset-btn" type="button" onClick={resetScheduleChanges} disabled={scheduleChangeLog.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit">{saving && activeForm === 'schedule' ? 'Saving…' : 'Save schedule'}</button>
+                                        </div>
+                                        <SubmissionMessage message={messages.schedule} />
+                                    </div>
                                 </div>
                             </fieldset>
-                            <div className="submission-msg" aria-live="polite">
-                                {error && activeForm === 'schedule' && <span className="settings-error" role="alert">{error}</span>}
-                                {saved === 'schedule' && <span className="settings-success" role="status">Schedule settings saved.</span>}
-                            </div>
                         </form>
                     </section>
                 </div>

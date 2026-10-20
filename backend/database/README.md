@@ -175,5 +175,14 @@ forms are separate follow-up work. The legacy in-memory `User`, `Admin`, and
 ## Migrations
 
 `schema_migrations` tracks applied numbered SQL migrations. Version 1 initializes
-the four profile/settings tables in a transaction and is safe to reopen. Extend
-the migration runner for subsequent versions; do not edit an applied migration.
+the four profile/settings tables. Version 2 adds `shul_initial_versions` and
+captures each new shul's initial contact information and settings atomically at
+creation. Later saves never replace that snapshot. Existing shuls receive their
+current saved values as the earliest available snapshot, marked `migration`;
+values overwritten before this migration cannot be reconstructed.
+
+`GET /api/shuls/:id/initial-version` is restricted to that shul's administrator.
+The admin form loads the snapshot as unsaved edits; normal profile/settings save
+endpoints apply those edits after review. Reset controls instead restore the
+latest saved values, either per field, per section, or across the whole form.
+Migrations run transactionally and are safe to reopen; do not edit an applied migration.

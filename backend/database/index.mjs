@@ -70,10 +70,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ) STRICT`);
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 1) throw new Error('Database schema is newer than this application');
+            if (version > 2) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
+            }
+            if (version < 2) {
+                db.exec(readFileSync(new URL('./migrations/002_initial_shul_versions.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(2);
             }
         });
     } catch (error) {
@@ -94,6 +98,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        getInitialShulVersion(id) {
+            const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
+            return row ? { info: JSON.parse(row.info_json), settings: JSON.parse(row.settings_json),
+                source: row.source, capturedAt: row.captured_at } : null;
+        },
         getUser,
         getUserByEmail: value => decodeUser(db.prepare(`${userQuery} WHERE u.email = ?`).get(email(value))),
         listShuls: () => db.prepare(`${shulQuery} ORDER BY s.name, s.id`).all().map(decodeShul),
@@ -111,6 +120,9 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
                     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
+                const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
+                db.prepare(`INSERT INTO shul_initial_versions (shul_id, info_json, settings_json, source)
+                    VALUES (?, ?, ?, 'creation')`).run(id, JSON.stringify(info), JSON.stringify(settings));
                 return getShul(id);
             });
         },

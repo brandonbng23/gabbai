@@ -118,6 +118,28 @@ test('saved schedule preferences change only the selected shul readings', async 
     assert.deepEqual(await (await request(schedulePath(other.id))).json(), otherBefore);
 });
 
+test('only the same shul admin can load its first saved version without modifying current data', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const path = `/api/shuls/${shul.id}/initial-version`;
+    assert.equal((await request(path)).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    db.updateShul(shul.id, { name: 'Current name' });
+    db.updateShulSettings(shul.id, { a: 7 });
+    const current = db.getShul(shul.id);
+    const response = await request(path);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const initial = await response.json();
+    assert.equal(initial.info.name, shul.name);
+    assert.equal(initial.settings.a, 3);
+    assert.equal(initial.source, 'creation');
+    assert.deepEqual(db.getShul(shul.id), current);
+    const other = db.createShul({ name: 'Other', settings: { hebYear: 5787 } });
+    assert.equal((await request(`/api/shuls/${other.id}/initial-version`)).status, 403);
+    const production = await setup(t, false);
+    assert.equal((await production.request(`/api/shuls/${production.shul.id}/initial-version`)).status, 401);
+});
+
 test('reading settings require an admin of the same shul', async t => {
     const production = await setup(t, false);
     assert.equal((await production.request(`/api/shuls/${production.shul.id}/settings`, patchShul({ a: 5 }))).status, 401);

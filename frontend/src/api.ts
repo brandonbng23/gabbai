@@ -57,6 +57,22 @@ export interface User {
 
 export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
 
+export interface InitialShulVersion {
+    info: ShulInfo;
+    settings: Settings;
+    source: 'creation' | 'migration';
+    capturedAt: string;
+}
+
+export async function getInitialShulVersion(id: string): Promise<InitialShulVersion> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/initial-version`, { cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load the first saved version.');
+    }
+    return response.json();
+}
+
 export async function updateShul(id: string, info: ShulInfo): Promise<Shul> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}`, {
         method: 'PATCH',

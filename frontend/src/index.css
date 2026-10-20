@@ -2075,6 +2075,121 @@ body:has(.content-window-settings) {
     resize: vertical;
 }
 
+.settings-field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+}
+
+.settings-field-heading > :is(label, .settings-field-label) {
+    margin: 0;
+    color: #eeedf2;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.settings-field-reset-row {
+    display: block;
+    width: 100%;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.settings-field-reset {
+    display: inline-block;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    color: var(--settings-muted);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.settings-field-reset:hover:enabled {
+    color: var(--settings-accent);
+    text-decoration: underline;
+}
+
+.settings-field-reset:disabled {
+    color: var(--settings-muted);
+    opacity: .4;
+    cursor: default;
+}
+
+.settings-field-controls {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.settings-field-controls > .settings-field-reset-row {
+    text-align: right;
+}
+
+.settings-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.settings-restore-menu {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.settings-restore-menu > summary {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    list-style: none;
+    border: 1px solid var(--settings-border);
+    border-radius: 9px;
+    color: var(--settings-muted);
+    cursor: pointer;
+}
+
+.settings-restore-menu > summary::-webkit-details-marker { display: none; }
+.settings-restore-menu > summary svg { width: 20px; height: 20px; fill: currentColor; }
+.settings-restore-menu > summary:hover { color: var(--settings-accent); }
+.settings-restore-menu > summary[aria-disabled="true"] { opacity: .45; cursor: wait; }
+.settings-restore-menu > summary:focus-visible { outline: 2px solid var(--settings-accent); outline-offset: 3px; }
+
+.settings-restore-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: min(270px, 60vw);
+    padding: 8px;
+    border: 1px solid var(--settings-border);
+    border-radius: 10px;
+    background: #3d3b3f;
+    box-shadow: 0 8px 24px #0004;
+}
+
+.settings-restore-popover > button {
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.settings-restore-popover > button:hover:enabled { background: #8bc8ff15; }
+.settings-restore-popover > span { display: block; padding: 4px 10px 8px; color: var(--settings-muted); font-size: 12px; }
+
 .shul-admin-page input:hover,
 .shul-admin-page textarea:hover {
     border-color: #929097;
@@ -2097,18 +2212,86 @@ body:has(.content-window-settings) {
 }
 
 .settings-form-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
     margin-top: 26px;
     padding-top: 22px;
     border-top: 1px solid var(--settings-border);
 }
 
-.settings-form-footer > span {
+.settings-footer-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    max-width: 340px;
+}
+
+.settings-footer-actions > span {
     color: var(--settings-muted);
     font-size: 12px;
+    text-align: right;
+    margin-bottom: 12px;
+}
+
+.settings-footer-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.settings-reset-btn {
+    min-height: 42px;
+    padding: 10px 16px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: transparent;
+    color: #eeedf2;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.settings-reset-btn:hover:enabled {
+    border-color: var(--settings-accent);
+    background: #8bc8ff10;
+}
+
+.settings-reset-btn:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+.change-log {
+    background: #3d3b3f;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 14px;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 9px;
+    border: 1px solid #646167;
+    padding: 10px 13px;
+}
+
+.change-log h5 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.change-log ul {
+    margin: 0;
+    padding-left: 0;
+    list-style-position: inside;
+    color: #d5d5d5;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .shul-admin-page .submit-btn {
@@ -2139,8 +2322,29 @@ body:has(.content-window-settings) {
 }
 
 .shul-admin-page .submission-msg:not(:empty) {
-    padding-top: 16px;
-    font-size: 14px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border: 1px solid #8bc8ff30;
+    border-radius: 8px;
+    background: #8bc8ff08;
+    color: var(--settings-accent);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+
+.shul-admin-page .submission-msg-success:not(:empty) {
+    border-color: #a3e4bc40;
+    background: #a3e4bc0a;
+    color: #a3e4bc;
+}
+
+.shul-admin-page .submission-msg-error:not(:empty) {
+    border-color: #ffb4b440;
+    background: #ffb4b40a;
+    color: #ffb4b4;
 }
 
 .settings-nav {
@@ -2165,9 +2369,6 @@ body:has(.content-window-settings) {
     border: none;
     background-color: #8bc8ff;
 }
-
-.settings-success { color: #a3e4bc; }
-.settings-error { color: #ffb4b4; }
 
 .settings-preference-row {
     display: grid;
@@ -2304,7 +2505,8 @@ input[type="number"] {
     cursor: pointer;
 }
 
-.shul-admin-page .settings-check-options > label {
+.shul-admin-page .settings-check-options > label,
+.shul-admin-page .settings-check-option > label {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -2318,6 +2520,19 @@ input[type="number"] {
     border-radius: 9px;
     font-size: 14px;
     cursor: pointer;
+}
+
+.settings-check-option {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+}
+
+.shul-admin-page .settings-check-option > label {
+    flex: 1;
+    width: 100%;
 }
 
 .settings-select-all {
@@ -2423,7 +2638,11 @@ input[type="number"] {
     .settings-field-preview { padding: 8px 12px; border-left: 2px solid #8bc8ff55; background: #8bc8ff06; }
     .settings-field-preview .settings-field-label { font-size: 11px; color: var(--settings-muted); }
     .settings-preview-value { min-height: 0; padding: 0; }
-    .settings-form-footer { align-items: stretch; flex-direction: column; }
+    .settings-form-footer { grid-template-columns: 1fr; gap: 16px; }
+    .settings-footer-actions { align-items: stretch; max-width: none; }
+    .settings-footer-actions > span { text-align: left; }
+    .settings-footer-buttons { justify-content: flex-start; }
+    .settings-footer-buttons > button { flex: 1; }
     .settings-section-header { align-items: flex-start; }
     .settings-bi-radio-options { flex-wrap: wrap; }
     .settings-bi-radio-options label { min-width: 90px; }

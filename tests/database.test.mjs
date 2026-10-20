@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -19,6 +19,56 @@ function setup(t) {
 }
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
+
+test('first saved shul versions survive edits, reopening, and repeated migrations', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-initial-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'shul.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let initial;
+    try {
+        shul = db.createShul({ name: 'Original Shul', address: 'First address', settings: { hebYear: 5787, a: 3 } });
+        initial = db.getInitialShulVersion(shul.id);
+        assert.equal(initial.source, 'creation');
+        assert.equal(initial.info.name, 'Original Shul');
+        assert.deepEqual(initial.settings, shul.settings);
+        db.updateShul(shul.id, { name: 'New name', address: 'New address' });
+        db.updateShulSettings(shul.id, { a: 7, yontifs: { rh2: false } });
+        assert.deepEqual(db.getInitialShulVersion(shul.id), initial);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getInitialShulVersion(shul.id), initial);
+        assert.equal(db.getShul(shul.id).name, 'New name');
+        assert.equal(db.getInitialShulVersion('missing'), null);
+    } finally { db.close(); }
+});
+
+test('legacy shuls retain their earliest available version without inventing history', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-legacy-initial-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'legacy.sqlite');
+    const legacy = new DatabaseSync(path);
+    const settings = JSON.stringify(new Settings(5787));
+    legacy.exec(`CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY);
+        INSERT INTO schema_migrations VALUES (1);`);
+    legacy.exec(readFileSync(new URL('../backend/database/migrations/001_profiles.sql', import.meta.url), 'utf8'));
+    legacy.prepare('INSERT INTO shuls (id, name) VALUES (?, ?)').run('legacy', 'Earliest available');
+    legacy.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run('legacy', settings);
+    legacy.close();
+    let db = openDatabase(path);
+    let initial;
+    try {
+        initial = db.getInitialShulVersion('legacy');
+        assert.equal(initial.source, 'migration');
+        assert.equal(initial.info.name, 'Earliest available');
+        db.updateShul('legacy', { name: 'Later change' });
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try { assert.deepEqual(db.getInitialShulVersion('legacy'), initial); }
+    finally { db.close(); }
+});
 
 test('demo startup refreshes existing shul information while preserving settings and memberships', t => {
     const { db, shul: unrelated } = setup(t);
