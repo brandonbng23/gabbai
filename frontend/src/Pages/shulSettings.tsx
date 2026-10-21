@@ -475,7 +475,22 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                     onLockChange={changeReadingLock}
                                                 />
                                             ))
-                                        : null}
+                                        : 
+                                        <>
+                                            <span style={{ color: "#bdbcc3"}}>Readings Upcoming in the Next 30 Days:</span>
+                                            {schedule
+                                                .filter((reading) => new Date(reading.dateString) >= new Date() && new Date(reading.dateString) <= new Date(new Date().setDate(new Date().getDate() + 30)))
+                                                .map((reading) => (
+                                                    <SearchResult
+                                                        key={`${reading.dateString}:${reading.desc}`}
+                                                        reading={previewReadingLocks(reading, readingDrafts)}
+                                                        disabled={busy}
+                                                        onLockChange={changeReadingLock}
+                                                    />
+
+                                                ))}
+                                        </>
+                                        }
                                 </div>
 
                                 <div className="settings-form-footer">
