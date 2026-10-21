@@ -1,13 +1,14 @@
-import type { Shul, ShulInfo, Settings } from '../api.js';
+import type { Shul, ShulInfo, Settings, ShulUser } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
-import { getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
-import { useState } from "react";
+import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
+import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx"
 import { pendingReadingLocks, previewReadingLocks, readingKey, stageReadingLock } from '../readingAdjustments.ts';
 import type { ReadingDrafts } from '../readingAdjustments.ts';
+import { UserCard } from "../Components/userCard.tsx"
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -66,7 +67,24 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
-    const [permissionsChangeLog, setPermissionsChangeLog] = useState<string[]>([]);
+    const [users, setUsers] = useState<ShulUser[]>([]);
+    const [usersLoading, setUsersLoading] = useState(true);
+    const [usersError, setUsersError] = useState('');
+
+    useEffect(() => {
+        const controller = new AbortController();
+        setUsers([]);
+        setUsersLoading(true);
+        setUsersError('');
+        getShulUsers(shul.id, controller.signal)
+            .then(data => { if (!controller.signal.aborted) setUsers(data); })
+            .catch(() => { if (!controller.signal.aborted) setUsersError('Unable to load shul users. Please try again.'); })
+            .finally(() => { if (!controller.signal.aborted) setUsersLoading(false); });
+        return () => controller.abort();
+    }, [shul.id]);
+
+    const members = users.filter(user => user.role === 'member');
+    const admins = users.filter(user => user.role === 'admin');
 
     const [name, setName] = useState<string>(shul.name);
     const [address, setAddress] = useState<string>(shul.address);
@@ -876,41 +894,24 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
                     <section className="settings-panel" aria-labelledby="permissions-heading">
                         <div className="settings-section-header">
-                            <div><h2 id="permissions-heading">Members & Permissions</h2><p>Descriptions</p></div>
+                            <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Members and administrators of {shul.name}.</p></div>
                         </div>
-                        <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
-                            <fieldset className="shul-edit" disabled={busy}>
-                                <legend className="visually-hidden">Reading adjustments</legend>
-                                <div className="reading-search">
-                                    <label htmlFor="reading-search">Search by Parsha or Yontif name</label>
-                                    <div className="reading-search-control">
-                                        <input
-                                            id="reading-search"
-                                            type="text"
-                                            placeholder="e.g. Pinchas or Pesach"
-                                            value={search}
-                                            onChange={(event) => setSearch(event.target.value)}
-                                            onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
-                                        />
-                                        <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
-                                    </div>
+                        <div className="settings-users" aria-busy={usersLoading}>
+                            <div className="admin-list">
+                                <div className="list-heading">
+                                    <div style={{ width: "30%"}}>Member Name</div>
+                                    <div style={{ width: "35%"}}>Email</div>
+                                    <div style={{width: "15%"}}>Role</div>
+                                    <div style={{width: "15%"}}>Actions</div>
                                 </div>
+                                <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
+                                {admins.map((u: ShulUser) => <UserCard user={u}></UserCard>)}
+                            </div>
 
-                                
-
-                                <div className="settings-form-footer">
-                                    <ChangeLog changes={readingAdjustmentChangeLog} />
-                                    <div className="settings-footer-actions">
-                                        <span>Changes take effect after publishing.</span>
-                                        <div className="settings-footer-buttons">
-                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={readingChanges.length === 0}>Reset changes</button>
-                                            <button className="submit-btn" type="submit" disabled={readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
-                                        </div>
-                                        <SubmissionMessage message={messages.readings} />
-                                    </div>
-                                </div>
-                            </fieldset>
-                        </form>
+                            <div className="member-list">
+                                {members.map((u: ShulUser) => <UserCard user={u}></UserCard>)}
+                            </div>
+                        </div>
                     </section>
                 </div>
             </main>
