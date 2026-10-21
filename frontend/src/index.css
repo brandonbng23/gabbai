@@ -2949,6 +2949,11 @@ input[type="number"] {
     height: 25px;
 }
 
+.user-card {
+    display: flex;
+    flex-direction: row;
+}
+
 .footer {
     bottom: 0;
     height: 60px;
@@ -2991,4 +2996,18 @@ input[type="number"] {
 
 .copyright {
     gap: 0rem;
+}
+
+.settings-users { padding: 20px; }
+.settings-user-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.settings-user-group { min-width: 0; }
+.settings-user-group h3 { margin: 0 0 12px; font-size: 18px; }
+.settings-user-group h3 span, .settings-user-group p, .settings-user-email { color: var(--settings-muted); }
+.settings-user-list { list-style: none; margin: 0; padding: 0; }
+.settings-user-list li { padding: 12px 0; border-bottom: 1px solid var(--settings-border); }
+.settings-user-list li:last-child { border-bottom: 0; }
+.settings-user-name, .settings-user-email { display: block; overflow-wrap: anywhere; }
+.settings-user-email { margin-top: 3px; font-size: 13px; }
+@media (max-width: 640px) {
+    .settings-user-groups { grid-template-columns: minmax(0, 1fr); }
 }

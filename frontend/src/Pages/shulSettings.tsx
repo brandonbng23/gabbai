@@ -60,6 +60,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
+    
+
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
     const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
 
@@ -866,6 +868,45 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="submit-btn" type="submit">{saving && activeForm === 'schedule' ? 'Saving…' : 'Publish Changes'}</button>
                                         </div>
                                         <SubmissionMessage message={messages.schedule} />
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </form>
+                    </section>
+
+                    <section className="settings-panel" aria-labelledby="permissions-heading">
+                        <div className="settings-section-header">
+                            <div><h2 id="permissions-heading">Members & Permissions</h2><p>Descriptions</p></div>
+                        </div>
+                        <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
+                            <fieldset className="shul-edit" disabled={busy}>
+                                <legend className="visually-hidden">Reading adjustments</legend>
+                                <div className="reading-search">
+                                    <label htmlFor="reading-search">Search by Parsha or Yontif name</label>
+                                    <div className="reading-search-control">
+                                        <input
+                                            id="reading-search"
+                                            type="text"
+                                            placeholder="e.g. Pinchas or Pesach"
+                                            value={search}
+                                            onChange={(event) => setSearch(event.target.value)}
+                                            onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
+                                        />
+                                        <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
+                                    </div>
+                                </div>
+
+                                
+
+                                <div className="settings-form-footer">
+                                    <ChangeLog changes={readingAdjustmentChangeLog} />
+                                    <div className="settings-footer-actions">
+                                        <span>Changes take effect after publishing.</span>
+                                        <div className="settings-footer-buttons">
+                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={readingChanges.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
+                                        </div>
+                                        <SubmissionMessage message={messages.readings} />
                                     </div>
                                 </div>
                             </fieldset>

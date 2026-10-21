@@ -285,7 +285,7 @@ test('production never exposes development user profiles or member lists', async
     const { request, shul, user } = await setup(t, false);
     assert.equal((await request('/api/me')).status, 401);
     assert.equal((await request(`/api/users/${user.id}`)).status, 404);
-    assert.equal((await request(`/api/shuls/${shul.id}/users`)).status, 404);
+    assert.equal((await request(`/api/shuls/${shul.id}/users`)).status, 401);
 });
 
 test('explicit preview mode works with production NODE_ENV and selects only the demo identity', async t => {
@@ -323,4 +323,25 @@ test('preview startup recreates its sample data in an empty database', t => {
             db.close();
         }
     }
+});
+
+test('shul user lists require the owning admin and only include that shul', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const path = `/api/shuls/${shul.id}/users`;
+    assert.equal((await request(path)).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Demo', lastName: 'Member', email: 'member@example.com' });
+    const other = db.createShul({ name: 'Other Shul', settings: shul.settings });
+    db.createUser({ shulId: other.id, firstName: 'Other', lastName: 'Member', email: 'other@example.com' });
+    const response = await request(path);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const users = await response.json();
+    assert.deepEqual(new Set(users.map(item => item.id)), new Set([user.id, member.id]));
+    assert.equal(users.find(item => item.id === user.id).role, 'admin');
+    assert.equal(users.find(item => item.id === member.id).role, 'member');
+    assert.ok(users.every(item => !('settings' in item)));
+    assert.equal((await request(`/api/shuls/${other.id}/users`)).status, 403);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request(`/api/shuls/${anonymous.shul.id}/users`)).status, 401);
 });

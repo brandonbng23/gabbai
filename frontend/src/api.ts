@@ -120,3 +120,11 @@ export async function getCurrentUser(signal: AbortSignal): Promise<User | null> 
     return response.json();
 }
 
+
+export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title'>;
+
+export async function getShulUsers(id: string, signal: AbortSignal): Promise<ShulUser[]> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/users`, { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load shul users. Please try again.');
+    return response.json();
+}

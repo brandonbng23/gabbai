@@ -29,6 +29,19 @@ export function createApp(database, {
         return res.json(shul);
     });
 
+    app.get("/api/shuls/:id/users", (req, res) => {
+        res.set("Cache-Control", "no-store");
+        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        if (!user) return res.status(401).json({ error: "Sign in to view shul users" });
+        if (user.role !== 'admin' || user.shulId !== req.params.id) {
+            return res.status(403).json({ error: "Only this shul's administrators can view its users" });
+        }
+        if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
+        return res.json(app.locals.database.listShulUsers(req.params.id).map(
+            ({ id, firstName, lastName, email, role, title }) => ({ id, firstName, lastName, email, role, title })
+        ));
+    });
+
     app.get("/api/shuls/:id/initial-version", (req, res) => {
         res.set("Cache-Control", "no-store");
         const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
