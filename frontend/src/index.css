@@ -2818,6 +2818,15 @@ input[type="number"] {
     stroke-width: 10;
     }
 
+.result-title-row {
+    display: flex;
+    align-items: baseline;
+}
+
+.result-title-row > .parsha-lock-btn {
+    align-self: center;
+}
+
 .result-name {
     display: block;
     padding-top: 3px;
@@ -2828,13 +2837,34 @@ input[type="number"] {
     color: white;
 }
 
+.result-greg-date {
+    display: block;
+    padding-top: 3px;
+    margin-left: 5px;
+
+    font-size: 14px;
+    font-weight: 450;
+    color: white
+}
+
+.result-heb-date {
+    display: block;
+    padding-top: 3px;
+    margin-left: 7.5px;
+
+    font-size: 14px;
+    font-weight: 250;
+    color: white;
+}
+
 .result-occassions {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 5px;
 
-    margin-left: 0;
+    margin-left: 5px;
+    padding-top: 2px;
     padding-bottom: 2px;
     
 }
@@ -2909,6 +2939,8 @@ input[type="number"] {
 .parsha-lock-btn svg {
     width: 25px;
     height: 25px;
+    margin-right: 3px;
+
     fill: white;
 }
 

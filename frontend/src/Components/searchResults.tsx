@@ -62,7 +62,7 @@ export function SearchResult({ reading, disabled, onLockChange }: {
                             onClick={() => setExpanded((previous) => !previous)}
                         >
                             <div className="result-info">
-                                <div style={{ display: "flex", flexDirection: "row"}}>
+                                <div className="result-title-row">
                                     <button type="button" className="parsha-lock-btn"
                                         aria-label={`${locked ? 'Unlock' : 'Lock'} ${reading.desc}`}
                                         aria-pressed={locked}
@@ -77,6 +77,12 @@ export function SearchResult({ reading, disabled, onLockChange }: {
                                     </button>
 
                                     <span className="result-name">{reading.desc}</span>
+                                    
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "row"}}>
+                                    <span className="result-greg-date">{reading.gregDate}</span>
+                                    <span className="result-heb-date">{reading.hDate}</span>
                                 </div>
 
                                 <span className="result-occassions">
