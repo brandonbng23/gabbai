@@ -2656,8 +2656,19 @@ input[type="number"] {
 }
 
 .reading-search {
-    position: relative;
     margin-top: 15px;
+}
+
+.reading-search > label {
+    display: block;
+    margin-bottom: 8px;
+    color: #eeedf2;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.reading-search-control {
+    position: relative;
 }
 
 .reading-search input {
@@ -2883,16 +2894,27 @@ input[type="number"] {
     cursor: not-allowed;
 }
 
-.aliyah-lock-btn svg {
+.aliyah-lock-btn svg,
+.aliyah-status-icon > svg {
     width: 20px;
     height: 20px;
     fill: white;
+}
+
+.aliyah-lock-btn button {
+    width: 20px;
+    height: 20px;
 }
 
 .parsha-lock-btn svg {
     width: 25px;
     height: 25px;
     fill: white;
+}
+
+.parsha-lock-btn button {
+    width: 25px;
+    height: 25px;
 }
 
 .footer {
