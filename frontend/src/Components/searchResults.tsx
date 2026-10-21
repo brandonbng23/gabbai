@@ -48,8 +48,8 @@ export function SearchResult({ reading }: { reading: ParshaObj }): React.JSX.Ele
                             </span>
 
                             <span className="result-readers">
-                                <span className="result-available-total">{reading.readers.filter((r: string) => r === "").length}</span>
-                                Readings available
+                                <span className="result-available-total">{reading.readers.filter((r: string, index) => r === "" && reading.psukim[index] !== "null").length}</span>
+                                Aliyot available
                             </span>
 
                             <span className="result-readers">
