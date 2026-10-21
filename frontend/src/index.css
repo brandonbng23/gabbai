@@ -2862,6 +2862,18 @@ input[type="number"] {
     font-weight: 800;
 }
 
+.aliyah-lock-btn {
+    border: none;
+    background: none;
+
+}
+
+.aliyah-lock-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+}
+
 .footer {
     bottom: 0;
     height: 60px;

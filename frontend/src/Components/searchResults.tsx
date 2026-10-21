@@ -3,6 +3,12 @@ import React, { useState } from "react";
 
 function AdminAliyah(props: Aliyah): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
+    const [locked, setLocked] = useState<boolean>(props.locked);
+
+    function toggleLocked(): void {
+        setLocked(!locked);
+        // update aliyah lock status in backend
+    }
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
     const aliyahLabel = ( 
@@ -13,10 +19,18 @@ function AdminAliyah(props: Aliyah): React.JSX.Element {
 
     return (
         <div className={`admin-aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+            <div style={{ width: "7%"}}>
+                <button className="aliyah-lock-btn" onClick={() => toggleLocked()}>
+                    {locked ? <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M256 160L256 224L384 224L384 160C384 124.7 355.3 96 320 96C284.7 96 256 124.7 256 160zM192 224L192 160C192 89.3 249.3 32 320 32C390.7 32 448 89.3 448 160L448 224C483.3 224 512 252.7 512 288L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 288C128 252.7 156.7 224 192 224z"/></svg>
+                    : <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M416 160C416 124.7 444.7 96 480 96C515.3 96 544 124.7 544 160L544 192C544 209.7 558.3 224 576 224C593.7 224 608 209.7 608 192L608 160C608 89.3 550.7 32 480 32C409.3 32 352 89.3 352 160L352 224L192 224C156.7 224 128 252.7 128 288L128 512C128 547.3 156.7 576 192 576L448 576C483.3 576 512 547.3 512 512L512 288C512 252.7 483.3 224 448 224L416 224L416 160z"/></svg>
+                    }
+                </button>
+            </div>
+            
             <div style={{ width: "15%" }}>{aliyahLabel}</div>
 
             <div style={{ width: "15%" }}>
-                {props.reader || "Available"}
+                {!props.locked ? (props.reader || "Available") : "Locked"}
             </div>
 
             <div style={{ width: "25%" }}>
@@ -28,6 +42,12 @@ function AdminAliyah(props: Aliyah): React.JSX.Element {
 
 export function SearchResult({ reading }: { reading: ParshaObj }): React.JSX.Element {
         const [expanded, setExpanded] = useState<boolean>(false);
+        const [locked, setLocked] = useState<boolean>(false);
+
+        function toggleLocked(): void {
+            setLocked(!locked);
+            // update parsha locked status in backend
+        }
 
         return (
             <div className="reading-result">
@@ -49,12 +69,12 @@ export function SearchResult({ reading }: { reading: ParshaObj }): React.JSX.Ele
 
                             <span className="result-readers">
                                 <span className="result-available-total">{reading.readers.filter((r: string, index) => r === "" && reading.psukim[index] !== "null").length}</span>
-                                Aliyot available
+                                Aliyot<br></br>available
                             </span>
 
                             <span className="result-readers">
                                 <span className="result-reader-total">{reading.readers.filter((r: string) => r !== "").length}</span>
-                                Registered readers
+                                Registered<br></br>readers
                             </span>                            
 
                             <span className="result-toggle-icon" aria-hidden="true">
@@ -81,7 +101,7 @@ export function SearchResult({ reading }: { reading: ParshaObj }): React.JSX.Ele
                                                 parshaId={reading.id}
                                                 a={index+1}
                                                 psukim={p}
-                                                locked={reading.locked}
+                                                locked={reading.lockedArr[index]}
                                                 available={!(reading.readers[index] || reading.locked)}
                                                 reader={reading.readers[index]}
                                             ></AdminAliyah> : null
