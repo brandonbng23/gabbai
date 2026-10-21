@@ -2782,6 +2782,10 @@ input[type="number"] {
 }
 
 .result-toggle-icon {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -2862,7 +2866,7 @@ input[type="number"] {
     font-weight: 800;
 }
 
-.aliyah-lock-btn {
+.aliyah-lock-btn, .parsha-lock-btn {
     border: none;
     background: none;
 
@@ -2871,6 +2875,12 @@ input[type="number"] {
 .aliyah-lock-btn svg {
     width: 20px;
     height: 20px;
+    fill: white;
+}
+
+.parsha-lock-btn svg {
+    width: 25px;
+    height: 25px;
     fill: white;
 }
 
