@@ -261,7 +261,7 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                 <h5>Section Change Log</h5>
                 {changes.length > 0 ? (
                     <ul>{changes.map((change) => <li key={change}>{change}</li>)}</ul>
-                ) : <i>Your changes will be summarized here.</i>}
+                ) : "Your changes will be summarized here."}
             </div>
         )
     }
