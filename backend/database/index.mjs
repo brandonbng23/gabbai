@@ -98,16 +98,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         return record;
     }
 
-    return {
-        path,
-        close: () => db.close(),
-        getShul,
-        listReadingLocks(shulId) {
-            return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
-                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
-                    aliyah: row.aliyah, locked: Boolean(row.locked) }));
-        },
-        setReadingLock(shulId, patch) {
+    function setReadingLocks(shulId, patches) {
+        if (!Array.isArray(patches) || patches.length === 0 || patches.length > 1000) {
+            throw new TypeError('Provide between 1 and 1000 reading lock changes');
+        }
+        const values = patches.map(patch => {
             validateKeys(patch, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
@@ -118,13 +113,30 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             text(desc, 'reading name', true);
             if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
             if (typeof locked !== 'boolean') throw new TypeError('locked must be a boolean');
-            return transaction(() => {
-                requireRecord(getShul(shulId), 'Shul');
-                db.prepare(`INSERT INTO reading_locks (shul_id, reading_date, reading_name, aliyah, locked)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
-                    DO UPDATE SET locked = excluded.locked`).run(shulId, dateString, desc, aliyah, Number(locked));
-            });
+            return [shulId, dateString, desc, aliyah, Number(locked)];
+        });
+        return transaction(() => {
+            requireRecord(getShul(shulId), 'Shul');
+            const statement = db.prepare(`INSERT INTO reading_locks (shul_id, reading_date, reading_name, aliyah, locked)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET locked = excluded.locked`);
+            values.forEach(value => statement.run(...value));
+        });
+    }
+
+    return {
+        path,
+        close: () => db.close(),
+        getShul,
+        listReadingLocks(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
+                    aliyah: row.aliyah, locked: Boolean(row.locked) }));
+        },
+        setReadingLocks,
+        setReadingLock(shulId, patch) {
+            return setReadingLocks(shulId, [patch]);
         },
         getInitialShulVersion(id) {
             const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);

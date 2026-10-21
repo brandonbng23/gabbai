@@ -1,15 +1,22 @@
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
-export async function updateReadingLock(shulId: string, reading: ParshaObj, locked: boolean, aliyah?: number): Promise<ParshaObj> {
-    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/lock`, {
+export interface ReadingLockChange {
+    dateString: string;
+    desc: string;
+    locked: boolean;
+    aliyah?: number;
+}
+
+export async function publishReadingLocks(shulId: string, changes: ReadingLockChange[]): Promise<ParshaObj[]> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/locks`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, locked, aliyah }),
+        body: JSON.stringify({ changes }),
     });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
-        throw new Error(failure?.error || 'Unable to save the lock. Please try again.');
+        throw new Error(failure?.error || 'Unable to publish reading adjustments. Please try again.');
     }
     return response.json();
 }

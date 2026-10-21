@@ -77,7 +77,7 @@ export function createApp(database, {
         }
     });
 
-    app.patch("/api/shuls/:id/readings/lock", (req, res, next) => {
+    function publishReadingLocks(req, res, next, batch) {
         res.set("Cache-Control", "no-store");
         const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to update reading locks" });
@@ -86,26 +86,50 @@ export function createApp(database, {
         }
         if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
         try {
-            validateKeys(req.body, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
-            const { dateString, desc, aliyah, locked } = req.body;
-            if (typeof dateString !== 'string' || typeof desc !== 'string' || typeof locked !== 'boolean'
-                || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
-                return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
+            if (batch) validateKeys(req.body, ['changes'], 'reading adjustments');
+            const changes = batch ? req.body.changes : [req.body];
+            if (!Array.isArray(changes) || changes.length === 0 || changes.length > 1000) {
+                return res.status(400).json({ error: "Provide between 1 and 1000 reading lock changes" });
             }
-            const reading = getShulSchedule(app.locals.database, req.params.id)
-                .find(item => item.dateString === dateString && item.desc === desc);
-            if (!reading) return res.status(404).json({ error: "Reading not found in your shul's current schedule" });
-            if (aliyah !== undefined && (!reading.psukim[aliyah - 1] || reading.psukim[aliyah - 1] === 'null')) {
-                return res.status(400).json({ error: "This aliyah is not part of the current reading" });
+            const schedule = getShulSchedule(app.locals.database, req.params.id);
+            const readings = new Map(schedule.map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading]));
+            const seen = new Set();
+            const affected = new Set();
+            for (const change of changes) {
+                validateKeys(change, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
+                const { dateString, desc, aliyah, locked } = change;
+                if (typeof dateString !== 'string' || typeof desc !== 'string' || typeof locked !== 'boolean'
+                    || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
+                    return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
+                }
+                const key = JSON.stringify([dateString, desc]);
+                const slot = JSON.stringify([dateString, desc, aliyah ?? 0]);
+                if (seen.has(slot)) return res.status(400).json({ error: "Each reading lock may only appear once per publication" });
+                seen.add(slot);
+                const reading = readings.get(key);
+                if (!reading) return res.status(404).json({ error: "Reading not found in your shul's current schedule" });
+                if (aliyah !== undefined && (!reading.psukim[aliyah - 1] || reading.psukim[aliyah - 1] === 'null')) {
+                    return res.status(400).json({ error: "This aliyah is not part of the current reading" });
+                }
+                affected.add(key);
             }
-            app.locals.database.setReadingLock(req.params.id, req.body);
-            return res.json(getShulSchedule(app.locals.database, req.params.id)
-                .find(item => item.dateString === dateString && item.desc === desc));
+            // Validate every change before the repository commits the batch atomically.
+            app.locals.database.setReadingLocks(req.params.id, changes);
+            for (const { dateString, desc, aliyah, locked } of changes) {
+                const reading = readings.get(JSON.stringify([dateString, desc]));
+                if (aliyah === undefined) reading.locked = locked;
+                else reading.lockedArr[aliyah - 1] = locked;
+            }
+            const updated = [...affected].map(key => readings.get(key));
+            return res.json(batch ? updated : updated[0]);
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             return next(error);
         }
-    });
+    }
+
+    app.patch("/api/shuls/:id/readings/lock", (req, res, next) => publishReadingLocks(req, res, next, false));
+    app.patch("/api/shuls/:id/readings/locks", (req, res, next) => publishReadingLocks(req, res, next, true));
 
     // Previews share a sample identity; regular deployments will use an authenticated session.
     app.get("/api/me", (_req, res) => {

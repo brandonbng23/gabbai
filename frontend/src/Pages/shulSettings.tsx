@@ -2,12 +2,14 @@ import type { Shul, ShulInfo, Settings } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
-import { getInitialShulVersion, updateShul, updateShulSettings } from '../api.js';
+import { getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx"
+import { pendingReadingLocks, previewReadingLocks, readingKey, stageReadingLock } from '../readingAdjustments.ts';
+import type { ReadingDrafts } from '../readingAdjustments.ts';
 
-type SettingsSection = 'info' | 'schedule';
+type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
 
 function SubmissionMessage({ message }: { message: SubmissionFeedback | null }) {
@@ -59,9 +61,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 }): React.JSX.Element {
     const settings = shul.settings;
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
-    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null });
+    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
 
-    const [readingAdjustmentChangeLog, setReadingAdjustmentChangeLog] = useState<string[]>([]);
+    const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
     const [permissionsChangeLog, setPermissionsChangeLog] = useState<string[]>([]);
 
     const [name, setName] = useState<string>(shul.name);
@@ -71,7 +73,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
     const [saving, setSaving] = useState(false);
-    const [activeForm, setActiveForm] = useState<'info' | 'schedule'>('info');
+    const [activeForm, setActiveForm] = useState<SettingsSection>('info');
 
     const [hebYear, setHebYear] = useState(settings.hebYear);
     const [a, setA] = useState<number>(settings.a);
@@ -133,6 +135,11 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${typeof field.value === 'boolean' ? (field.value ? 'enabled' : 'disabled') : field.value}.`);
 
+    const readingChanges = pendingReadingLocks(readingDrafts, schedule);
+    const aliyahLabels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
+    const readingAdjustmentChangeLog = readingChanges.map(change =>
+        `${change.locked ? 'Lock' : 'Unlock'} ${change.desc} (${change.dateString})${change.aliyah === undefined ? '' : ` — ${aliyahLabels[change.aliyah - 1]}`}.`);
+
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
     const [search, setSearch] = useState<string>("");
@@ -145,6 +152,38 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     function clearFeedback(section: SettingsSection): void {
         setMessages((previous) => previous[section] ? { ...previous, [section]: null } : previous);
+    }
+
+    function changeReadingLock(reading: ParshaObj, locked: boolean, aliyah?: number): void {
+        if (busy) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setReadingDrafts(previous => stageReadingLock(previous, saved, locked, aliyah));
+        clearFeedback('readings');
+    }
+
+    function resetReadingAdjustments(): void {
+        if (busy) return;
+        setReadingDrafts({});
+        showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
+    }
+
+    async function publishReadingAdjustments(event: SubmitEvent<HTMLFormElement>): Promise<void> {
+        event.preventDefault();
+        if (busy || readingChanges.length === 0) return;
+        setActiveForm('readings');
+        setSaving(true);
+        showFeedback('readings', 'progress', 'Publishing reading adjustments…');
+        try {
+            const updated = await publishReadingLocks(shul.id, readingChanges);
+            updated.forEach(onReadingUpdated);
+            setReadingDrafts({});
+            showFeedback('readings', 'success', 'Reading adjustments published.');
+        } catch (failure) {
+            showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
+        } finally {
+            setSaving(false);
+        }
     }
 
     function applyContactValues(values: ShulInfo): void {
@@ -409,31 +448,49 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         <div className="settings-section-header">
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
                         </div>
-                        <div className="reading-search">
-                            <input
-                                id="reading-search"
-                                type="text"
-                                placeholder="Search by Parsha or Yontif name, e.g. 'Pinchas' or 'Pesach'"
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                            />
-                            <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
-                        </div>
+                        <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
+                            <fieldset className="shul-edit" disabled={busy}>
+                                <legend className="visually-hidden">Reading adjustments</legend>
+                                <div className="reading-search">
+                                    <input
+                                        id="reading-search"
+                                        type="text"
+                                        placeholder="Search by Parsha or Yontif name, e.g. 'Pinchas' or 'Pesach'"
+                                        value={search}
+                                        onChange={(event) => setSearch(event.target.value)}
+                                        onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
+                                    />
+                                    <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
+                                </div>
 
-                        <div className="results">
-                                {search ? schedule
-                                    .filter((reading) => reading.searchTerms.some((term) =>
-                                        term.toLowerCase().includes(search.trim().toLowerCase())))
-                                    .map((reading) => (
-                                        <SearchResult
-                                            key={`${reading.dateString}:${reading.desc}`}
-                                            reading={reading}
-                                            shulId={shul.id}
-                                            onReadingUpdated={onReadingUpdated}
-                                        />
-                                    ))
-                                : null}
-                        </div>
+                                <div className="results">
+                                        {search ? schedule
+                                            .filter((reading) => reading.searchTerms.some((term) =>
+                                                term.toLowerCase().includes(search.trim().toLowerCase())))
+                                            .map((reading) => (
+                                                <SearchResult
+                                                    key={`${reading.dateString}:${reading.desc}`}
+                                                    reading={previewReadingLocks(reading, readingDrafts)}
+                                                    disabled={busy}
+                                                    onLockChange={changeReadingLock}
+                                                />
+                                            ))
+                                        : null}
+                                </div>
+
+                                <div className="settings-form-footer">
+                                    <ChangeLog changes={readingAdjustmentChangeLog} />
+                                    <div className="settings-footer-actions">
+                                        <span>Lock changes take effect after publishing.</span>
+                                        <div className="settings-footer-buttons">
+                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={readingChanges.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish changes'}</button>
+                                        </div>
+                                        <SubmissionMessage message={messages.readings} />
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </form>
                     </section>
 
                     <section className="settings-panel" aria-labelledby="schedule-heading">

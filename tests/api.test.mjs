@@ -25,6 +25,36 @@ const patchShul = body => ({
     body: JSON.stringify(body),
 });
 
+test('publishing reading adjustments validates and saves the entire batch atomically', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = readings.find(item => item.desc === 'Bereshit');
+    const other = readings.find(item => item.desc === 'Noach');
+    const key = { dateString: reading.dateString, desc: reading.desc };
+    const lock = { ...key, aliyah: 1, locked: true };
+    const path = `/api/shuls/${shul.id}/readings/locks`;
+    for (const changes of [[], [lock, { ...key, aliyah: 4, locked: true }],
+        [lock, { ...lock, desc: 'Missing reading' }], [lock, lock], [lock, { ...lock, locked: 'yes', aliyah: 2 }]]) {
+        const response = await request(path, patchShul({ changes }));
+        assert.ok([400, 404].includes(response.status));
+        assert.deepEqual(db.listReadingLocks(shul.id), [], 'An invalid batch must not partially save');
+    }
+    const response = await request(path, patchShul({ changes: [lock, { ...key, aliyah: 8, locked: true },
+        { dateString: other.dateString, desc: other.desc, locked: true }] }));
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    assert.equal(updated.length, 2);
+    assert.equal(updated.find(item => item.desc === 'Bereshit').lockedArr[0], true);
+    assert.equal(updated.find(item => item.desc === 'Bereshit').lockedArr[7], true);
+    assert.equal(updated.find(item => item.desc === 'Noach').locked, true);
+    assert.equal(db.listReadingLocks(shul.id).length, 3);
+    db.updateUser(user.id, { role: 'member' });
+    assert.equal((await request(path, patchShul({ changes: [{ ...lock, locked: false }] }))).status, 403);
+    const production = await setup(t, false);
+    assert.equal((await production.request(`/api/shuls/${production.shul.id}/readings/locks`, patchShul({ changes: [lock] }))).status, 401);
+});
+
 test('reading and aliyah locks persist in schedules while keeping individual overrides independent', async t => {
     const { request, shul, user, db } = await setup(t, true);
     db.updateUser(user.id, { role: 'admin' });

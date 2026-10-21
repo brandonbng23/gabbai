@@ -1,6 +1,5 @@
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useState } from "react";
-import { updateReadingLock } from "../api.js";
 
 function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void }): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
@@ -37,32 +36,16 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
     )
 }
 
-export function SearchResult({ reading, shulId, onReadingUpdated }: {
+export function SearchResult({ reading, disabled, onLockChange }: {
     reading: ParshaObj;
-    shulId: string;
-    onReadingUpdated: (reading: ParshaObj) => void;
+    disabled: boolean;
+    onLockChange: (reading: ParshaObj, locked: boolean, aliyah?: number) => void;
 }): React.JSX.Element {
         const [expanded, setExpanded] = useState<boolean>(false);
-        const [savingLock, setSavingLock] = useState(false);
-        const [lockError, setLockError] = useState<string | null>(null);
         const locked = reading.locked;
 
-        async function saveLock(nextLocked: boolean, aliyah?: number): Promise<void> {
-            if (savingLock) return;
-            setSavingLock(true);
-            setLockError(null);
-            try {
-                const updated = await updateReadingLock(shulId, reading, nextLocked, aliyah);
-                onReadingUpdated(updated);
-            } catch (failure) {
-                setLockError(failure instanceof Error ? failure.message : 'Unable to save the lock. Please try again.');
-            } finally {
-                setSavingLock(false);
-            }
-        }
-
         return (
-            <div className="reading-result" aria-busy={savingLock}>
+            <div className="reading-result">
                 <div className="reading-result-head">
                         <div
                             className="result-heading"
@@ -73,10 +56,10 @@ export function SearchResult({ reading, shulId, onReadingUpdated }: {
                                     <button type="button" className="parsha-lock-btn"
                                         aria-label={`${locked ? 'Unlock' : 'Lock'} ${reading.desc}`}
                                         aria-pressed={locked}
-                                        disabled={savingLock}
+                                        disabled={disabled}
                                         onClick={(event) => {
                                             event.stopPropagation();
-                                            void saveLock(!locked);
+                                            onLockChange(reading, !locked);
                                         }}>
                                         {locked ? <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M256 160L256 224L384 224L384 160C384 124.7 355.3 96 320 96C284.7 96 256 124.7 256 160zM192 224L192 160C192 89.3 249.3 32 320 32C390.7 32 448 89.3 448 160L448 224C483.3 224 512 252.7 512 288L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 288C128 252.7 156.7 224 192 224z"/></svg>
                                         : <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M416 160C416 124.7 444.7 96 480 96C515.3 96 544 124.7 544 160L544 192C544 209.7 558.3 224 576 224C593.7 224 608 209.7 608 192L608 160C608 89.3 550.7 32 480 32C409.3 32 352 89.3 352 160L352 224L192 224C156.7 224 128 252.7 128 288L128 512C128 547.3 156.7 576 192 576L448 576C483.3 576 512 547.3 512 512L512 288C512 252.7 483.3 224 448 224L416 224L416 160z"/></svg>
@@ -116,11 +99,6 @@ export function SearchResult({ reading, shulId, onReadingUpdated }: {
                             </button>
                         </div>
 
-                        <div className="reading-lock-feedback" aria-live="polite">
-                            {savingLock && <span role="status">Saving lock…</span>}
-                            {lockError && <span role="alert">{lockError}</span>}
-                        </div>
-
                         {expanded ? <>
                             <div className="divider" style={{ width: "97%", margin: "10px"}}></div>
                             <div className="parsha">
@@ -132,8 +110,8 @@ export function SearchResult({ reading, shulId, onReadingUpdated }: {
                                                 a={index+1}
                                                 psukim={p}
                                                 locked={locked || reading.lockedArr[index]}
-                                                disabled={savingLock || locked}
-                                                onToggleLock={() => { void saveLock(!reading.lockedArr[index], index + 1); }}
+                                                disabled={disabled || locked}
+                                                onToggleLock={() => onLockChange(reading, !reading.lockedArr[index], index + 1)}
                                                 available={!(reading.readers[index] || locked || reading.lockedArr[index])}
                                                 reader={reading.readers[index]}
                                             ></AdminAliyah> : null

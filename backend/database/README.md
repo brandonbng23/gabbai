@@ -196,5 +196,11 @@ so those choices remain when the reading is unlocked.
 `PATCH /api/shuls/:id/readings/lock` accepts `{ dateString, desc, locked, aliyah? }`.
 It requires an administrator of that shul and validates that the reading and
 optional aliyah exist in its current schedule. Omit `aliyah` to lock the whole
-reading. The response contains the updated reading. Lock controls save
-immediately; failed requests leave the displayed state unchanged.
+reading. The response contains the updated reading.
+
+The admin UI keeps reading adjustments as local drafts and publishes them with
+`PATCH /api/shuls/:id/readings/locks`, accepting `{ changes: [...] }` with the same
+fields per change. Every entry is validated before a single transaction saves
+the batch; a failed publication saves none of the changes. The response contains
+each affected reading once. Reset discards local drafts, and publication updates
+the schedule used by the member-facing pages. Search changes do not discard drafts.
