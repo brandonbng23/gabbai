@@ -87,7 +87,9 @@ function App() {
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your shul is not available yet.</p>
               : isShulSettingsPage ? (
-                user?.role === 'admin' ? <ShulSettings shul={shul} schedule={schedule} onSaved={setShul} />
+                user?.role === 'admin' ? <ShulSettings shul={shul} schedule={schedule} onSaved={setShul}
+                    onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
+                        reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : <>
               <WelcomeBar fName={user?.firstName}></WelcomeBar>

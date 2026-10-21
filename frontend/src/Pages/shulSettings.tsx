@@ -51,10 +51,11 @@ function RestoreMenu({ section, disabled, onRestore }: { section: string; disabl
     );
 }
 
-export default function ShulSettings({ shul, onSaved, schedule }: {
+export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated }: {
     shul: Shul;
     onSaved: (shul: Shul) => void;
     schedule: ParshaObj[];
+    onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
@@ -425,8 +426,10 @@ export default function ShulSettings({ shul, onSaved, schedule }: {
                                         term.toLowerCase().includes(search.trim().toLowerCase())))
                                     .map((reading) => (
                                         <SearchResult
-                                            key={reading.id}
+                                            key={`${reading.dateString}:${reading.desc}`}
                                             reading={reading}
+                                            shulId={shul.id}
+                                            onReadingUpdated={onReadingUpdated}
                                         />
                                     ))
                                 : null}

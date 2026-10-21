@@ -1,4 +1,18 @@
 import type { Yontifs } from '../../interfaces/yontifs.mts';
+import type { ParshaObj } from './Components/parsha.tsx';
+
+export async function updateReadingLock(shulId: string, reading: ParshaObj, locked: boolean, aliyah?: number): Promise<ParshaObj> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/lock`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, locked, aliyah }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save the lock. Please try again.');
+    }
+    return response.json();
+}
 
 export interface ShulSummary {
     id: string;

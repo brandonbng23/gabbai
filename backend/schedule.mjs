@@ -18,5 +18,17 @@ export function getShulSchedule(database, shulId, year) {
         if (!Number.isInteger(year) || year < 1 || year > 9999) throw new TypeError('Invalid Hebrew year');
         settings.setHebYear(year);
     }
-    return new Schedule(settings, settings.getHebYear()).getScheduleData();
+    const locks = new Map();
+    for (const lock of database.listReadingLocks(shulId)) {
+        const key = JSON.stringify([lock.dateString, lock.desc]);
+        if (!locks.has(key)) locks.set(key, []);
+        locks.get(key).push(lock);
+    }
+    return new Schedule(settings, settings.getHebYear()).getScheduleData().map(reading => {
+        for (const lock of locks.get(JSON.stringify([reading.dateString, reading.desc])) ?? []) {
+            if (lock.aliyah === 0) reading.locked = lock.locked;
+            else reading.lockedArr[lock.aliyah - 1] = lock.locked;
+        }
+        return reading;
+    });
 }

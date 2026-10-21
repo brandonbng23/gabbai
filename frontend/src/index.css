@@ -2872,6 +2872,27 @@ input[type="number"] {
 
 }
 
+.aliyah-lock-btn:disabled,
+.parsha-lock-btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.reading-result[aria-busy="true"] :is(.aliyah-lock-btn, .parsha-lock-btn) {
+    cursor: wait;
+}
+
+.reading-lock-feedback:not(:empty) {
+    margin: 8px 16px 0;
+    color: var(--settings-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.reading-lock-feedback [role="alert"] {
+    color: #ffb4b4;
+}
+
 .aliyah-lock-btn svg {
     width: 20px;
     height: 20px;

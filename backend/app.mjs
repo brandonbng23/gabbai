@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
+import { validateKeys } from "./database/settings.mjs";
 
 export function createApp(database, {
     development = process.env.NODE_ENV === "development",
@@ -70,6 +71,36 @@ export function createApp(database, {
         }
         try {
             return res.json(app.locals.database.updateShulSettings(req.params.id, req.body));
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    });
+
+    app.patch("/api/shuls/:id/readings/lock", (req, res, next) => {
+        res.set("Cache-Control", "no-store");
+        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        if (!user) return res.status(401).json({ error: "Sign in to update reading locks" });
+        if (user.role !== 'admin' || user.shulId !== req.params.id) {
+            return res.status(403).json({ error: "Only this shul's administrators can update reading locks" });
+        }
+        if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
+        try {
+            validateKeys(req.body, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
+            const { dateString, desc, aliyah, locked } = req.body;
+            if (typeof dateString !== 'string' || typeof desc !== 'string' || typeof locked !== 'boolean'
+                || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
+                return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
+            }
+            const reading = getShulSchedule(app.locals.database, req.params.id)
+                .find(item => item.dateString === dateString && item.desc === desc);
+            if (!reading) return res.status(404).json({ error: "Reading not found in your shul's current schedule" });
+            if (aliyah !== undefined && (!reading.psukim[aliyah - 1] || reading.psukim[aliyah - 1] === 'null')) {
+                return res.status(400).json({ error: "This aliyah is not part of the current reading" });
+            }
+            app.locals.database.setReadingLock(req.params.id, req.body);
+            return res.json(getShulSchedule(app.locals.database, req.params.id)
+                .find(item => item.dateString === dateString && item.desc === desc));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             return next(error);

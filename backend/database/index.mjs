@@ -70,7 +70,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ) STRICT`);
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 2) throw new Error('Database schema is newer than this application');
+            if (version > 3) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -78,6 +78,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 2) {
                 db.exec(readFileSync(new URL('./migrations/002_initial_shul_versions.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(2);
+            }
+            if (version < 3) {
+                db.exec(readFileSync(new URL('./migrations/003_reading_locks.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(3);
             }
         });
     } catch (error) {
@@ -98,6 +102,30 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        listReadingLocks(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
+                    aliyah: row.aliyah, locked: Boolean(row.locked) }));
+        },
+        setReadingLock(shulId, patch) {
+            validateKeys(patch, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
+            const { dateString, desc, locked, aliyah = 0 } = patch;
+            if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
+                || !Number.isFinite(Date.parse(dateString))
+                || new Date(dateString).toISOString().slice(0, 10) !== dateString) {
+                throw new TypeError('Invalid reading date');
+            }
+            text(desc, 'reading name', true);
+            if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
+            if (typeof locked !== 'boolean') throw new TypeError('locked must be a boolean');
+            return transaction(() => {
+                requireRecord(getShul(shulId), 'Shul');
+                db.prepare(`INSERT INTO reading_locks (shul_id, reading_date, reading_name, aliyah, locked)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                    DO UPDATE SET locked = excluded.locked`).run(shulId, dateString, desc, aliyah, Number(locked));
+            });
+        },
         getInitialShulVersion(id) {
             const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
             return row ? { info: JSON.parse(row.info_json), settings: JSON.parse(row.settings_json),

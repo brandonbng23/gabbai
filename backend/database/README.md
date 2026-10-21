@@ -186,3 +186,15 @@ The admin form loads the snapshot as unsaved edits; normal profile/settings save
 endpoints apply those edits after review. Reset controls instead restore the
 latest saved values, either per field, per section, or across the whole form.
 Migrations run transactionally and are safe to reopen; do not edit an applied migration.
+
+Version 3 adds `reading_locks`, keyed by shul, reading date/name, and aliyah slot.
+Slot 0 stores the whole-reading lock; slots 1–7 are aliyot, 8 is maftir, and 9 is
+haftarah. Schedule generation overlays saved locks onto the reading data, with
+new readings unlocked by default. Whole-reading locks preserve individual locks
+so those choices remain when the reading is unlocked.
+
+`PATCH /api/shuls/:id/readings/lock` accepts `{ dateString, desc, locked, aliyah? }`.
+It requires an administrator of that shul and validates that the reading and
+optional aliyah exist in its current schedule. Omit `aliyah` to lock the whole
+reading. The response contains the updated reading. Lock controls save
+immediately; failed requests leave the displayed state unchanged.

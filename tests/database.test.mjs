@@ -20,6 +20,36 @@ function setup(t) {
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
 
+test('reading locks survive reopening and remain tied to their shul, date, and original slot', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-locks-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'locks.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let other;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Locks', settings: { hebYear: 5787 } });
+        other = db.createShul({ name: 'Other', settings: { hebYear: 5787 } });
+        db.setReadingLock(shul.id, { ...key, locked: true });
+        db.setReadingLock(shul.id, { ...key, aliyah: 8, locked: true });
+        db.setReadingLock(shul.id, { ...key, locked: false });
+        for (const invalid of [{ ...key, locked: 1 }, { ...key, locked: true, aliyah: 10 },
+            { ...key, dateString: '2026-02-30', locked: true }]) {
+            assert.throws(() => db.setReadingLock(shul.id, invalid), TypeError);
+        }
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingLocks(other.id), []);
+        const locks = db.listReadingLocks(shul.id);
+        assert.equal(locks.length, 2);
+        assert.equal(locks.find(lock => lock.aliyah === 0).locked, false);
+        assert.equal(locks.find(lock => lock.aliyah === 8).locked, true);
+        assert.ok(locks.every(lock => lock.dateString === key.dateString && lock.desc === key.desc));
+    } finally { db.close(); }
+});
+
 test('first saved shul versions survive edits, reopening, and repeated migrations', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-initial-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));

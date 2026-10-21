@@ -25,6 +25,66 @@ const patchShul = body => ({
     body: JSON.stringify(body),
 });
 
+test('reading and aliyah locks persist in schedules while keeping individual overrides independent', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const path = `/api/shuls/${shul.id}/readings/lock`;
+    const load = async () => (await (await request(`/api/schedule?shul=${shul.id}`)).json());
+    const readings = await load();
+    assert.ok(readings.every(reading => !reading.locked && reading.lockedArr.every(value => !value)));
+    const reading = readings.find(reading => reading.desc === 'Bereshit');
+    const key = { desc: reading.desc, dateString: reading.dateString };
+    const current = async () => (await load()).find(item => item.desc === key.desc && item.dateString === key.dateString);
+
+    let response = await request(path, patchShul({ ...key, aliyah: 1, locked: true }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.equal((await response.json()).lockedArr[0], true);
+    assert.equal((await current()).lockedArr[0], true);
+    response = await request(path, patchShul({ ...key, locked: true }));
+    assert.equal((await response.json()).locked, true);
+    response = await request(path, patchShul({ ...key, locked: false }));
+    let updated = await response.json();
+    assert.equal(updated.locked, false);
+    assert.equal(updated.lockedArr[0], true);
+    assert.equal(updated.lockedArr[1], false);
+    // Maftir retains position 8 even when aliyot 4–7 are hidden.
+    response = await request(path, patchShul({ ...key, aliyah: 8, locked: true }));
+    updated = await response.json();
+    assert.equal(updated.lockedArr[7], true);
+    assert.equal(updated.lockedArr[3], false);
+    response = await request(path, patchShul({ ...key, aliyah: 1, locked: false }));
+    assert.equal((await response.json()).lockedArr[0], false);
+
+    const other = db.createShul({ name: 'Other', settings: shul.settings });
+    const otherReadings = await (await request(`/api/schedule?shul=${other.id}`)).json();
+    assert.ok(otherReadings.every(item => !item.locked && item.lockedArr.every(value => !value)));
+    db.updateShulSettings(shul.id, { hebYear: 5787 });
+    assert.ok((await load()).every(item => !item.locked && item.lockedArr.every(value => !value)));
+    db.updateShulSettings(shul.id, { hebYear: 5788, yontifs: { rh2: false } });
+    assert.equal((await current()).lockedArr[7], true);
+});
+
+test('reading lock updates require the same shul admin and reject invalid or hidden slots', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json())
+        .find(item => item.desc === 'Bereshit');
+    const body = { desc: reading.desc, dateString: reading.dateString, locked: true };
+    const path = `/api/shuls/${shul.id}/readings/lock`;
+    assert.equal((await request(path, patchShul(body))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    const other = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    assert.equal((await request(`/api/shuls/${other.id}/readings/lock`, patchShul(body))).status, 403);
+    for (const invalid of [null, [], {}, { ...body, locked: 'true' }, { ...body, aliyah: 0 },
+        { ...body, aliyah: 10 }, { ...body, aliyah: 1.5 }, { ...body, aliyah: 4 }, { ...body, extra: true }]) {
+        assert.equal((await request(path, patchShul(invalid))).status, 400);
+    }
+    assert.equal((await request(path, patchShul({ ...body, dateString: '2020-01-01' }))).status, 404);
+    assert.deepEqual(db.listReadingLocks(shul.id), []);
+    const production = await setup(t, false);
+    assert.equal((await production.request(`/api/shuls/${production.shul.id}/readings/lock`, patchShul(body))).status, 401);
+});
+
 test('shul admins can save contact information without changing reading settings', async t => {
     const { request, shul, user, db } = await setup(t, true);
     db.updateUser(user.id, { role: 'admin' });
