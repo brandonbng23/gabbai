@@ -2659,7 +2659,8 @@ input[type="number"] {
     margin-top: 15px;
 }
 
-.reading-search > label {
+.reading-search > label,
+.user-search > label {
     display: block;
     margin-bottom: 8px;
     color: #eeedf2;
@@ -2671,7 +2672,8 @@ input[type="number"] {
     position: relative;
 }
 
-.reading-search input {
+.reading-search input,
+.user-search input {
     display: block;
     width: 100%;
     min-height: 44px;
@@ -3085,4 +3087,13 @@ input[type="number"] {
 .settings-user-email { margin-top: 3px; font-size: 13px; }
 @media (max-width: 640px) {
     .settings-user-groups { grid-template-columns: minmax(0, 1fr); }
+}
+
+.user-search {
+    margin-bottom: 20px;
+}
+
+.user-search input:focus-visible {
+    outline: 2px solid #66b1f2;
+    outline-offset: 2px;
 }

@@ -89,7 +89,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [nameSortClicks, setNameSortClicks] = useState<number>(0);
     const [emailSortClicks, setEmailSortClicks] = useState<number>(0);
     const [roleSortClicks, setRoleSortClicks] = useState<number>(0);
+    const [userSearch, setUserSearch] = useState<string>("");
     const [nameClick, setNameClick] = useState<boolean>(false);
+
+    function searchUsers(usersToSort: ShulUser[]): ShulUser[] {
+        return usersToSort.filter((u: ShulUser) => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch))
+    }
 
     function sortUsers(): ShulUser[] {
         if (userSort === "name") {
@@ -930,9 +935,24 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                             <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Members and administrators of {shul.name}.</p></div>
                         </div>
                         <div className="settings-users" aria-busy={usersLoading}>
-                            <div className="admin-list">
+                            <div className="user-search">
+                                <label htmlFor="user-search">Search users</label>
+                                <div className="reading-search-control">
+                                <input
+                                    id="user-search"
+                                    type="text"
+                                    placeholder="e.g. Josh Cohen"
+                                    value={userSearch}
+                                    onChange={(event) => setUserSearch(event.target.value)}
+                                    onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
+                                />
+                                <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
+                                </div>
+                            </div>
+
+                            <div className="user-list">
                                 
-                                {sortUsers().map((u: ShulUser, index) => {
+                                {searchUsers(sortUsers()).map((u: ShulUser, index) => {
                                     return index % 10 === 0 ? <>
                                         {index !== 0 ? <br></br> : null}
                                         <div className="list-heading">
