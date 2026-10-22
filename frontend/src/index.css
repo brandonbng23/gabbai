@@ -3297,6 +3297,22 @@ input[type="number"] {
     text-align: left;
 }
 
+.list-heading .field-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.field-btn svg {
+    display: block;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    fill: #bdbcc3;
+
+    padding-bottom: 2px;
+}
+
 .action-icons {
     display: grid;
     grid-template-columns: repeat(4, 20px);
