@@ -28,7 +28,7 @@ function shulValues(input) {
 
 function userValues(input) {
     const role = input.role ?? 'member';
-    if (!['member', 'admin'].includes(role)) throw new TypeError('role must be member or admin');
+    if (!['member', 'admin', 'guest'].includes(role)) throw new TypeError('role must be member, admin, or guest');
     return [text(input.shulId, 'shulId', true), text(input.firstName, 'firstName', true),
         text(input.lastName, 'lastName', true), text(input.hebrewName ?? '', 'hebrewName'),
         email(input.email), text(input.phone ?? '', 'phone'), role, text(input.title ?? '', 'title')];
@@ -68,9 +68,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) STRICT`);
+        // Rebuilding users must preserve dependent settings and reader assignments.
+        const migrateGuests = (db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0) < 7;
+        if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 6) throw new Error('Database schema is newer than this application');
+            if (version > 7) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -95,7 +98,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/006_reading_aliyah_counts.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(6);
             }
+            if (version < 7) {
+                db.exec(readFileSync(new URL('./migrations/007_guest_role.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(7);
+                if (db.prepare('PRAGMA foreign_key_check').all().length)
+                    throw new Error('Guest role migration would violate foreign keys');
+            }
         });
+        if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
         db.close();
         throw error;
@@ -241,6 +251,38 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.prepare(`INSERT INTO shul_initial_versions (shul_id, info_json, settings_json, source)
                     VALUES (?, ?, ?, 'creation')`).run(id, JSON.stringify(info), JSON.stringify(settings));
                 return getShul(id);
+            });
+        },
+        registerReading(shulId, { dateString, desc, aliyah, readerId, guest }, validateReading) {
+            return transaction(() => {
+                // Validate availability while holding the write lock, before creating a guest.
+                validateReading();
+                let id = readerId;
+                if (guest) {
+                    const values = userValues({ ...guest, shulId, role: 'guest' });
+                    const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
+                    const existing = existingId ? getUser(existingId) : null;
+                    if (existing) {
+                        if (existing.role !== 'guest' || existing.shulId !== shulId || existing.firstName !== values[1]
+                            || existing.lastName !== values[2] || existing.hebrewName !== values[3]) {
+                            const error = new Error('This email already has a profile with different details. Register with that profile or use another email.');
+                            error.status = 409;
+                            throw error;
+                        }
+                        id = existing.id;
+                    } else {
+                        id = randomUUID();
+                        db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                        db.prepare("INSERT INTO user_settings (user_id, settings_json) VALUES (?, '{}')").run(id);
+                    }
+                } else if (!id || getUser(id)?.shulId !== shulId) {
+                    const error = new Error('Sign in with a profile from this shul.');
+                    error.status = 403;
+                    throw error;
+                }
+                db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
+                    VALUES (?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id);
             });
         },
         createUser(input) {

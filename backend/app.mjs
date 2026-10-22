@@ -29,6 +29,44 @@ export function createApp(database, {
         return res.json(shul);
     });
 
+    app.post("/api/shuls/:id/readings/register", (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        try {
+            validateKeys(req.body, ['dateString', 'desc', 'aliyah', 'guest'], 'registration');
+            const { dateString, desc, aliyah, guest } = req.body;
+            if (typeof dateString !== 'string' || typeof desc !== 'string'
+                || !Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9)
+                return res.status(400).json({ error: 'Choose a reading and aliyah from 1 to 9.' });
+            if (!database.getShul(req.params.id)) return res.status(404).json({ error: 'Shul not found' });
+            if ('guest' in req.body) {
+                validateKeys(guest, ['firstName', 'lastName', 'hebrewName', 'email'], 'guest');
+                for (const [key, value] of Object.entries(guest)) {
+                    if (typeof value !== 'string' || value.length > 254)
+                        throw new TypeError(`${key} must be a string of at most 254 characters`);
+                }
+            }
+            const user = currentUserId ? database.getUser(currentUserId) : null;
+            if (!('guest' in req.body) && !user)
+                return res.status(401).json({ error: 'Sign in or register as a guest.' });
+            database.registerReading(req.params.id, { dateString, desc, aliyah, guest, readerId: user?.id }, () => {
+                const reading = getShulSchedule(database, req.params.id)
+                    .find(item => item.dateString === dateString && item.desc === desc);
+                const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
+                if (!reading) fail(404, 'Reading not found in this shul’s current schedule.');
+                if (!reading.psukim[aliyah - 1] || reading.psukim[aliyah - 1] === 'null')
+                    fail(400, 'This aliyah is not part of the reading.');
+                if (reading.locked || reading.lockedArr[aliyah - 1]) fail(409, 'This aliyah is locked.');
+                if (reading.readers[aliyah - 1]) fail(409, 'Another reader has already registered for this aliyah.');
+            });
+            // Registration clients only need confirmation, not other readers' profiles.
+            return res.status(201).json({ registered: true });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            if (error.status) return res.status(error.status).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     app.get("/api/shuls/:id/users", (req, res) => {
         res.set("Cache-Control", "no-store");
         const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;

@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import Filter from "./filter.tsx";
 import Parsha, { ParshaObj } from "./parsha.tsx";
 
-function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
+function Schedule({parshiyot, shulId}: {parshiyot: ParshaObj[]; shulId?: string}): React.JSX.Element {
     const [nameFilter, setNameFilter] = useState<string>("");
     const [dateFilter, setDateFilter] = useState<string>("");
     const [bookFilter, setBookFilter] = useState<string[]>([]);
@@ -103,7 +103,7 @@ function Schedule({parshiyot}: {parshiyot: ParshaObj[]}): React.JSX.Element {
             />
             <div className="parshiyot">
                 {applyAllFilters().length > 0 ? 
-                    applyAllFilters().map((p: ParshaObj, index) => <Parsha key={index} {...p}></Parsha>)
+                    applyAllFilters().map((p: ParshaObj, index) => <Parsha key={index} {...p} shulId={shulId}></Parsha>)
                 : <span className="no-results">
                     <h3>Oy Gevalt!</h3>
                     No results. Double check filters are applied as intended.

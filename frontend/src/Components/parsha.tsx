@@ -37,7 +37,7 @@ export function AliyahInfo(): React.JSX.Element {
     )
 }
 
-function Aliyah(props: Aliyah): React.JSX.Element {
+function Aliyah(props: Aliyah & { shulId?: string; dateString: string; desc: string }): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
@@ -69,7 +69,8 @@ function Aliyah(props: Aliyah): React.JSX.Element {
                         <button
                             type="button"
                             onClick={() => {
-                                const params = new URLSearchParams({ parsha: String(props.parshaId), aliyah: String(props.a) });
+                                const params = new URLSearchParams({ parsha: String(props.parshaId), aliyah: String(props.a), date: props.dateString, desc: props.desc });
+                                if (props.shulId) params.set("shul", props.shulId);
                                 window.location.assign(`/registration?${params}`);
                             }}
                         >Register</button>
@@ -94,7 +95,7 @@ function Aliyah(props: Aliyah): React.JSX.Element {
     )
 }
 
-export default function Parsha(props: ParshaObj): React.JSX.Element {
+export default function Parsha(props: ParshaObj & { shulId?: string }): React.JSX.Element {
     function formatOccassionView(o: string): string {
         const lowerCase_o: string = o.toLowerCase();
 
@@ -152,6 +153,9 @@ export default function Parsha(props: ParshaObj): React.JSX.Element {
                                 <Aliyah
                                     key={index}
                                     parshaId={props.id}
+                                    shulId={props.shulId}
+                                    dateString={props.dateString}
+                                    desc={props.desc}
                                     a={index + 1}
                                     psukim={p}
                                     locked={props.locked}
@@ -162,6 +166,9 @@ export default function Parsha(props: ParshaObj): React.JSX.Element {
                                 <Aliyah
                                     key={index}
                                     parshaId={props.id}
+                                    shulId={props.shulId}
+                                    dateString={props.dateString}
+                                    desc={props.desc}
                                     a={index + 1}
                                     psukim={p}
                                     locked={props.lockedArr[index]}

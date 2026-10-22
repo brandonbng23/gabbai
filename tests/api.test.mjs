@@ -457,3 +457,83 @@ test('per-reading aliyah counts override rules independently and publish with ne
     assert.equal(reset.find(reading => reading.desc === 'Bereshit').aliyahCount, 4);
     assert.equal(reset.find(reading => reading.desc === 'Bereshit').aliyahCountOverride, null);
 });
+
+test('guests appear in shul users and can be assigned by admins but have no admin access', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const visitor = db.createUser({ shulId: shul.id, firstName: 'Guest', lastName: 'Reader',
+        hebrewName: 'Yehoshua', email: 'guest@example.com', role: 'guest' });
+    const usersPath = `/api/shuls/${shul.id}/users`;
+    const users = await (await request(usersPath)).json();
+    assert.equal(users.find(item => item.id === visitor.id).role, 'guest');
+    const schedule = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = schedule.find(item => item.desc === 'Bereshit');
+    const path = `/api/shuls/${shul.id}/readings/locks`;
+    const change = { dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: visitor.id };
+    const response = await request(path, patchShul({ changes: [change] }));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json())[0].readers[0].role, 'guest');
+    db.updateUser(user.id, { role: 'guest' });
+    assert.equal((await request(usersPath)).status, 403);
+    assert.equal((await request(path, patchShul({ changes: [{ ...change, readerId: null }] }))).status, 403);
+    assert.equal((await request(`/api/shuls/${shul.id}`, patchShul({ name: 'Changed' }))).status, 403);
+    assert.equal((await request(`/api/shuls/${shul.id}/settings`, patchShul({ a: 4 }))).status, 403);
+});
+
+const registrationRequest = body => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+test('profile registration reserves an available aliyah and rejects locked, hidden and foreign-shul selections', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = readings.find(item => item.desc === 'Bereshit');
+    const base = { dateString: reading.dateString, desc: reading.desc };
+    const path = `/api/shuls/${shul.id}/readings/register`;
+    const post = body => request(path, registrationRequest(body));
+    assert.equal((await post({ ...base, aliyah: 4 })).status, 400);
+    assert.equal((await post({ ...base, aliyah: 1, readerId: user.id })).status, 400);
+    assert.equal((await post({ ...base, aliyah: 1, guest: null })).status, 400);
+    db.setReadingLocks(shul.id, [{ ...base, aliyah: 2, locked: true }]);
+    assert.equal((await post({ ...base, aliyah: 2 })).status, 409);
+    db.setReadingLocks(shul.id, [{ ...base, locked: true }]);
+    assert.equal((await post({ ...base, aliyah: 1 })).status, 409);
+    db.setReadingLocks(shul.id, [{ ...base, locked: false }]);
+    const response = await post({ ...base, aliyah: 1 });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), { registered: true });
+    assert.equal((await post({ ...base, aliyah: 1 })).status, 409);
+    const refreshed = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    assert.equal(refreshed.find(item => item.desc === reading.desc).readers[0].id, user.id);
+    const other = db.createShul({ name: 'Other', settings: shul.settings });
+    assert.equal((await request(`/api/shuls/${other.id}/readings/register`, registrationRequest({ ...base, aliyah: 3 }))).status, 403);
+    assert.equal(db.listReadingReaders(other.id).length, 0);
+});
+
+test('anonymous guest registration validates details, reuses matching guests and never overwrites existing identities', async t => {
+    const { request, shul, user, db } = await setup(t, false);
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = readings.find(item => item.desc === 'Bereshit');
+    const base = { dateString: reading.dateString, desc: reading.desc };
+    const post = body => request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(body));
+    const guest = { firstName: 'Visitor', lastName: 'Cohen', hebrewName: 'Yehoshua', email: 'visitor@example.com' };
+    const initialUsers = db.listShulUsers(shul.id).length;
+    assert.equal((await post({ ...base, aliyah: 1 })).status, 401);
+    for (const invalid of [{ ...guest, email: 'invalid' }, { ...guest, firstName: '' }, { ...guest, role: 'admin' }, { ...guest, email: user.email }]) {
+        assert.ok([400, 409].includes((await post({ ...base, aliyah: 1, guest: invalid })).status));
+        assert.equal(db.listShulUsers(shul.id).length, initialUsers);
+    }
+    assert.equal((await post({ ...base, aliyah: 1, guest })).status, 201);
+    const visitor = db.listShulUsers(shul.id).find(item => item.email === guest.email);
+    assert.equal(visitor.role, 'guest');
+    assert.equal(visitor.hebrewName, guest.hebrewName);
+    assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, email: 'VISITOR@EXAMPLE.COM' } })).status, 201);
+    assert.equal(db.listShulUsers(shul.id).length, initialUsers + 1);
+    assert.equal(db.listReadingReaders(shul.id).find(item => item.aliyah === 2).reader.id, visitor.id);
+    assert.equal((await post({ ...base, aliyah: 3, guest: { ...guest, firstName: 'Different' } })).status, 409);
+    assert.equal(db.getUser(visitor.id).firstName, guest.firstName);
+    const attempts = await Promise.all(['one', 'two'].map(name => post({ ...base, aliyah: 3, guest: { ...guest, email: `${name}@example.com` } })));
+    assert.deepEqual(attempts.map(response => response.status).sort(), [201, 409]);
+    assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2, 'Failed competing registration creates no guest');
+    assert.equal(db.listReadingReaders(shul.id).length, 3);
+    assert.equal((await post({ ...base, aliyah: 4, guest: { ...guest, email: 'hidden@example.com' } })).status, 400);
+    assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2);
+});

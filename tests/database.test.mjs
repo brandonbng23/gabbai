@@ -305,3 +305,52 @@ test('reading count overrides survive reopening and can return to the schedule r
         assert.equal(getShulSchedule(db, shul.id).find(reading => reading.desc === key.desc).aliyahCount, 3);
     } finally { db.close(); }
 });
+
+test('guest profiles use registration fields and support role changes', t => {
+    const { db, shul } = setup(t);
+    const profile = db.createUser({ ...guest(shul.id), role: 'guest', hebrewName: 'Yehoshua ben Shlomo' });
+    assert.equal(profile.role, 'guest');
+    assert.equal(profile.hebrewName, 'Yehoshua ben Shlomo');
+    assert.equal(profile.phone, '');
+    assert.equal(profile.title, '');
+    assert.equal(db.listShulUsers(shul.id).find(user => user.id === profile.id).role, 'guest');
+    assert.equal(db.updateUser(profile.id, { role: 'member' }).role, 'member');
+    assert.equal(db.updateUser(profile.id, { role: 'guest' }).role, 'guest');
+    for (const field of ['firstName', 'lastName', 'email']) {
+        assert.throws(() => db.updateUser(profile.id, { [field]: '' }), TypeError);
+    }
+});
+
+test('guest role migration preserves existing users, settings, assignments and constraints', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-migration-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    const legacy = new DatabaseSync(path);
+    legacy.exec('PRAGMA foreign_keys = ON; CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY)');
+    for (const name of ['001_profiles', '002_initial_shul_versions', '003_reading_locks', '004_reading_occasions', '005_reading_readers', '006_reading_aliyah_counts']) {
+        legacy.exec(readFileSync(new URL(`../backend/database/migrations/${name}.sql`, import.meta.url), 'utf8'));
+    }
+    legacy.exec(`INSERT INTO schema_migrations VALUES (6);
+        INSERT INTO shuls (id, name) VALUES ('legacy-shul', 'Legacy');
+        INSERT INTO shul_settings (shul_id, settings_json) VALUES ('legacy-shul', '{}');
+        INSERT INTO users (id, shul_id, first_name, last_name, email, role) VALUES ('legacy-user', 'legacy-shul', 'Josh', 'Cohen', 'legacy@example.com', 'admin');
+        INSERT INTO user_settings (user_id, settings_json) VALUES ('legacy-user', '{"language":"he"}');
+        INSERT INTO reading_readers VALUES ('legacy-shul', '2026-10-10', 'Bereshit', 1, 'legacy-user');`);
+    legacy.close();
+    let db = openDatabase(path);
+    try {
+        const user = db.getUser('legacy-user');
+        assert.equal(user.role, 'admin');
+        assert.deepEqual(user.settings, { language: 'he' });
+        assert.equal(db.listReadingReaders('legacy-shul')[0].reader.id, user.id);
+        db.updateUser(user.id, { role: 'guest' });
+        assert.throws(() => db.createUser({ ...guest('missing'), email: 'missing@example.com', role: 'guest' }), /FOREIGN KEY/);
+        assert.throws(() => db.createUser({ ...guest('legacy-shul'), email: user.email, role: 'guest' }), /UNIQUE/);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getUser('legacy-user').role, 'guest');
+        assert.equal(db.listReadingReaders('legacy-shul')[0].reader.role, 'guest');
+        assert.deepEqual(db.getUser('legacy-user').settings, { language: 'he' });
+    } finally { db.close(); }
+});

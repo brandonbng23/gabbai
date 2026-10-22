@@ -29,13 +29,10 @@ function App() {
             try {
                 const currentUser = await getCurrentUser(controller.signal);
                 if (controller.signal.aborted) return;
-                if (!currentUser) throw new Error('Sign in to view your shul.');
-                const selected = currentUser.shulId;
+                const selected = currentUser?.shulId || new URLSearchParams(window.location.search).get('shul');
+                if (!selected) throw new Error('Open a shul registration link or sign in to view your shul.');
                 const profile = await getJson<Shul>(`/api/shuls/${encodeURIComponent(selected)}`, controller.signal);
                 if (controller.signal.aborted) return;
-                const url = new URL(window.location.href);
-                url.searchParams.delete('shul');
-                window.history.replaceState(null, '', url);
                 setUser(currentUser);
                 setShul(profile);
             } catch (failure) {
@@ -82,7 +79,7 @@ function App() {
               <Aside user={user}></Aside>
             <div className={`content-window${isShulSettingsPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
-                <AliyahRegistration schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
+                <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your shul is not available yet.</p>
@@ -96,7 +93,7 @@ function App() {
               {scheduleLoading ? <p className="shul-context" role="status">Loading your schedule…</p>
               : scheduleError ? <p className="shul-context" role="alert">{scheduleError}</p>
               : <Schedule
-                parshiyot = {schedule}>
+                shulId={shulId} parshiyot = {schedule}>
               </Schedule>}
               </>}
             </div>

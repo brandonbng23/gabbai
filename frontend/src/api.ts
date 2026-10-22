@@ -136,3 +136,22 @@ export async function getShulUsers(id: string, signal: AbortSignal): Promise<Shu
     if (!response.ok) throw new Error('Unable to load shul users. Please try again.');
     return response.json();
 }
+
+export interface GuestRegistration {
+    firstName: string;
+    lastName: string;
+    hebrewName: string;
+    email: string;
+}
+
+export async function registerForReading(shulId: string, reading: ParshaObj, aliyah: number, guest?: GuestRegistration): Promise<void> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, aliyah, ...(guest ? { guest } : {}) }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to register. Please try again.');
+    }
+}

@@ -6,7 +6,7 @@ export interface User {
     hebrewName: string;
     email: string;
     phone: string;
-    role: 'member' | 'admin';
+    role: 'member' | 'admin' | 'guest';
     title: string;
     settings: Record<string, unknown>;
 }

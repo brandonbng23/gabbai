@@ -48,14 +48,14 @@ backend to loopback; browser API requests use the same-origin Vite proxy.
 
 The frontend loads the current user from `/api/me`, reads their assigned shul
 from `/api/shuls/:id`, and generates its schedule from saved settings. The user's
-membership is the only source of the active shul; URL parameters and browser
-storage cannot override it. Shul changes will belong in the future user settings
-page. Without a current user, the frontend prompts for sign-in.
+membership selects their active shul. Without a current user, a `shul` URL
+parameter allows viewing that shul's public schedule and guest registration.
+Shul changes for signed-in users will belong in the future user settings page.
 My Shul displays the saved profile and reading preferences. The development
-user's first name appears in the greeting and their details prefill the guest
-form. Profiles/settings are read-only in the frontend for now; editing and real
-login need authenticated write endpoints. Registration submission remains a
-separate feature.
+user's first name appears in the greeting. The guest form starts blank so it
+does not accidentally submit the signed-in profile's email as a guest. Profiles/settings are read-only in the frontend for now; editing and real
+login need authenticated write endpoints. Online registration supports both
+the current profile and guest details.
 
 ## Render preview
 
@@ -106,7 +106,19 @@ already uses while binding to `0.0.0.0`.
 
 Each user belongs to exactly one shul through `users.shul_id`. Querying users by
 that field supplies the shul's membership list; no second list needs syncing.
-The user's role is `member` or `admin`, with an optional administrator title.
+The user's role is `guest`, `member`, or `admin`, with an optional administrator title.
+Guests use the registration form's first name, last name, Hebrew name, and email
+fields; phone and title remain optional. Guests can be assigned as readers but
+have no administrator permissions. Version 7 extends the role constraint while
+preserving existing profiles, settings, and reader assignments. Online registration uses `POST /api/shuls/:id/readings/register` with
+`{ dateString, desc, aliyah }` for the current profile, or those fields plus
+`guest: { firstName, lastName, hebrewName?, email }` for a guest. Guest requests
+cannot set a user ID or role. Matching guest details can reuse a guest in the
+same shul, without modifying their profile or granting account access. Existing
+member/admin emails and conflicting guest details require the associated profile.
+Availability checks and guest creation/assignment run in one write transaction;
+locked, hidden, missing, or already assigned aliyot cannot be registered.
+Responses contain only confirmation, and failed registrations save no changes.
 Email addresses are normalized and unique across users, regardless of case.
 Moving a user to another shul changes this same membership field.
 

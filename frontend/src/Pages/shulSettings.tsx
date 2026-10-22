@@ -120,14 +120,22 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                 return users.sort((a, b) => b.email.localeCompare(a.email));
             }
         } else if (userSort === "role") {
-            if (roleSortClicks % 2 === 0) {
+            if (roleSortClicks % 3 === 0) {
                 return [
+                    ...users.filter((u: ShulUser) => u.role === "admin"),
+                    ...users.filter((u: ShulUser) => u.role === "member"),
+                    ...users.filter((u: ShulUser) => u.role === "guest")
+                ]
+            } else if (roleSortClicks % 3 === 1){
+                return [
+                    ...users.filter((u: ShulUser) => u.role === "guest"),
                     ...users.filter((u: ShulUser) => u.role === "admin"),
                     ...users.filter((u: ShulUser) => u.role === "member")
                 ]
             } else {
                 return [
                     ...users.filter((u: ShulUser) => u.role === "member"),
+                    ...users.filter((u: ShulUser) => u.role === "guest"),
                     ...users.filter((u: ShulUser) => u.role === "admin")
                 ]
             }
@@ -1039,7 +1047,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
                     <section className="settings-panel" aria-labelledby="permissions-heading">
                         <div className="settings-section-header">
-                            <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Members and administrators of {shul.name}.</p></div>
+                            <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Guests, members, and administrators of {shul.name}.</p></div>
                         </div>
                         <div className="settings-users" aria-busy={usersLoading}>
                             <div className="user-search">
