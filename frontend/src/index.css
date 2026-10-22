@@ -3523,7 +3523,16 @@ body:has(.content-window-settings) .footer-text {
     position: relative;
     min-width: 0;
     overflow-wrap: anywhere;
-    cursor: help;
+}
+
+.assigned-reader-trigger {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 .assigned-reader-preview {
@@ -3534,12 +3543,10 @@ body:has(.content-window-settings) .footer-text {
     width: max-content;
     max-width: min(280px, 70vw);
     padding-top: 8px;
-    visibility: hidden;
 }
 
-.assigned-reader-name:hover > .assigned-reader-preview,
-.assigned-reader-name:focus-within > .assigned-reader-preview {
-    visibility: visible;
+.assigned-reader-preview[hidden] {
+    display: none;
 }
 
 .assigned-reader-preview .reader-card {

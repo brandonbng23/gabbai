@@ -7,6 +7,7 @@ import type { ShulUser } from "../api.ts";
 
 function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void, users: ShulUser[]; onAssignReader: (reader: ShulUser | null) => void }): React.JSX.Element {
     const readerCardId = useId();
+    const [readerCardOpen, setReaderCardOpen] = useState(false);
     const [hovered, setHovered] = useState<boolean>(false);
     const hasReader = props.reader != null;
     const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
@@ -43,9 +44,27 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
 
             <div style={{ width: "20%" }}>
                 {hasReader ? <div className="assigned-reader">
-                    <div className="assigned-reader-name" tabIndex={0} aria-describedby={readerCardId}>
-                        {readerName}
-                        <div id={readerCardId} role="tooltip" className="assigned-reader-preview">
+                    <div className="assigned-reader-name"
+                        onMouseEnter={() => setReaderCardOpen(true)}
+                        onMouseLeave={() => setReaderCardOpen(false)}
+                        onFocus={event => {
+                            if (event.target.matches(':focus-visible')) setReaderCardOpen(true);
+                        }}
+                        onBlur={event => {
+                            if (!event.currentTarget.contains(event.relatedTarget)) setReaderCardOpen(false);
+                        }}
+                        onKeyDown={event => {
+                            if (event.key === 'Escape') {
+                                event.stopPropagation();
+                                event.currentTarget.querySelector<HTMLButtonElement>('.assigned-reader-trigger')?.focus();
+                                setReaderCardOpen(false);
+                            }
+                        }}>
+                        <button type="button" className="assigned-reader-trigger"
+                            aria-expanded={readerCardOpen} aria-controls={readerCardId}
+                            onClick={() => setReaderCardOpen(true)}>{readerName}</button>
+                        <div id={readerCardId} role="group" aria-label={`Details for ${readerName}`}
+                            className="assigned-reader-preview" hidden={!readerCardOpen}>
                             {props.reader && <ReaderCard user={props.reader} />}
                         </div>
                     </div>
