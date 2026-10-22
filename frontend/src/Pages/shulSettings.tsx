@@ -240,8 +240,21 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     }
 
     for (const change of readerChanges) {
-        const reader = users.find(user => user.id === change.readerId);
-        readingAdjustmentChangeLog.push(`${reader ? `Assign ${reader.firstName} ${reader.lastName} to` : change.readerId ? 'Assign reader to' : 'Remove reader from'} ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) — ${aliyahLabels[change.aliyah - 1]}.`);
+        const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
+        const previousReader = saved?.readers[change.aliyah - 1];
+        const reader = users.find(user => user.id === change.readerId)
+            ?? Object.values(readerDrafts).find(draft => readingKey(draft) === readingKey(change) && draft.aliyah === change.aliyah)?.reader;
+        const readerName = reader ? [reader.title, reader.firstName, reader.lastName].filter(Boolean).join(' ') : `user ${change.readerId}`;
+        const previousName = previousReader
+            ? [previousReader.title, previousReader.firstName, previousReader.lastName].filter(Boolean).join(' ')
+            : 'the assigned reader';
+        const target = `${aliyahLabels[change.aliyah - 1]} of ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString})`;
+        if (change.readerId === null)
+            readingAdjustmentChangeLog.push(`Remove ${previousName} from ${target}.`);
+        else if (previousReader)
+            readingAdjustmentChangeLog.push(`Replace ${previousName} with ${readerName} for ${target}.`);
+        else
+            readingAdjustmentChangeLog.push(`Assign ${readerName} to ${target}.`);
     }
 
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
