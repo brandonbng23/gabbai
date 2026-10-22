@@ -18,6 +18,8 @@ export function getShulSchedule(database, shulId, year) {
         if (!Number.isInteger(year) || year < 1 || year > 9999) throw new TypeError('Invalid Hebrew year');
         settings.setHebYear(year);
     }
+    const occasions = new Map(database.listReadingOccasions(shulId)
+        .map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading.manualOccasions]));
     const locks = new Map();
     for (const lock of database.listReadingLocks(shulId)) {
         const key = JSON.stringify([lock.dateString, lock.desc]);
@@ -29,6 +31,8 @@ export function getShulSchedule(database, shulId, year) {
             if (lock.aliyah === 0) reading.locked = lock.locked;
             else reading.lockedArr[lock.aliyah - 1] = lock.locked;
         }
+        reading.manualOccasions = occasions.get(JSON.stringify([reading.dateString, reading.desc])) ?? [];
+        reading.searchTerms = [...reading.searchTerms, ...reading.manualOccasions];
         return reading;
     });
 }

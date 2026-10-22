@@ -240,3 +240,23 @@ test('schedule generation uses the saved shul settings and an optional year over
     assert.equal(db.getShul(shul.id).settings.hebYear, 5787);
     assert.throws(() => getShulSchedule(db, 'missing'), /not found/);
 });
+
+test('manual occasions persist across reopening and invalid mixed publications do not partially write', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-occasions-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Occasions', settings: { hebYear: 5787 } });
+        db.setReadingLocks(shul.id, [{ ...key, manualOccasions: ['Birthday'] }]);
+        assert.throws(() => db.setReadingLocks(shul.id, [{ ...key, locked: true },
+            { ...key, manualOccasions: ['Invalid', 'invalid'] }]), TypeError);
+        assert.deepEqual(db.listReadingLocks(shul.id), []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingOccasions(shul.id), [{ ...key, manualOccasions: ['Birthday'] }]);
+    } finally { db.close(); }
+});

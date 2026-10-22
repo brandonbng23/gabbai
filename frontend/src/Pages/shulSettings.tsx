@@ -6,8 +6,8 @@ import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, u
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx"
-import { pendingReadingLocks, previewReadingLocks, readingKey, stageReadingLock } from '../readingAdjustments.ts';
-import type { ReadingDrafts } from '../readingAdjustments.ts';
+import { pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions } from '../readingAdjustments.ts';
+import type { ReadingDrafts, OccasionDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx"
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
@@ -76,6 +76,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
+    const [occasionDrafts, setOccasionDrafts] = useState<OccasionDrafts>({});
     const [users, setUsers] = useState<ShulUser[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
     const [usersError, setUsersError] = useState('');
@@ -203,9 +204,36 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         .map((field) => `Changed ${field.label} to ${typeof field.value === 'boolean' ? (field.value ? 'enabled' : 'disabled') : field.value}.`);
 
     const readingChanges = pendingReadingLocks(readingDrafts, schedule);
+    const occasionChanges = pendingReadingOccasions(occasionDrafts, schedule);
+    const hasReadingChanges = readingChanges.length > 0 || occasionChanges.length > 0;
+    const hasUnsavedChanges = contactChangeLog.length > 0 || scheduleChangeLog.length > 0 || hasReadingChanges;
+
+    useEffect(() => {
+        if (!hasUnsavedChanges) return;
+        const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warnBeforeLeaving);
+        return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+    }, [hasUnsavedChanges]);
+
     const aliyahLabels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
     const readingAdjustmentChangeLog = readingChanges.map(change =>
         `${change.locked ? 'Lock' : 'Unlock'} ${change.desc} (${change.dateString})${change.aliyah === undefined ? '' : ` — ${aliyahLabels[change.aliyah - 1]}`}.`);
+
+    for (const change of occasionChanges) {
+        const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
+        const before = saved?.manualOccasions ?? [];
+        const previousOrder = before.filter(label => change.manualOccasions.includes(label));
+        const nextOrder = change.manualOccasions.filter(label => before.includes(label));
+        if (JSON.stringify(previousOrder) !== JSON.stringify(nextOrder))
+            readingAdjustmentChangeLog.push(`Reorder manually added occasions for ${change.desc} (${change.dateString}).`);
+        for (const label of change.manualOccasions.filter(label => !before.includes(label)))
+            readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${change.dateString}).`);
+        for (const label of before.filter(label => !change.manualOccasions.includes(label)))
+            readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${change.dateString}).`);
+    }
 
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
@@ -233,22 +261,32 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         clearFeedback('readings');
     }
 
+    function changeReadingOccasions(reading: ParshaObj, labels: string[]): void {
+        if (busy) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setOccasionDrafts(previous => stageReadingOccasions(previous, saved, labels));
+        clearFeedback('readings');
+    }
+
     function resetReadingAdjustments(): void {
         if (busy) return;
         setReadingDrafts({});
+        setOccasionDrafts({});
         showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
     }
 
     async function publishReadingAdjustments(event: SubmitEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
-        if (busy || readingChanges.length === 0) return;
+        if (busy || !hasReadingChanges) return;
         setActiveForm('readings');
         setSaving(true);
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
-            const updated = await publishReadingLocks(shul.id, readingChanges);
+            const updated = await publishReadingLocks(shul.id, [...readingChanges, ...occasionChanges]);
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
+            setOccasionDrafts({});
             showFeedback('readings', 'success', 'Reading adjustments published.');
         } catch (failure) {
             showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
@@ -543,9 +581,10 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             .map((reading) => (
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
-                                                    reading={previewReadingLocks(reading, readingDrafts)}
+                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts)}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
+                                                    onOccasionsChange={changeReadingOccasions}
                                                 />
                                             ))
                                         : 
@@ -556,9 +595,10 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                 .map((reading) => (
                                                     <SearchResult
                                                         key={`${reading.dateString}:${reading.desc}`}
-                                                        reading={previewReadingLocks(reading, readingDrafts)}
+                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts)}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}
+                                                    onOccasionsChange={changeReadingOccasions}
                                                     />
 
                                                 ))}
@@ -571,8 +611,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                     <div className="settings-footer-actions">
                                         <span>Changes take effect after publishing.</span>
                                         <div className="settings-footer-buttons">
-                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={busy || readingChanges.length === 0}>Reset changes</button>
-                                            <button className="submit-btn" type="submit" disabled={busy || readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
+                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={busy || !hasReadingChanges}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={busy || !hasReadingChanges}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
                                         <SubmissionMessage message={messages.readings} />
                                     </div>

@@ -9,7 +9,13 @@ export interface ReadingLockChange {
     aliyah?: number;
 }
 
-export async function publishReadingLocks(shulId: string, changes: ReadingLockChange[]): Promise<ParshaObj[]> {
+export interface ReadingOccasionChange {
+    dateString: string;
+    desc: string;
+    manualOccasions: string[];
+}
+
+export async function publishReadingLocks(shulId: string, changes: (ReadingLockChange | ReadingOccasionChange)[]): Promise<ParshaObj[]> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/locks`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

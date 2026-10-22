@@ -109,14 +109,14 @@ export function createApp(database, {
             const seen = new Set();
             const affected = new Set();
             for (const change of changes) {
-                validateKeys(change, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
+                validateKeys(change, 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
                 const { dateString, desc, aliyah, locked } = change;
-                if (typeof dateString !== 'string' || typeof desc !== 'string' || typeof locked !== 'boolean'
+                if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('manualOccasions' in change) && typeof locked !== 'boolean')
                     || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
                     return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
                 }
                 const key = JSON.stringify([dateString, desc]);
-                const slot = JSON.stringify([dateString, desc, aliyah ?? 0]);
+                const slot = JSON.stringify([dateString, desc, 'manualOccasions' in change ? 'occasions' : aliyah ?? 0]);
                 if (seen.has(slot)) return res.status(400).json({ error: "Each reading lock may only appear once per publication" });
                 seen.add(slot);
                 const reading = readings.get(key);
@@ -128,12 +128,8 @@ export function createApp(database, {
             }
             // Validate every change before the repository commits the batch atomically.
             app.locals.database.setReadingLocks(req.params.id, changes);
-            for (const { dateString, desc, aliyah, locked } of changes) {
-                const reading = readings.get(JSON.stringify([dateString, desc]));
-                if (aliyah === undefined) reading.locked = locked;
-                else reading.lockedArr[aliyah - 1] = locked;
-            }
-            const updated = [...affected].map(key => readings.get(key));
+            const updated = getShulSchedule(app.locals.database, req.params.id)
+                .filter(reading => affected.has(JSON.stringify([reading.dateString, reading.desc])));
             return res.json(batch ? updated : updated[0]);
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });

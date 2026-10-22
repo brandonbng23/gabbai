@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { pendingReadingLocks, previewReadingLocks, stageReadingLock } from '../frontend/src/readingAdjustments.ts';
+import { reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
 
 const reading = {
-    id: 1, dateString: '2026-10-10', desc: 'Bereshit', locked: false,
+    id: 1, manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
     lockedArr: Array(9).fill(false), psukim: ['one', 'two', 'three', 'null', 'null', 'null', 'null', 'maftir', 'haftarah'],
 };
 
@@ -46,4 +46,30 @@ test('published values become the new baseline while missing readings remain pen
     assert.equal(pendingReadingLocks(draft, []).length, 1);
     const undo = stageReadingLock({}, saved, false, 1);
     assert.equal(previewReadingLocks(saved, undo).lockedArr[0], false);
+});
+
+test('manual occasion drafts preview, deduplicate the log, revert, and keep saved data intact', () => {
+    let draft = stageReadingOccasions({}, reading, ['Bar Mitzvah']);
+    assert.deepEqual(reading.manualOccasions, []);
+    assert.deepEqual(previewReadingLocks(reading, {}, draft).manualOccasions, ['Bar Mitzvah']);
+    draft = stageReadingOccasions(draft, reading, ['Bar Mitzvah', 'Anniversary']);
+    assert.equal(pendingReadingOccasions(draft, [reading]).length, 1);
+    const saved = { ...reading, manualOccasions: ['Bar Mitzvah', 'Anniversary'] };
+    assert.equal(pendingReadingOccasions(draft, [saved]).length, 0);
+    assert.deepEqual(stageReadingOccasions(draft, reading, []), {});
+    assert.deepEqual(previewReadingLocks(reading, {}, {}).manualOccasions, []);
+});
+
+test('manual occasion reordering preserves labels and publishes only a changed order', () => {
+    const saved = { ...reading, manualOccasions: ['First', 'Second', 'Third'] };
+    const reordered = reorderManualOccasions(saved.manualOccasions, 'First', 'Third');
+    assert.deepEqual(reordered, ['Second', 'Third', 'First']);
+    assert.deepEqual(saved.manualOccasions, ['First', 'Second', 'Third']);
+    const draft = stageReadingOccasions({}, saved, reordered);
+    assert.equal(pendingReadingOccasions(draft, [saved]).length, 1);
+    assert.deepEqual(previewReadingLocks(saved, {}, draft).manualOccasions, reordered);
+    const restored = reorderManualOccasions(reordered, 'First', 'Second');
+    assert.deepEqual(stageReadingOccasions(draft, saved, restored), {});
+    assert.equal(reorderManualOccasions(reordered, 'Built-in', 'First'), reordered);
+    assert.equal(reorderManualOccasions(reordered, 'First', 'First'), reordered);
 });

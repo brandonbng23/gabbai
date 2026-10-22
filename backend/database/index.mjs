@@ -70,7 +70,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ) STRICT`);
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 3) throw new Error('Database schema is newer than this application');
+            if (version > 4) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -82,6 +82,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 3) {
                 db.exec(readFileSync(new URL('./migrations/003_reading_locks.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(3);
+            }
+            if (version < 4) {
+                db.exec(readFileSync(new URL('./migrations/004_reading_occasions.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(4);
             }
         });
     } catch (error) {
@@ -103,7 +107,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, ['dateString', 'desc', 'aliyah', 'locked'], 'reading lock');
+            validateKeys(patch, 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -111,6 +115,15 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 throw new TypeError('Invalid reading date');
             }
             text(desc, 'reading name', true);
+            if ('manualOccasions' in patch) {
+                const labels = patch.manualOccasions;
+                if (!Array.isArray(labels) || labels.length > 100 || labels.some(label =>
+                    typeof label !== 'string' || !label.trim() || label !== label.trim() || label.length > 120)
+                    || new Set(labels.map(label => label.toLowerCase())).size !== labels.length) {
+                    throw new TypeError('Provide up to 100 unique occasions, each between 1 and 120 characters');
+                }
+                return { occasions: [shulId, dateString, desc, JSON.stringify(labels)] };
+            }
             if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
             if (typeof locked !== 'boolean') throw new TypeError('locked must be a boolean');
             return [shulId, dateString, desc, aliyah, Number(locked)];
@@ -121,7 +134,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
                 DO UPDATE SET locked = excluded.locked`);
-            values.forEach(value => statement.run(...value));
+            const occasionsStatement = db.prepare(`INSERT INTO reading_occasions (shul_id, reading_date, reading_name, occasions_json)
+                VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
+                DO UPDATE SET occasions_json = excluded.occasions_json`);
+            values.forEach(value => value.occasions
+                ? occasionsStatement.run(...value.occasions) : statement.run(...value));
         });
     }
 
@@ -129,6 +146,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        listReadingOccasions(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
+                    manualOccasions: JSON.parse(row.occasions_json) }));
+        },
         listReadingLocks(shulId) {
             return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,

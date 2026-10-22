@@ -345,3 +345,36 @@ test('shul user lists require the owning admin and only include that shul', asyn
     const anonymous = await setup(t, false);
     assert.equal((await anonymous.request(`/api/shuls/${anonymous.shul.id}/users`)).status, 401);
 });
+
+test('manual occasions publish with locks, survive reload, preserve calendar tags, and remain shul scoped', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const path = `/api/shuls/${shul.id}/readings/locks`;
+    const load = async () => (await (await request(`/api/schedule?shul=${shul.id}`)).json());
+    const original = (await load()).find(reading => reading.desc === 'Bereshit');
+    const key = { dateString: original.dateString, desc: original.desc };
+    const occasion = { ...key, manualOccasions: ['Josh Cohen Bar Mitzvah'] };
+    assert.equal((await request(path, patchShul({ changes: [occasion] }))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    for (const labels of [[''], [' Birthday '], ['Same', 'same'], [123], ['x'.repeat(121)]]) {
+        assert.equal((await request(path, patchShul({ changes: [{ ...key, locked: true },
+            { ...key, manualOccasions: labels }] }))).status, 400);
+        assert.deepEqual(db.listReadingLocks(shul.id), []);
+        assert.deepEqual(db.listReadingOccasions(shul.id), []);
+    }
+    const response = await request(path, patchShul({ changes: [occasion, { ...key, aliyah: 1, locked: true }] }));
+    assert.equal(response.status, 200);
+    const [updated] = await response.json();
+    assert.deepEqual(updated.manualOccasions, occasion.manualOccasions);
+    assert.equal(updated.lockedArr[0], true);
+    const reloaded = (await load()).find(reading => reading.desc === key.desc);
+    assert.deepEqual(reloaded.manualOccasions, occasion.manualOccasions);
+    assert.deepEqual(reloaded.occassions, original.occassions);
+    assert.ok(reloaded.searchTerms.includes('Josh Cohen Bar Mitzvah'));
+    const other = db.createShul({ name: 'Other', settings: shul.settings });
+    assert.equal((await request(`/api/shuls/${other.id}/readings/locks`, patchShul({ changes: [occasion] }))).status, 403);
+    assert.ok((await (await request(`/api/schedule?shul=${other.id}`)).json()).every(reading => reading.manualOccasions.length === 0));
+    assert.equal((await request(path, patchShul({ changes: [{ ...key, manualOccasions: [] }] }))).status, 200);
+    const removed = (await load()).find(reading => reading.desc === key.desc);
+    assert.deepEqual(removed.manualOccasions, []);
+    assert.deepEqual(removed.occassions, original.occassions);
+});

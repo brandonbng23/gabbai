@@ -284,6 +284,7 @@ export class Parsha {
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
             occassions: this.findOccassions(),
+            manualOccasions: [],
             locked: this.readingSet.getLockStatus(),
             lockedArr: this.readingSet.getLockStatusArr(),
             psukim: this.readingSet.getPsukimArr(),

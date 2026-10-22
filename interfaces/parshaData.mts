@@ -19,6 +19,9 @@ export interface ParshaData {
      * set occassion as "". */
     occassions: string[];
 
+    /* Admin-added labels, independent of calendar-generated occasions. */
+    manualOccasions: string[];
+
     /* Boolean repersenting if the entire Parsha is locked (true) or not (false) */
     locked: boolean;
 

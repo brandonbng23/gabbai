@@ -120,7 +120,7 @@ export default function Parsha(props: ParshaObj): React.JSX.Element {
                         This parsha has been locked by your shul
                     </div>
                 )}
-                {props.occassions.map((o: string, index) => (
+                {[...props.occassions, ...(props.manualOccasions ?? [])].map((o: string, index) => (
                     <div key={index} className="occassion">
                         {formatOccassionView(o)}
                     </div>

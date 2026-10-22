@@ -1,3 +1,4 @@
+import { reorderManualOccasions } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useState } from "react";
 
@@ -47,12 +48,30 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
     )
 }
 
-export function SearchResult({ reading, disabled, onLockChange }: {
+export function SearchResult({ reading, disabled, onLockChange, onOccasionsChange }: {
     reading: ParshaObj;
     disabled: boolean;
     onLockChange: (reading: ParshaObj, locked: boolean, aliyah?: number) => void;
+    onOccasionsChange: (reading: ParshaObj, labels: string[]) => void;
 }): React.JSX.Element {
         const [expanded, setExpanded] = useState<boolean>(false);
+        const [newOccasion, setNewOccasion] = useState<string>("");
+        const [draggedOccasion, setDraggedOccasion] = useState<string | null>(null);
+        const [dropTarget, setDropTarget] = useState<string | null>(null);
+        const manualOccasions = reading.manualOccasions ?? [];
+        const canReorderOccasions = expanded && !disabled && manualOccasions.length > 1;
+        function moveOccasion(source: string, target: string): void {
+            if (!canReorderOccasions) return;
+            const next = reorderManualOccasions(manualOccasions, source, target);
+            if (next !== manualOccasions) onOccasionsChange(reading, next);
+        }
+        function addOccasion(): void {
+            const label = newOccasion.trim();
+            if (disabled || !label || label.length > 120 || manualOccasions.length >= 100
+                || [...reading.occassions, ...manualOccasions].some(item => item.toLowerCase() === label.toLowerCase())) return;
+            onOccasionsChange(reading, [...manualOccasions, label]);
+            setNewOccasion('');
+        }
         const locked = reading.locked;
 
         return (
@@ -88,6 +107,64 @@ export function SearchResult({ reading, disabled, onLockChange }: {
 
                                 <span className="result-occassions">
                                     {reading.occassions.map((o: string, index) => <span key={index} className="result-occassion">{o}</span>)}
+                                    {manualOccasions.map(label => (
+                                        <span key={label}
+                                            className={`result-occassion manual-occasion-tag${draggedOccasion === label ? ' is-dragging' : ''}${dropTarget === label ? ' is-drop-target' : ''}`}
+                                            draggable={canReorderOccasions}
+                                            tabIndex={canReorderOccasions ? 0 : undefined}
+                                            title={canReorderOccasions ? 'Drag to reorder, or use Alt + Left/Right Arrow' : undefined}
+                                            onDragStart={event => {
+                                                if (!canReorderOccasions || (event.target instanceof Element && event.target.closest('button'))) {
+                                                    event.preventDefault();
+                                                    return;
+                                                }
+                                                event.stopPropagation();
+                                                event.dataTransfer.effectAllowed = 'move';
+                                                event.dataTransfer.setData('text/plain', label);
+                                                setDraggedOccasion(label);
+                                            }}
+                                            onDragOver={event => {
+                                                if (!canReorderOccasions || draggedOccasion === null || draggedOccasion === label) return;
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                event.dataTransfer.dropEffect = 'move';
+                                                setDropTarget(label);
+                                            }}
+                                            onDragLeave={event => {
+                                                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null);
+                                            }}
+                                            onDrop={event => {
+                                                if (!canReorderOccasions || draggedOccasion === null) return;
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                moveOccasion(draggedOccasion, label);
+                                                setDraggedOccasion(null);
+                                                setDropTarget(null);
+                                            }}
+                                            onDragEnd={() => { setDraggedOccasion(null); setDropTarget(null); }}
+                                            onKeyDown={event => {
+                                                if (event.target !== event.currentTarget || !canReorderOccasions || !event.altKey
+                                                    || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                const index = manualOccasions.indexOf(label);
+                                                const target = manualOccasions[index + (event.key === 'ArrowLeft' ? -1 : 1)];
+                                                if (target !== undefined) moveOccasion(label, target);
+                                            }}>
+
+                                            {label}
+                                            {expanded && <button type="button" className="occasion-add-btn occasion-remove-btn"
+                                                aria-label={`Remove ${label}`} disabled={disabled}
+                                                onClick={event => {
+                                                    event.stopPropagation();
+                                                    onOccasionsChange(reading, manualOccasions.filter(item => item !== label));
+                                                }}>
+                                                <svg aria-hidden="true" viewBox="0 0 640 640">
+                                                    <path d="M232.7 69.9C237.1 56.8 249.3 48 263.1 48L377 48C390.8 48 403 56.8 407.4 69.9L416 96L512 96C529.7 96 544 110.3 544 128C544 145.7 529.7 160 512 160L128 160C110.3 160 96 145.7 96 128C96 110.3 110.3 96 128 96L224 96L232.7 69.9zM128 208L512 208L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 208zM216 272C202.7 272 192 282.7 192 296L192 488C192 501.3 202.7 512 216 512C229.3 512 240 501.3 240 488L240 296C240 282.7 229.3 272 216 272zM320 272C306.7 272 296 282.7 296 296L296 488C296 501.3 306.7 512 320 512C333.3 512 344 501.3 344 488L344 296C344 282.7 333.3 272 320 272zM424 272C410.7 272 400 282.7 400 296L400 488C400 501.3 410.7 512 424 512C437.3 512 448 501.3 448 488L448 296C448 282.7 437.3 272 424 272z" />
+                                                </svg>
+                                            </button>}
+                                        </span>
+                                    ))}
                                 </span>
                             </div>
 
@@ -118,6 +195,35 @@ export function SearchResult({ reading, disabled, onLockChange }: {
 
                         {expanded ? <>
                             <div className="divider" style={{ width: "97%", margin: "10px"}}></div>
+                            <div className="add-occassions">
+                                <span>Add an Occassion:</span>
+                                <div className="result-occassion occasion-input-tag">
+                                    <input
+                                        type="text"
+                                        aria-label="Add an occasion"
+                                        placeholder="e.g. Josh Cohen Bar Mitzvah"
+                                        value={newOccasion}
+                                        maxLength={120}
+                                        disabled={disabled}
+                                        onKeyDown={event => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                if (!event.nativeEvent.isComposing) addOccasion();
+                                            }
+                                        }}
+                                        onChange={(event) => setNewOccasion(event.currentTarget.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="occasion-add-btn"
+                                        aria-label="Add occasion"
+                                        disabled={disabled || !newOccasion.trim()}
+                                        onClick={addOccasion}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
                             <div className="parsha">
                                 {reading.psukim.map((p: string, index) =>
                                         p && p !== "null" ?
