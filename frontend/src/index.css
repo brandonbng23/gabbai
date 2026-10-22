@@ -3305,10 +3305,13 @@ body:has(.content-window-settings) .footer-text {
 }
 
 .aliyah-lock-btn:hover:not(:disabled) svg,
-.parsha-lock-btn:hover:not(:disabled) svg,
-.aliyah-lock-btn:focus-visible:not(:disabled) svg,
-.parsha-lock-btn:focus-visible:not(:disabled) svg {
+.aliyah-lock-btn:focus-visible:not(:disabled) svg {
     fill: #1a2a3e;
+}
+
+.parsha-lock-btn:hover:not(:disabled) svg,
+.parsha-lock-btn:focus-visible:not(:disabled) svg {
+    fill: var(--settings-accent, #8bc8ff);
 }
 
 .assigned-reader {

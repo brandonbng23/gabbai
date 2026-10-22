@@ -219,7 +219,7 @@ export function SearchResult({ reading, disabled, users, onLockChange, onOccasio
                                     <input
                                         type="text"
                                         aria-label="Add an occasion"
-                                        placeholder="e.g. Josh Cohen Bar Mitzvah"
+                                        placeholder="e.g. Josh Cohen's Bar Mitzvah"
                                         value={newOccasion}
                                         maxLength={120}
                                         disabled={disabled}
