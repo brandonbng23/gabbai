@@ -2939,6 +2939,64 @@ input[type="number"] {
     color: inherit;
 }
 
+.user-dropdown {
+    position: relative;
+    min-width: 0;
+    font-weight: 400;
+}
+
+.user-dropdown .selected-option > button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.user-dropdown .selections {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 200;
+    width: max-content;
+    min-width: 100%;
+    max-width: min(320px, 60vw);
+    max-height: 248px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px;
+    border: 1px solid var(--settings-border, #646167);
+    border-radius: 9px;
+    background: #302f30;
+    color: #f6f5f7;
+    box-shadow: 0 8px 24px #0005;
+    scrollbar-width: thin;
+}
+
+.user-dropdown .selections > button {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.user-dropdown .selections > button:hover,
+.user-dropdown .selections > button:focus-visible {
+    background: #66b1f2;
+    color: #152b40;
+}
+
+.user-dropdown .dropdown-empty { display: block; padding: 8px 12px; }
 
 .admin-aliyah,
 .admin-aliyah-hover {
@@ -2975,9 +3033,22 @@ input[type="number"] {
     fill: white;
 }
 
-.aliyah-lock-btn button {
+.aliyah-status-icon,
+.aliyah-lock-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 20px;
     height: 20px;
+    padding: 0;
+    margin: 0;
+    line-height: 0;
+}
+
+.aliyah-lock-btn svg,
+.aliyah-status-icon > svg {
+    display: block;
+    flex-shrink: 0;
 }
 
 .parsha-lock-btn svg {
@@ -3220,4 +3291,20 @@ body:has(.content-window-settings) .footer-text {
 .manual-occasion-tag.is-drop-target {
     outline: 2px solid #f6f5f7;
     outline-offset: 2px;
+}
+
+.aliyah-status-icon > svg {
+    transform: translateX(2px);
+}
+
+.aliyah-lock-btn:not(:disabled),
+.parsha-lock-btn:not(:disabled) {
+    cursor: pointer;
+}
+
+.aliyah-lock-btn:hover:not(:disabled) svg,
+.parsha-lock-btn:hover:not(:disabled) svg,
+.aliyah-lock-btn:focus-visible:not(:disabled) svg,
+.parsha-lock-btn:focus-visible:not(:disabled) svg {
+    fill: #1a2a3e;
 }

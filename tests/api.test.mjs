@@ -378,3 +378,40 @@ test('manual occasions publish with locks, survive reload, preserve calendar tag
     assert.deepEqual(removed.manualOccasions, []);
     assert.deepEqual(removed.occassions, original.occassions);
 });
+
+test('admin reader assignments publish atomically, respect locks and membership, and reload as ShulUser objects', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const path = `/api/shuls/${shul.id}/readings/locks`;
+    const load = async () => (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(reading => reading.desc === 'Bereshit');
+    const original = await load();
+    const key = { dateString: original.dateString, desc: original.desc };
+    const reader = db.createUser({ shulId: shul.id, firstName: 'Josh', lastName: 'Cohen', email: 'reader@example.com', title: 'Rabbi' });
+    const assignment = { ...key, aliyah: 8, readerId: reader.id };
+    assert.equal((await request(path, patchShul({ changes: [assignment] }))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    const other = db.createShul({ name: 'Other', settings: shul.settings });
+    const outsider = db.createUser({ shulId: other.id, firstName: 'Other', lastName: 'User', email: 'outsider@example.com' });
+    for (const invalid of [{ ...assignment, readerId: outsider.id }, { ...assignment, readerId: 'missing' },
+        { ...assignment, readerId: 12 }, { ...assignment, aliyah: 4 }, { ...key, readerId: reader.id }]) {
+        assert.equal((await request(path, patchShul({ changes: [{ ...key, locked: true }, invalid] }))).status, 400);
+        assert.deepEqual(db.listReadingReaders(shul.id), []);
+        assert.deepEqual(db.listReadingLocks(shul.id), []);
+    }
+    assert.equal((await request(path, patchShul({ changes: [{ ...key, aliyah: 8, locked: true }, assignment] }))).status, 409);
+    const response = await request(path, patchShul({ changes: [assignment, { ...key, manualOccasions: ['Birthday'] }] }));
+    assert.equal(response.status, 200);
+    const [updated] = await response.json();
+    assert.deepEqual(updated.readers[7], { id: reader.id, firstName: 'Josh', lastName: 'Cohen', email: reader.email, role: 'member', title: 'Rabbi' });
+    assert.equal(updated.readers[0], null);
+    assert.equal((await load()).readers[7].id, reader.id);
+    assert.deepEqual(db.listReadingReaders(other.id), []);
+    db.updateUser(reader.id, { firstName: 'Joshua' });
+    assert.equal((await load()).readers[7].firstName, 'Joshua');
+    assert.equal((await request(path, patchShul({ changes: [{ ...assignment, readerId: user.id }] }))).status, 200);
+    assert.equal((await load()).readers[7].id, user.id);
+    assert.equal((await request(path, patchShul({ changes: [{ ...assignment, readerId: null }] }))).status, 200);
+    assert.equal((await load()).readers[7], null);
+    assert.equal((await request(path, patchShul({ changes: [assignment] }))).status, 200);
+    db.updateUser(reader.id, { shulId: other.id });
+    assert.equal((await load()).readers[7], null, 'Transferred members must not remain visible on the old shul schedule');
+});

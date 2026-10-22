@@ -260,3 +260,26 @@ test('manual occasions persist across reopening and invalid mixed publications d
         assert.deepEqual(db.listReadingOccasions(shul.id), [{ ...key, manualOccasions: ['Birthday'] }]);
     } finally { db.close(); }
 });
+
+test('reader assignments survive reopening and preserve original maftir slot', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-readers-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul, reader;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 8 };
+    try {
+        shul = db.createShul({ name: 'Readers', settings: { hebYear: 5787 } });
+        reader = db.createUser(guest(shul.id));
+        db.setReadingLocks(shul.id, [{ ...key, readerId: reader.id }]);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const [saved] = db.listReadingReaders(shul.id);
+        assert.equal(saved.aliyah, 8);
+        assert.equal(saved.reader.id, reader.id);
+        assert.equal(saved.reader.firstName, reader.firstName);
+        db.setReadingLocks(shul.id, [{ ...key, readerId: null }]);
+        assert.deepEqual(db.listReadingReaders(shul.id), []);
+    } finally { db.close(); }
+});

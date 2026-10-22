@@ -70,7 +70,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ) STRICT`);
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 4) throw new Error('Database schema is newer than this application');
+            if (version > 5) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -86,6 +86,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 4) {
                 db.exec(readFileSync(new URL('./migrations/004_reading_occasions.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(4);
+            }
+            if (version < 5) {
+                db.exec(readFileSync(new URL('./migrations/005_reading_readers.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(5);
             }
         });
     } catch (error) {
@@ -107,7 +111,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            validateKeys(patch, 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -125,6 +129,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 return { occasions: [shulId, dateString, desc, JSON.stringify(labels)] };
             }
             if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
+            if ('readerId' in patch) {
+                if (aliyah < 1) throw new TypeError('A reader must be assigned to an aliyah from 1 to 9');
+                if (patch.readerId !== null) {
+                    const reader = typeof patch.readerId === 'string' ? getUser(patch.readerId) : null;
+                    if (!reader || reader.shulId !== shulId) throw new TypeError('Choose a user from this shul');
+                }
+                return { reader: [shulId, dateString, desc, aliyah, patch.readerId] };
+            }
             if (typeof locked !== 'boolean') throw new TypeError('locked must be a boolean');
             return [shulId, dateString, desc, aliyah, Number(locked)];
         });
@@ -137,8 +149,22 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const occasionsStatement = db.prepare(`INSERT INTO reading_occasions (shul_id, reading_date, reading_name, occasions_json)
                 VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
                 DO UPDATE SET occasions_json = excluded.occasions_json`);
-            values.forEach(value => value.occasions
-                ? occasionsStatement.run(...value.occasions) : statement.run(...value));
+            const readerStatement = db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
+                VALUES (?, ?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET user_id = excluded.user_id`);
+            const removeReader = db.prepare(`DELETE FROM reading_readers
+                WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
+            for (const value of values) {
+                if (value.reader) {
+                    const readerId = value.reader[4];
+                    if (readerId === null) removeReader.run(...value.reader.slice(0, 4));
+                    else {
+                        if (getUser(readerId)?.shulId !== shulId) throw new TypeError('Choose a user from this shul');
+                        readerStatement.run(...value.reader);
+                    }
+                } else if (value.occasions) occasionsStatement.run(...value.occasions);
+                else statement.run(...value);
+            }
         });
     }
 
@@ -146,6 +172,13 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        listReadingReaders(shulId) {
+            return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title
+                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id WHERE r.shul_id = ?`)
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah,
+                    reader: { id: row.id, firstName: row.first_name, lastName: row.last_name,
+                        email: row.email, role: row.role, title: row.title } }));
+        },
         listReadingOccasions(shulId) {
             return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,

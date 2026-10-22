@@ -5,10 +5,10 @@ import type { Yontifs } from "../../../interfaces/yontifs.mts"
 import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
-import { SearchResult } from "../Components/searchResults.tsx"
-import { pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions } from '../readingAdjustments.ts';
-import type { ReadingDrafts, OccasionDrafts } from '../readingAdjustments.ts';
-import { UserCard } from "../Components/userCard.tsx"
+import { SearchResult } from "../Components/searchResults.tsx";
+import { pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
+import type { ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
+import { UserCard } from "../Components/userCard.tsx";
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -77,6 +77,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
     const [occasionDrafts, setOccasionDrafts] = useState<OccasionDrafts>({});
+    const [readerDrafts, setReaderDrafts] = useState<ReaderDrafts>({});
     const [users, setUsers] = useState<ShulUser[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
     const [usersError, setUsersError] = useState('');
@@ -155,6 +156,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [tradMaftir, setTradMaftir] = useState<boolean>(settings.triennial.tradMaftir);
     const [yitro, setYitro] = useState<boolean>(settings.triennial.yitro);
     const [vaetchanan, setVaetchanan] = useState<boolean>(settings.triennial.vaetchanan);
+        
     const yontifAbr: (keyof Yontifs)[] = ["rh1", "rh2", "yk", "sukkot1", "sukkot2", "sukkotSA", "sukkotST", "pesach1", "pesach2", "pesach7", "pesach8", "shavuot1", "shavuot2"]
     const yontifNames = ["Rosh Hashana Day I",
                          "Rosh Hashana Day II",
@@ -205,7 +207,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     const readingChanges = pendingReadingLocks(readingDrafts, schedule);
     const occasionChanges = pendingReadingOccasions(occasionDrafts, schedule);
-    const hasReadingChanges = readingChanges.length > 0 || occasionChanges.length > 0;
+    const readerChanges = pendingReadingReaders(readerDrafts, schedule);
+    const hasReadingChanges = readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0;
     const hasUnsavedChanges = contactChangeLog.length > 0 || scheduleChangeLog.length > 0 || hasReadingChanges;
 
     useEffect(() => {
@@ -234,6 +237,11 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
             readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
         for (const label of before.filter(label => !change.manualOccasions.includes(label)))
             readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
+    }
+
+    for (const change of readerChanges) {
+        const reader = users.find(user => user.id === change.readerId);
+        readingAdjustmentChangeLog.push(`${reader ? `Assign ${reader.firstName} ${reader.lastName} to` : change.readerId ? 'Assign reader to' : 'Remove reader from'} ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) — ${aliyahLabels[change.aliyah - 1]}.`);
     }
 
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
@@ -270,10 +278,19 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         clearFeedback('readings');
     }
 
+    function changeReadingReader(reading: ParshaObj, aliyah: number, reader: ShulUser | null): void {
+        if (busy || reading.locked || reading.lockedArr[aliyah - 1]) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setReaderDrafts(previous => stageReadingReader(previous, saved, aliyah, reader));
+        clearFeedback('readings');
+    }
+
     function resetReadingAdjustments(): void {
         if (busy) return;
         setReadingDrafts({});
         setOccasionDrafts({});
+        setReaderDrafts({});
         showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
     }
 
@@ -284,10 +301,11 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         setSaving(true);
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
-            const updated = await publishReadingLocks(shul.id, [...readingChanges, ...occasionChanges]);
+            const updated = await publishReadingLocks(shul.id, [...readingChanges, ...occasionChanges, ...readerChanges]);
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
             setOccasionDrafts({});
+            setReaderDrafts({});
             showFeedback('readings', 'success', 'Reading adjustments published.');
         } catch (failure) {
             showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
@@ -582,10 +600,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             .map((reading) => (
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
-                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts)}
+                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts)}
+                                                    users={users}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
                                                     onOccasionsChange={changeReadingOccasions}
+                                                    onReaderChange={changeReadingReader}
                                                 />
                                             ))
                                         : 
@@ -596,10 +616,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                 .map((reading) => (
                                                     <SearchResult
                                                         key={`${reading.dateString}:${reading.desc}`}
-                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts)}
+                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts)}
+                                                        users={users}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}
                                                     onOccasionsChange={changeReadingOccasions}
+                                                    onReaderChange={changeReadingReader}
                                                     />
 
                                                 ))}

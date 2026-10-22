@@ -1,4 +1,4 @@
-import type { ReadingLockChange, ReadingOccasionChange } from './api.ts';
+import type { ReadingLockChange, ReadingOccasionChange, ReadingReaderChange, ShulUser } from './api.ts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
 export type ReadingDrafts = Record<string, ReadingLockChange>;
@@ -25,12 +25,15 @@ export function pendingReadingLocks(drafts: ReadingDrafts, schedule: ParshaObj[]
     });
 }
 
-export function previewReadingLocks(reading: ParshaObj, drafts: ReadingDrafts, occasions: OccasionDrafts = {}): ParshaObj {
-    const preview = { ...reading, lockedArr: [...reading.lockedArr], manualOccasions: occasions[readingKey(reading)]?.manualOccasions ?? reading.manualOccasions ?? [] };
+export function previewReadingLocks(reading: ParshaObj, drafts: ReadingDrafts, occasions: OccasionDrafts = {}, readers: ReaderDrafts = {}): ParshaObj {
+    const preview = { ...reading, lockedArr: [...reading.lockedArr], readers: [...(reading.readers ?? [])], manualOccasions: occasions[readingKey(reading)]?.manualOccasions ?? reading.manualOccasions ?? [] };
     for (const change of Object.values(drafts)) {
         if (readingKey(change) !== readingKey(reading)) continue;
         if (change.aliyah === undefined) preview.locked = change.locked;
         else preview.lockedArr[change.aliyah - 1] = change.locked;
+    }
+    for (const change of Object.values(readers)) {
+        if (readingKey(change) === readingKey(reading)) preview.readers[change.aliyah - 1] = change.reader;
     }
     return preview;
 }
@@ -61,4 +64,22 @@ export function reorderManualOccasions(labels: string[], source: string, target:
     next.splice(from, 1);
     next.splice(to, 0, source);
     return next;
+}
+
+export type ReaderDrafts = Record<string, ReadingReaderChange & { reader: ShulUser | null }>;
+
+export function stageReadingReader(drafts: ReaderDrafts, saved: ParshaObj, aliyah: number, reader: ShulUser | null): ReaderDrafts {
+    const key = JSON.stringify([saved.dateString, saved.desc, aliyah]);
+    const next = { ...drafts };
+    if ((saved.readers[aliyah - 1]?.id ?? null) === (reader?.id ?? null)) delete next[key];
+    else next[key] = { dateString: saved.dateString, desc: saved.desc, aliyah, readerId: reader?.id ?? null, reader };
+    return next;
+}
+
+export function pendingReadingReaders(drafts: ReaderDrafts, schedule: ParshaObj[]): ReadingReaderChange[] {
+    const saved = new Map(schedule.map(reading => [readingKey(reading), reading]));
+    return Object.values(drafts).filter(change => {
+        const reading = saved.get(readingKey(change));
+        return !reading || (reading.readers[change.aliyah - 1]?.id ?? null) !== change.readerId;
+    }).map(({ dateString, desc, aliyah, readerId }) => ({ dateString, desc, aliyah, readerId }));
 }

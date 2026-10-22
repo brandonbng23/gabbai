@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
+import { stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
 
 const reading = {
-    id: 1, manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
+    id: 1, readers: Array(9).fill(null), manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
     lockedArr: Array(9).fill(false), psukim: ['one', 'two', 'three', 'null', 'null', 'null', 'null', 'maftir', 'haftarah'],
 };
 
@@ -72,4 +72,26 @@ test('manual occasion reordering preserves labels and publishes only a changed o
     assert.deepEqual(stageReadingOccasions(draft, saved, restored), {});
     assert.equal(reorderManualOccasions(reordered, 'Built-in', 'First'), reordered);
     assert.equal(reorderManualOccasions(reordered, 'First', 'First'), reordered);
+});
+
+test('reader drafts assign original slots, replace and revert without mutating saved assignments', () => {
+    const reader = { id: 'one', firstName: 'Josh', lastName: 'Cohen', email: 'one@example.com', role: 'member', title: 'Mr.' };
+    const other = { ...reader, id: 'two', firstName: 'David' };
+    let draft = stageReadingReader({}, reading, 8, reader);
+    let preview = previewReadingLocks(reading, {}, {}, draft);
+    assert.equal(preview.readers[7].id, reader.id);
+    assert.equal(preview.readers[0], null);
+    assert.ok(reading.readers.every(item => item === null));
+    draft = stageReadingReader(draft, reading, 8, other);
+    assert.equal(pendingReadingReaders(draft, [reading]).length, 1);
+    assert.deepEqual(pendingReadingReaders(draft, [reading])[0], {
+        dateString: reading.dateString, desc: reading.desc, aliyah: 8, readerId: other.id,
+    });
+    assert.deepEqual(stageReadingReader(draft, reading, 8, null), {});
+    const saved = { ...reading, readers: [...reading.readers] };
+    saved.readers[7] = other;
+    assert.deepEqual(pendingReadingReaders(draft, [saved]), []);
+    const removal = stageReadingReader({}, saved, 8, null);
+    assert.equal(previewReadingLocks(saved, {}, {}, removal).readers[7], null);
+    assert.equal(pendingReadingReaders(removal, [saved])[0].readerId, null);
 });

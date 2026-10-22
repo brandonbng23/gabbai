@@ -1,8 +1,10 @@
 import { reorderManualOccasions } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useState } from "react";
+import { UserDropDown } from "./dropdown.tsx";
+import type { ShulUser } from "../api.ts";
 
-function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void }): React.JSX.Element {
+function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void, users: ShulUser[]; onAssignReader: (reader: ShulUser | null) => void }): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
     const hasReader = props.reader != null;
     const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
@@ -38,7 +40,8 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
             <div style={{ width: "15%" }}>{aliyahLabel}</div>
 
             <div style={{ width: "15%" }}>
-                {hasReader ? readerName : props.locked ? "Locked" : "Available"}
+                {hasReader ? readerName : props.locked ? "Locked" : <UserDropDown options={props.users}
+                    selected={props.reader} onSelect={props.onAssignReader} disabled={props.disabled || props.locked} />}
             </div>
 
             <div style={{ width: "25%" }}>
@@ -48,11 +51,13 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
     )
 }
 
-export function SearchResult({ reading, disabled, onLockChange, onOccasionsChange }: {
+export function SearchResult({ reading, disabled, users, onLockChange, onOccasionsChange, onReaderChange }: {
     reading: ParshaObj;
     disabled: boolean;
+    users: ShulUser[];
     onLockChange: (reading: ParshaObj, locked: boolean, aliyah?: number) => void;
     onOccasionsChange: (reading: ParshaObj, labels: string[]) => void;
+    onReaderChange: (reading: ParshaObj, aliyah: number, reader: ShulUser | null) => void;
 }): React.JSX.Element {
         const [expanded, setExpanded] = useState<boolean>(false);
         const [newOccasion, setNewOccasion] = useState<string>("");
@@ -234,6 +239,8 @@ export function SearchResult({ reading, disabled, onLockChange, onOccasionsChang
                                                 psukim={p}
                                                 locked={locked || reading.lockedArr[index]}
                                                 disabled={disabled || locked}
+                                                users={users}
+                                                onAssignReader={reader => onReaderChange(reading, index + 1, reader)}
                                                 onToggleLock={() => onLockChange(reading, !reading.lockedArr[index], index + 1)}
                                                 available={!(reading.readers[index] || locked || reading.lockedArr[index])}
                                                 reader={reading.readers[index]}
