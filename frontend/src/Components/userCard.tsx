@@ -61,3 +61,12 @@ export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, na
         </div>
     )
 }
+
+export function ReaderCard( {user}: {user: ShulUser} ): React.JSX.Element {
+    return (
+        <div className="reader-card">
+            <h2>{`${user.title} ${user.firstName} ${user.lastName}`}</h2>
+            <span>{user.role}</span>
+        </div>
+    )
+}

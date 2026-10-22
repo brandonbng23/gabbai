@@ -2,9 +2,11 @@ import { reorderManualOccasions } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useId, useState } from "react";
 import { UserDropDown } from "./dropdown.tsx";
+import { ReaderCard } from "./userCard.tsx";
 import type { ShulUser } from "../api.ts";
 
 function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void, users: ShulUser[]; onAssignReader: (reader: ShulUser | null) => void }): React.JSX.Element {
+    const readerCardId = useId();
     const [hovered, setHovered] = useState<boolean>(false);
     const hasReader = props.reader != null;
     const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
@@ -41,7 +43,12 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
 
             <div style={{ width: "20%" }}>
                 {hasReader ? <div className="assigned-reader">
-                    <span>{readerName}</span>
+                    <div className="assigned-reader-name" tabIndex={0} aria-describedby={readerCardId}>
+                        {readerName}
+                        <div id={readerCardId} role="tooltip" className="assigned-reader-preview">
+                            {props.reader && <ReaderCard user={props.reader} />}
+                        </div>
+                    </div>
                     <button type="button" className="reader-remove-btn"
                         aria-label={`Remove ${readerName} from ${aliyahLabels[props.a - 1]}`}
                         title="Remove reader"

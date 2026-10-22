@@ -3419,7 +3419,52 @@ body:has(.content-window-settings) .footer-text {
     gap: 14px;
 }
 
-.assigned-reader > span { min-width: 0; overflow-wrap: anywhere; }
+.assigned-reader-name {
+    position: relative;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    cursor: help;
+}
+
+.assigned-reader-preview {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 300;
+    width: max-content;
+    max-width: min(280px, 70vw);
+    padding-top: 8px;
+    visibility: hidden;
+}
+
+.assigned-reader-name:hover > .assigned-reader-preview,
+.assigned-reader-name:focus-within > .assigned-reader-preview {
+    visibility: visible;
+}
+
+.assigned-reader-preview .reader-card {
+    padding: 12px 16px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: #262626;
+    color: #f6f5f7;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 25%);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.assigned-reader-preview .reader-card h2 {
+    margin: 0 0 4px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.assigned-reader-preview .reader-card > span {
+    color: #bdbcc3;
+    text-transform: capitalize;
+}
 
 .reader-remove-btn {
     display: inline-flex;
