@@ -235,3 +235,24 @@ maftir and haftarah, and persist across schedule rule changes. Saved assignments
 and locks for hidden slots are retained. Count changes are applied before
 validating other adjustments, allowing newly visible aliyot to receive readers
 or locks in the same atomic publication.
+
+Version 8 adds `user_pictures` and `shul_pictures`. Each owner has at most one
+PNG stored in SQLite, alongside a version used to refresh browser caches.
+Pictures are included in the same database backup and persistence lifecycle as
+profiles; no separate uploads directory is needed.
+
+My Preferences uploads to `PUT /api/me/picture`; shul administrators upload to
+`PUT /api/shuls/:id/picture`. Both accept PNG bytes up to 1 MB and dimensions up
+to 1024 × 1024. `DELETE` on those endpoints removes the current picture. User
+uploads always target the current identity, and shul uploads require an admin
+from that shul. Versioned picture URLs in profiles and reader assignments use
+`GET /api/users/:id/picture` or `GET /api/shuls/:id/picture` and can be displayed
+on public-facing cards.
+
+The browser accepts PNG, JPG, and WebP source images up to 10 MB, crops the center
+to a square, and resizes to 512 × 512. Selection and removal stay as local drafts
+until Save Changes or Publish Changes is clicked. Reset restores the saved picture.
+The user and shul profile PATCH endpoints accept an optional `picture` value:
+a PNG data URL to replace the image, or `null` to remove it. Picture changes and
+profile fields commit in one transaction, so failed saves retain the old image
+and fields. Missing or unreadable pictures display initials.

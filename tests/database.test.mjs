@@ -376,3 +376,30 @@ test('demo profile enrichment fills missing sample fields and preserves existing
     ensureDemoUser(db);
     assert.deepEqual(db.getUser(sample.id), populated);
 });
+
+test('user and shul picture bytes survive reopening and can be removed independently', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-pictures-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    let db = openDatabase(path);
+    let user;
+    let shul;
+    try {
+        shul = db.createShul({ name: 'Pictures', settings: { hebYear: 5787 } });
+        user = db.createUser(guest(shul.id));
+        db.setPicture('users', user.id, png);
+        db.setPicture('shuls', shul.id, png);
+        assert.throws(() => db.setPicture('users', user.id, Buffer.from('invalid')), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.ok(db.getUser(user.id).pictureUrl);
+        assert.ok(db.getShul(shul.id).pictureUrl);
+        assert.deepEqual(Buffer.from(db.getPicture('users', user.id).png), png);
+        assert.deepEqual(Buffer.from(db.getPicture('shuls', shul.id).png), png);
+        db.setPicture('users', user.id, null);
+        assert.equal(db.getUser(user.id).pictureUrl, undefined);
+        assert.ok(db.getShul(shul.id).pictureUrl);
+    } finally { db.close(); }
+});

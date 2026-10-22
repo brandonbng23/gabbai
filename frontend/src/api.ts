@@ -48,6 +48,7 @@ export interface ShulSummary {
 }
 
 export interface Shul extends ShulSummary {
+    pictureUrl?: string;
     websiteUrl: string;
     donationUrl: string;
     email: string;
@@ -88,7 +89,7 @@ export type { User, ShulUser } from '../../interfaces/user.mts';
 
 export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
 
-export async function updateCurrentUser(changes: Partial<UserProfile>): Promise<User> {
+export async function updateCurrentUser(changes: Partial<UserProfile> & { picture?: string | null }): Promise<User> {
     const response = await fetch('/api/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +120,7 @@ export async function getInitialShulVersion(id: string): Promise<InitialShulVers
     return response.json();
 }
 
-export async function updateShul(id: string, info: ShulInfo): Promise<Shul> {
+export async function updateShul(id: string, info: ShulInfo & { picture?: string | null }): Promise<Shul> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

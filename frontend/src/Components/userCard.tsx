@@ -1,3 +1,4 @@
+import { ProfilePicture } from './profilePicture.tsx';
 import type { ShulUser } from '../api.js';
 import React, { useState } from "react";
 
@@ -9,8 +10,10 @@ export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, na
             <div>
                 <button
                     onClick={() => setNameClick(!nameClick)}
-                    className="field-btn"
+                    className="field-btn profile-picture-name"
                 >
+                    <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} small />
+                    <span>
                     {!nameClick ?
                         !hovered ? 
                             <>
@@ -19,6 +22,7 @@ export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, na
                             </>
                         : `${user.title} ${user.firstName} ${user.lastName}`
                     : `${user.lastName}, ${user.firstName}`}
+                    </span>
                 </button>
             </div>
 
@@ -65,6 +69,7 @@ export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, na
 export function ReaderCard( {user}: {user: ShulUser} ): React.JSX.Element {
     return (
         <div className="reader-card">
+            <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} small />
             <h2>{`${user.title} ${user.firstName} ${user.lastName}`}</h2>
             <span>{user.role}</span>
         </div>

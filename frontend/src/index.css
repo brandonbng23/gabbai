@@ -2058,6 +2058,17 @@ body:has(.content-window-settings) {
     margin: 0;
 }
 
+.user-profile-heading,
+.shul-profile-heading {
+    flex-wrap: wrap;
+}
+
+.user-profile-heading > div,
+.shul-profile-heading > div {
+    flex: 1;
+    min-width: 0;
+}
+
 .user-settings-fields {
     display: grid;
     grid-template-columns: minmax(100px, .5fr) repeat(2, minmax(0, 1fr));
@@ -3522,7 +3533,7 @@ body:has(.content-window-settings) .footer-text {
     line-height: 1.3;
 }
 
-.assigned-reader-preview .reader-card > span {
+.assigned-reader-preview .reader-card > span:not(.profile-picture) {
     color: #bdbcc3;
     text-transform: capitalize;
 }
@@ -3684,3 +3695,42 @@ body:has(.content-window-settings) .footer-text {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+.profile-picture {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    border: 1px solid var(--settings-border, #646167);
+    border-radius: 50%;
+    background: #303c48;
+    color: #8bc8ff;
+    font-size: 26px;
+    font-weight: 650;
+}
+
+.profile-picture-square { border-radius: 14px; }
+.profile-picture-small { width: 32px; height: 32px; font-size: 12px; }
+.profile-picture img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.profile-picture-editor,
+.profile-picture-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.profile-picture-editor { margin-bottom: 24px; }
+.shul-picture-field .profile-picture-editor { margin-bottom: 0; }
+.profile-picture-actions { flex: 1 1 200px; min-width: 0; }
+.profile-picture-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.profile-picture-hint,
+.profile-picture-feedback { display: block; margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.profile-picture-hint { color: var(--settings-muted, #676767); }
+.profile-picture-feedback { color: #a3e4bc; }
+.profile-picture-error { color: #f5b1b1; }
+.profile-picture-name { display: inline-flex; align-items: center; gap: 10px; text-align: left; }
+.reader-card > .profile-picture { margin-bottom: 8px; }

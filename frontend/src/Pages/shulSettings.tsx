@@ -1,3 +1,4 @@
+import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul, ShulInfo, Settings, ShulUser } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
@@ -151,6 +152,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
     const [saving, setSaving] = useState(false);
+    const [pictureBusy, setPictureBusy] = useState(false);
+    const [pictureDraft, setPictureDraft] = useState<string | null | undefined>();
+    const picturePreview = pictureDraft === undefined ? shul.pictureUrl : pictureDraft ?? undefined;
     const [activeForm, setActiveForm] = useState<SettingsSection>('info');
 
     const [hebYear, setHebYear] = useState(settings.hebYear);
@@ -192,6 +196,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const contactChangeLog = contactFields
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${field.value ? `“${field.value}”` : '(empty)'}.`);
+
+    if (pictureDraft !== undefined) contactChangeLog.push(pictureDraft === null ? 'Remove shul picture.' : 'Change shul picture.');
 
     const scheduleChanges = [
         { label: 'Schedule Hebrew year', value: hebYear, savedValue: settings.hebYear },
@@ -278,7 +284,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const matchingUsers = searchUsers(sortUsers());
 
 
-    const busy = saving || restoring !== null;
+    const busy = saving || pictureBusy || restoring !== null;
 
     function showFeedback(section: SettingsSection, tone: SubmissionFeedback['tone'], text: string): void {
         setMessages((previous) => ({ ...previous, [section]: { tone, text } }));
@@ -375,6 +381,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     }
 
     function resetContactChanges(): void {
+        setPictureDraft(undefined);
         applyContactValues(shul);
         showFeedback('info', 'info', 'Unsaved changes reset.');
     }
@@ -443,7 +450,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         try {
             const updated = await updateShul(shul.id, {
                 name, address, phone, email, websiteUrl: website, donationUrl: donation,
+                ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}),
             });
+            setPictureDraft(undefined);
             setName(updated.name);
             setAddress(updated.address);
             setPhone(updated.phone);
@@ -518,7 +527,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
             <main className="shul-settings">
                 <div className="settings-view">
                     <aside className="shul-card" aria-label="Published shul information">
-                        <div className="settings-summary-heading">
+                        <div className="settings-summary-heading shul-profile-heading">
+                            <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
                             <div>
                                 <span className="settings-eyebrow">YOUR CONGREGATION</span>
                                 <h2>{shul.name}</h2>
@@ -557,9 +567,20 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         <form className="shul-settings-edit" onSubmit={updateShulInfo} onChange={() => clearFeedback('info')}>
                             <fieldset className="shul-edit" disabled={busy}>
                                 <legend className="visually-hidden">Shul information</legend>
-                                <div className="settings-field-row settings-column-headings">
-                                    <span>Edit details</span>
-                                    <span>Preview <small>Visible to your congregation after publishing.</small></span>
+                                <div className="settings-field-row shul-picture-field">
+                                    <div className="settings-field-edit">
+                                        <span className="settings-field-label">Shul Profile Picture</span>
+                                        <PictureEditor pictureUrl={picturePreview} name={shul.name} square showPicture={false}
+                                            onChange={picture => {
+                                                setPictureDraft(picture === null && !shul.pictureUrl ? undefined : picture);
+                                                clearFeedback('info');
+                                            }} onReset={() => setPictureDraft(undefined)} changed={pictureDraft !== undefined}
+                                            disabled={busy} onBusyChange={setPictureBusy} />
+                                    </div>
+                                    <div className="settings-field-preview">
+                                        <span className="settings-field-label">Shul Profile Picture</span>
+                                        <ProfilePicture src={picturePreview} name={shul.name} square />
+                                    </div>
                                 </div>
                                 {contactFields.map((field) => (
                                     <div className="settings-field-row" key={field.id}>

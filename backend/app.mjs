@@ -4,6 +4,7 @@ import { getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
+import { decodePicture, maxPictureBytes } from './pictures.mjs';
 import { userTitles } from '../interfaces/titles.mts';
 
 export function createApp(database, {
@@ -18,7 +19,39 @@ export function createApp(database, {
     const app = express();
     app.locals.database = database;
 
-    app.use(express.json());
+    app.use(express.json({ limit: '2mb' }));
+
+    function savePicture(req, res, next, kind) {
+        res.set('Cache-Control', 'no-store');
+        const user = currentUserId ? database.getUser(currentUserId) : null;
+        if (!user) return res.status(401).json({ error: 'Sign in to change a picture.' });
+        const id = kind === 'users' ? user.id : req.params.id;
+        if (kind === 'shuls' && (user.role !== 'admin' || user.shulId !== id))
+            return res.status(403).json({ error: 'Only this shul’s administrators can change its picture.' });
+        if (kind === 'shuls' && !database.getShul(id)) return res.status(404).json({ error: 'Shul not found.' });
+        try {
+            if (req.method !== 'DELETE' && !req.is('image/png'))
+                return res.status(415).json({ error: 'Upload a PNG picture.' });
+            return res.json(database.setPicture(kind, id, req.method === 'DELETE' ? null : req.body));
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    }
+    const readPicture = express.raw({ type: 'image/png', limit: maxPictureBytes });
+    app.put('/api/me/picture', readPicture, (req, res, next) => savePicture(req, res, next, 'users'));
+    app.delete('/api/me/picture', (req, res, next) => savePicture(req, res, next, 'users'));
+    app.put('/api/shuls/:id/picture', readPicture, (req, res, next) => savePicture(req, res, next, 'shuls'));
+    app.delete('/api/shuls/:id/picture', (req, res, next) => savePicture(req, res, next, 'shuls'));
+    app.get(['/api/users/:id/picture', '/api/shuls/:id/picture'], (req, res) => {
+        const kind = req.path.startsWith('/api/users/') ? 'users' : 'shuls';
+        const picture = database.getPicture(kind, req.params.id);
+        if (!picture || (req.query.v && req.query.v !== picture.version))
+            return res.status(404).json({ error: 'Picture not found.' });
+        res.set('Cache-Control', req.query.v ? 'public, max-age=31536000, immutable' : 'no-cache');
+        res.set('X-Content-Type-Options', 'nosniff');
+        return res.type('png').send(Buffer.from(picture.png));
+    });
 
     app.get("/api/shuls", (_req, res) => {
         res.json(app.locals.database.listShuls().map(({ id, name }) => ({ id, name })));
@@ -77,7 +110,7 @@ export function createApp(database, {
         }
         if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
         return res.json(app.locals.database.listShulUsers(req.params.id).map(
-            ({ id, firstName, lastName, email, role, title }) => ({ id, firstName, lastName, email, role, title })
+            ({ id, firstName, lastName, email, role, title, pictureUrl }) => ({ id, firstName, lastName, email, role, title, ...(pictureUrl ? { pictureUrl } : {}) })
         ));
     });
 
@@ -104,7 +137,8 @@ export function createApp(database, {
             return res.status(404).json({ error: "Shul not found" });
         }
         try {
-            return res.json(app.locals.database.updateShul(req.params.id, req.body));
+            validateKeys(req.body, ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'picture'], 'shul');
+            return res.json(app.locals.database.updateShul(req.params.id, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             return next(error);
@@ -222,14 +256,15 @@ export function createApp(database, {
         if (!currentUserId) return res.status(401).json({ error: 'Sign in to edit your profile.' });
         if (!database.getUser(currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
         try {
-            validateKeys(req.body, ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone'], 'profile');
+            validateKeys(req.body, ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'picture'], 'profile');
             for (const [field, value] of Object.entries(req.body)) {
+                if (field === 'picture') continue;
                 if (typeof value !== 'string' || value.length > 254)
                     throw new TypeError(`${field} must be a string of at most 254 characters`);
             }
             if ('title' in req.body && req.body.title !== '' && !userTitles.includes(req.body.title))
                 throw new TypeError('Choose a title from the list.');
-            return res.json(database.updateUser(currentUserId, req.body));
+            return res.json(database.updateUser(currentUserId, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             if (error.message?.includes('UNIQUE constraint failed: users.email'))
@@ -266,5 +301,9 @@ export function createApp(database, {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
     });
 
+    app.use((error, _req, res, next) => {
+        if (error.type === 'entity.too.large') return res.status(413).json({ error: 'The uploaded picture is too large.' });
+        return next(error);
+    });
     return app;
 }

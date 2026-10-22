@@ -1,3 +1,4 @@
+import { validatePicture } from '../pictures.mjs';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
@@ -35,10 +36,15 @@ function userValues(input) {
         email(input.email), text(input.phone ?? '', 'phone'), role, text(input.title ?? '', 'title')];
 }
 
+function pictureUrl(kind, id, version) {
+    return `/api/${kind}/${encodeURIComponent(id)}/picture?v=${encodeURIComponent(version)}`;
+}
+
 function decodeShul(row) {
     if (!row) return null;
     return { id: row.id, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
         email: row.email, phone: row.phone, address: row.address,
+        ...(row.picture_version ? { pictureUrl: pictureUrl('shuls', row.id, row.picture_version) } : {}),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
@@ -46,6 +52,7 @@ function decodeUser(row) {
     if (!row) return null;
     return { id: row.id, shulId: row.shul_id, firstName: row.first_name, lastName: row.last_name,
         hebrewName: row.hebrew_name, email: row.email, phone: row.phone, role: row.role, title: row.title,
+        ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
@@ -74,7 +81,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 7) throw new Error('Database schema is newer than this application');
+            if (version > 8) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -105,6 +112,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (db.prepare('PRAGMA foreign_key_check').all().length)
                     throw new Error('Guest role migration would violate foreign keys');
             }
+            if (version < 8) {
+                db.exec(readFileSync(new URL('./migrations/008_profile_pictures.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(8);
+            }
         });
         if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
@@ -112,13 +123,25 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         throw error;
     }
 
-    const shulQuery = 'SELECT s.*, p.settings_json FROM shuls s JOIN shul_settings p ON p.shul_id = s.id';
-    const userQuery = 'SELECT u.*, p.settings_json FROM users u JOIN user_settings p ON p.user_id = u.id';
+    const shulQuery = 'SELECT s.*, p.settings_json, pic.version AS picture_version FROM shuls s JOIN shul_settings p ON p.shul_id = s.id LEFT JOIN shul_pictures pic ON pic.shul_id = s.id';
+    const userQuery = 'SELECT u.*, p.settings_json, pic.version AS picture_version FROM users u JOIN user_settings p ON p.user_id = u.id LEFT JOIN user_pictures pic ON pic.user_id = u.id';
     const getShul = id => decodeShul(db.prepare(`${shulQuery} WHERE s.id = ?`).get(id));
     const getUser = id => decodeUser(db.prepare(`${userQuery} WHERE u.id = ?`).get(id));
     function requireRecord(record, name) {
         if (!record) throw new Error(`${name} not found`);
         return record;
+    }
+
+    function writePicture(kind, id, png) {
+        if (!['users', 'shuls'].includes(kind)) throw new TypeError('Invalid picture owner');
+        if (png !== null) validatePicture(png);
+        const table = kind === 'users' ? 'user_pictures' : 'shul_pictures';
+        const column = kind === 'users' ? 'user_id' : 'shul_id';
+        requireRecord(kind === 'users' ? getUser(id) : getShul(id), 'Profile');
+        if (png === null) db.prepare(`DELETE FROM ${table} WHERE ${column} = ?`).run(id);
+        else db.prepare(`INSERT INTO ${table} (${column}, png, version) VALUES (?, ?, ?)
+            ON CONFLICT (${column}) DO UPDATE SET png = excluded.png, version = excluded.version`)
+            .run(id, png, randomUUID());
     }
 
     function setReadingLocks(shulId, patches) {
@@ -201,16 +224,29 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        getPicture(kind, id) {
+            if (!['users', 'shuls'].includes(kind)) throw new TypeError('Invalid picture owner');
+            const table = kind === 'users' ? 'user_pictures' : 'shul_pictures';
+            const column = kind === 'users' ? 'user_id' : 'shul_id';
+            return db.prepare(`SELECT png, version FROM ${table} WHERE ${column} = ?`).get(id) ?? null;
+        },
+        setPicture(kind, id, png) {
+            return transaction(() => {
+                writePicture(kind, id, png);
+                return kind === 'users' ? getUser(id) : getShul(id);
+            });
+        },
         listReadingAliyahCounts(shulId) {
             return db.prepare('SELECT reading_date, reading_name, aliyah_count FROM reading_aliyah_counts WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyahCount: row.aliyah_count }));
         },
         listReadingReaders(shulId) {
-            return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title
-                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id WHERE r.shul_id = ?`)
+            return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title, pic.version AS picture_version
+                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id LEFT JOIN user_pictures pic ON pic.user_id = u.id WHERE r.shul_id = ?`)
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah,
                     reader: { id: row.id, firstName: row.first_name, lastName: row.last_name,
-                        email: row.email, role: row.role, title: row.title } }));
+                        email: row.email, role: row.role, title: row.title,
+                        ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}) } }));
         },
         listReadingOccasions(shulId) {
             return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')
@@ -303,22 +339,24 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             });
         },
         updateShul(id, patch) {
-            validateKeys(patch, shulFields, 'shul');
+            validateKeys(patch, [...shulFields, 'picture'], 'shul');
             return transaction(() => {
                 const current = requireRecord(getShul(id), 'Shul');
                 const values = shulValues({ ...current, ...patch });
                 db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
+                if ('picture' in patch) writePicture('shuls', id, patch.picture);
                 return getShul(id);
             });
         },
         updateUser(id, patch) {
-            validateKeys(patch, userFields, 'user');
+            validateKeys(patch, [...userFields, 'picture'], 'user');
             return transaction(() => {
                 const current = requireRecord(getUser(id), 'User');
                 const values = userValues({ ...current, ...patch });
                 db.prepare(`UPDATE users SET shul_id = ?, first_name = ?, last_name = ?, hebrew_name = ?, email = ?, phone = ?, role = ?, title = ?,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
+                if ('picture' in patch) writePicture('users', id, patch.picture);
                 return getUser(id);
             });
         },

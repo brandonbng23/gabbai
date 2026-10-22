@@ -3,6 +3,7 @@ import type { JSX, SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
 import { updateCurrentUser } from '../api.js';
 import type { Shul, User, UserProfile } from '../api.js';
+import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
 import { getGreeting } from "../Components/welcomeBar.tsx"
 
 const editableFields = [
@@ -22,12 +23,15 @@ function profileValues(user: User): UserProfile {
 export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; onSaved: (user: User) => void }): JSX.Element {
     const [draft, setDraft] = useState<UserProfile>(() => profileValues(user));
     const [saving, setSaving] = useState(false);
+    const [pictureBusy, setPictureBusy] = useState(false);
+    const [pictureDraft, setPictureDraft] = useState<string | null | undefined>();
+    const picturePreview = pictureDraft === undefined ? user.pictureUrl : pictureDraft ?? undefined;
     const [feedback, setFeedback] = useState<{ kind: 'success' | 'error' | 'info'; text: string } | null>(null);
     const changedFields = editableFields.filter(field => {
         const value = draft[field.key].trim();
         return (field.key === 'email' ? value.toLowerCase() : value) !== user[field.key];
     });
-    const hasChanges = changedFields.length > 0;
+    const hasChanges = changedFields.length > 0 || pictureDraft !== undefined;
 
     useEffect(() => {
         if (!hasChanges) return;
@@ -43,12 +47,13 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
 
     async function saveProfile(event: SubmitEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
-        if (saving || !hasChanges) return;
+        if (saving || pictureBusy || !hasChanges) return;
         setSaving(true);
         setFeedback(null);
         try {
             const changes = Object.fromEntries(changedFields.map(field => [field.key, draft[field.key].trim()]));
-            const updated = await updateCurrentUser(changes);
+            const updated = await updateCurrentUser({ ...changes, ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}) });
+            setPictureDraft(undefined);
             setDraft(profileValues(updated));
             onSaved(updated);
             setFeedback({ kind: 'success', text: 'Your profile has been saved.' });
@@ -79,7 +84,8 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
             <div className="shul-settings">
                 <div className="settings-view">
                     <section className="shul-card" aria-labelledby="user-profile-heading">
-                        <div className="settings-summary-heading">
+                        <div className="settings-summary-heading user-profile-heading">
+                            <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} />
                             <div>
                                 <span className="settings-eyebrow">YOUR PROFILE</span>
                                 <h2 id="user-profile-heading">{`${getGreeting()}, ${user.firstName}`}</h2>
@@ -103,7 +109,14 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                             </div>
                         </div>
                         <form className="shul-settings-edit" onSubmit={saveProfile}>
-                            <fieldset className="shul-edit" disabled={saving}>
+                            <span className="settings-field-label">Profile picture</span>
+                            <PictureEditor pictureUrl={picturePreview} name={`${user.firstName} ${user.lastName}`}
+                                onChange={picture => {
+                                    setPictureDraft(picture === null && !user.pictureUrl ? undefined : picture);
+                                    setFeedback(null);
+                                }} onReset={() => setPictureDraft(undefined)} changed={pictureDraft !== undefined}
+                                disabled={saving} onBusyChange={setPictureBusy} />
+                            <fieldset className="shul-edit" disabled={saving || pictureBusy}>
                                 <legend className="visually-hidden">Edit personal information</legend>
                                 <div className="user-settings-fields">
                                 {editableFields.map(field => (
@@ -144,6 +157,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                                             <button type="button" className="settings-reset-btn" disabled={!hasChanges}
                                                 onClick={() => {
                                                     setDraft(profileValues(user));
+                                                    setPictureDraft(undefined);
                                                     setFeedback({ kind: 'info', text: 'Unsaved profile changes reset.' });
                                                 }}>Reset changes</button>
                                             <button type="submit" className="submit-btn" disabled={!hasChanges}>

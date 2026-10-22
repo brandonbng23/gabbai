@@ -1,3 +1,4 @@
+import { ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul } from '../api.js';
 
 function publicLink(value: string): string | undefined {
@@ -15,7 +16,10 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
     const donation = publicLink(shul.donationUrl);
     return (
         <main className="aliyah-registration">
-            <h1>{shul.name}</h1>
+            <div className="profile-picture-heading">
+                <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
+                <h1>{shul.name}</h1>
+            </div>
             <dl className="registration-details">
                 <h5>Shul Information</h5>
                 {shul.address && <div><dt>Address</dt><dd>{shul.address}</dd></div>}
