@@ -69,9 +69,13 @@ export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, na
 export function ReaderCard( {user}: {user: ShulUser} ): React.JSX.Element {
     return (
         <div className="reader-card">
-            <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} small />
-            <h2>{`${user.title} ${user.firstName} ${user.lastName}`}</h2>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", height: "45px", gap: "15px"}}>
+                <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} small />
+                <h2>{`${user.firstName} ${user.lastName}`}</h2>
+            </div>
             <span>{user.role}</span>
+            <span style={{padding: "0 7.5px 0 7.5px"}}>·</span>
+            <span>{`${user.assignedReadings.length} Lifetime Readings`}</span>
         </div>
     )
 }
