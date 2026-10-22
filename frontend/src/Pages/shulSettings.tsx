@@ -86,6 +86,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const members = users.filter(user => user.role === 'member');
     const admins = users.filter(user => user.role === 'admin');
     const [userSort, setUserSort] = useState<string>("");
+    const [nameClick, setNameClick] = useState<boolean>(false);
+
+    /*
+    function sortAlphaLastName(): ShulUser[] {
+        const names = members.lastName.
+    } */
 
     const [name, setName] = useState<string>(shul.name);
     const [address, setAddress] = useState<string>(shul.address);
@@ -910,8 +916,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <div style={{width: "14%"}}>Actions</div>
                                         </div>
                                         <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
-                                        <UserCard user={u}></UserCard>
-                                    </> : <> <UserCard user={u}></UserCard> </>;
+                                        <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick}></UserCard>
+                                    </> : <> <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick} ></UserCard> </>;
                                 })}
                                     
                             </div>

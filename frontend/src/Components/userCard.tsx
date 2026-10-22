@@ -1,18 +1,25 @@
 import type { ShulUser } from '../api.js';
 import React, { useState } from "react";
 
-export function UserCard({ user }: { user: ShulUser }): React.JSX.Element {
+export function UserCard({ user, nameClick, setNameClick }: { user: ShulUser, nameClick: boolean, setNameClick: (click: boolean) => void }): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
 
     return (
         <div className={`user-card${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>          
             <div style={{ width: "30%" }}>
-                {!hovered ? 
-                    <>
-                    <span style={{ fontWeight: "200"}}>{user.title}</span> 
-                    <span style={{ fontWeight: "600"}}>{` ${user.firstName} ${user.lastName}`}</span>
-                    </>
-                : `${user.title} ${user.firstName} ${user.lastName}`}
+                <button
+                    onClick={() => setNameClick(!nameClick)}
+                    style={{ color: "white", background: "none", border: "none", width: "100%", height: "100%", textAlign: "left"}}
+                >
+                    {!nameClick ?
+                        !hovered ? 
+                            <>
+                            <span style={{ fontWeight: "200"}}>{user.title}</span> 
+                            <span style={{ fontWeight: "600"}}>{` ${user.firstName} ${user.lastName}`}</span>
+                            </>
+                        : `${user.title} ${user.firstName} ${user.lastName}`
+                    : `${user.lastName}, ${user.firstName}`}
+                </button>
             </div>
 
             <div style={{ width: "35%"}}>
