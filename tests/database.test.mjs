@@ -354,3 +354,25 @@ test('guest role migration preserves existing users, settings, assignments and c
         assert.deepEqual(db.getUser('legacy-user').settings, { language: 'he' });
     } finally { db.close(); }
 });
+
+test('demo profile enrichment fills missing sample fields and preserves existing and unrelated details', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    assert.equal(demo.title, 'Mr.');
+    assert.equal(demo.hebrewName, 'Moshe ben Avraham');
+    assert.equal(demo.phone, '(202) 555-0100');
+    const sample = db.createUser({ shulId: demo.shulId, firstName: 'David', lastName: 'Cohen',
+        email: 'david.cohen@example.com', title: 'Mr.' });
+    const edited = db.createUser({ shulId: demo.shulId, firstName: 'Sarah', lastName: 'Levy',
+        email: 'sarah.levy@example.com', title: 'Dr.', hebrewName: 'Saved Hebrew name', phone: '(202) 555-0199' });
+    const outsider = db.createUser({ shulId: unrelated.id, firstName: 'Daniel', lastName: 'Goldberg',
+        email: 'daniel.goldberg@example.com' });
+    ensureDemoUser(db);
+    const populated = db.getUser(sample.id);
+    assert.equal(populated.hebrewName, 'David ben Avraham');
+    assert.equal(populated.phone, '(202) 555-0101');
+    assert.deepEqual(db.getUser(edited.id), edited);
+    assert.deepEqual(db.getUser(outsider.id), outsider);
+    ensureDemoUser(db);
+    assert.deepEqual(db.getUser(sample.id), populated);
+});

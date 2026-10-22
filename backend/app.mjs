@@ -4,6 +4,7 @@ import { getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
+import { userTitles } from '../interfaces/titles.mts';
 
 export function createApp(database, {
     development = process.env.NODE_ENV === "development",
@@ -216,6 +217,27 @@ export function createApp(database, {
         return res.json(user);
     });
 
+    app.patch('/api/me', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        if (!currentUserId) return res.status(401).json({ error: 'Sign in to edit your profile.' });
+        if (!database.getUser(currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
+        try {
+            validateKeys(req.body, ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone'], 'profile');
+            for (const [field, value] of Object.entries(req.body)) {
+                if (typeof value !== 'string' || value.length > 254)
+                    throw new TypeError(`${field} must be a string of at most 254 characters`);
+            }
+            if ('title' in req.body && req.body.title !== '' && !userTitles.includes(req.body.title))
+                throw new TypeError('Choose a title from the list.');
+            return res.json(database.updateUser(currentUserId, req.body));
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            if (error.message?.includes('UNIQUE constraint failed: users.email'))
+                return res.status(409).json({ error: 'This email is already used by another profile.' });
+            return next(error);
+        }
+    });
+
     app.get("/api/test", (req, res) => {
         res.json({
             message: "Backend is working"
@@ -240,7 +262,7 @@ export function createApp(database, {
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/"], (req, res) => {
+    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
     });
 

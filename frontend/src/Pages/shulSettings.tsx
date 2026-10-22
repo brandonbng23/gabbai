@@ -34,7 +34,7 @@ function SettingsNoResults() {
 function FieldReset({ label, changed, onReset }: { label: string; changed: boolean; onReset: () => void }) {
     return (
         <div className="settings-field-reset-row">
-            <button type="button" className="settings-field-reset" disabled={!changed}
+            <button type="button" className="settings-field-reset" tabIndex={-1} disabled={!changed}
                 aria-label={`Reset ${label} to its last saved value`} title="Reset to last saved value" onClick={onReset}>Reset</button>
         </div>
     );

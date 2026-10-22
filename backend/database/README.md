@@ -53,9 +53,14 @@ parameter allows viewing that shul's public schedule and guest registration.
 Shul changes for signed-in users will belong in the future user settings page.
 My Shul displays the saved profile and reading preferences. The development
 user's first name appears in the greeting. The guest form starts blank so it
-does not accidentally submit the signed-in profile's email as a guest. Profiles/settings are read-only in the frontend for now; editing and real
-login need authenticated write endpoints. Online registration supports both
-the current profile and guest details.
+does not accidentally submit the signed-in profile's email as a guest.
+My Preferences supports editing the current user's title, first and last name,
+Hebrew name, email, and phone through `PATCH /api/me`. The endpoint uses the
+current identity, validates a partial profile update, and rejects changes to
+IDs, role, membership, or stored preferences. Duplicate emails return a conflict
+without saving any fields. The form includes previews, resets, a change log,
+and save feedback. Real login still requires authenticated session support.
+Online registration supports both the current profile and guest details.
 
 ## Render preview
 
@@ -80,6 +85,9 @@ demo settings are preserved on subsequent starts when the database survives.
 Demo contact information is synchronized from `backend/database/demo.mjs` on
 startup, including for existing demo records. This synchronization is limited to
 the demo user's shul and does not change saved reading settings or user preferences.
+The demo user's missing title, Hebrew name, and phone are populated with sample
+values. Known dummy member profiles in the demo shul also receive missing Hebrew
+names and fictional 202-555-01xx phone numbers. Existing profile values are preserved.
 The frontend fetches the saved shul profile on page load, so refresh the page
 after updating a profile in the database. Editing the demo seed requires a server
 restart (or a Render redeploy) to apply its updated information.

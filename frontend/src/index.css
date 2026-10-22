@@ -2045,6 +2045,44 @@ body:has(.content-window-settings) {
     font-size: 12px;
 }
 
+.user-profile-fields {
+    margin: 0;
+    font-size: 14px;
+}
+
+.user-profile-fields dt {
+    font-weight: 400;
+}
+
+.user-profile-fields dd {
+    margin: 0;
+}
+
+.user-settings-fields {
+    display: grid;
+    grid-template-columns: minmax(100px, .5fr) repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.user-settings-field {
+    min-width: 0;
+}
+
+.user-settings-field-full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+    .user-settings-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.user-page .user-settings-footer {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: end;
+}
+
 .settings-panel {
     padding: clamp(20px, 3vw, 30px);
 }
@@ -2140,6 +2178,7 @@ body:has(.content-window-settings) {
 }
 
 .shul-admin-page .settings-field-edit input,
+.shul-admin-page .settings-field-edit select,
 .shul-admin-page .settings-field-edit textarea,
 .shul-admin-page input[type="number"] {
     display: block;
@@ -2153,6 +2192,14 @@ body:has(.content-window-settings) {
     font: inherit;
     font-size: 14px;
     transition: border-color .15s, background-color .15s;
+}
+
+.user-page .settings-field-edit select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23f6f5f7' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
 }
 
 .settings-field-edit textarea {
@@ -2275,11 +2322,12 @@ body:has(.content-window-settings) {
 .settings-restore-popover > span { display: block; padding: 4px 10px 8px; color: var(--settings-muted); font-size: 12px; }
 
 .shul-admin-page input:hover,
+.shul-admin-page select:hover,
 .shul-admin-page textarea:hover {
     border-color: #929097;
 }
 
-.shul-admin-page :is(input, textarea, button):focus-visible,
+.shul-admin-page :is(input, select, textarea, button):focus-visible,
 .settings-bi-radio-options label:has(input:focus-visible),
 .settings-check-options label:has(input:focus-visible) {
     outline: 2px solid var(--settings-accent);

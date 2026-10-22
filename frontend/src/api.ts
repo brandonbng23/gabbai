@@ -86,6 +86,21 @@ export async function updateShulSettings(id: string, settings: SettingsPatch): P
 
 export type { User, ShulUser } from '../../interfaces/user.mts';
 
+export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
+
+export async function updateCurrentUser(changes: Partial<UserProfile>): Promise<User> {
+    const response = await fetch('/api/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save your profile. Please try again.');
+    }
+    return response.json();
+}
+
 export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
 
 export interface InitialShulVersion {

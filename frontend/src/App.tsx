@@ -8,6 +8,7 @@ import type { ParshaObj } from "./Components/parsha.tsx"
 import { useEffect, useState } from "react"
 import MyShul from "./Pages/myShul.js"
 import ShulSettings from "./Pages/shulSettings.js"
+import { UserSettings } from "./Pages/userSettings.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
 
@@ -22,6 +23,7 @@ function App() {
     const isRegistrationPage = window.location.pathname.replace(/\/$/, "") === "/registration";
     const isShulPage = window.location.pathname.replace(/\/$/, "") === "/shul";
     const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
+    const isUserSettingsPage = window.location.pathname.replace(/\/$/, "") === "/userSettings";
 
     useEffect(() => {
         const controller = new AbortController();
@@ -77,7 +79,7 @@ function App() {
             <div className="app-layout">
               <Navbar></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage ? ' content-window-settings' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
@@ -88,6 +90,8 @@ function App() {
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
+              ) : isUserSettingsPage ? (
+                user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : <>
               <WelcomeBar fName={user?.firstName}></WelcomeBar>
               {scheduleLoading ? <p className="shul-context" role="status">Loading your schedule…</p>

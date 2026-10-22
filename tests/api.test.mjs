@@ -541,3 +541,34 @@ test('anonymous guest registration validates details, reuses matching guests and
     assert.equal((await post({ ...base, aliyah: 4, guest: { ...guest, email: 'hidden@example.com' } })).status, 400);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2);
 });
+
+test('users can edit only their own profile fields and failed edits preserve saved data', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Member', email: 'taken@example.com' });
+    db.setUserSettings(user.id, { language: 'he' });
+    const edits = { title: 'Chazzan', firstName: ' Updated ', lastName: ' Reader ', hebrewName: 'Yehoshua', email: 'UPDATED@EXAMPLE.COM', phone: '(202) 555-0101' };
+    const response = await request('/api/me', patchShul(edits));
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    assert.equal(updated.id, user.id);
+    assert.equal(updated.firstName, 'Updated');
+    assert.equal(updated.lastName, 'Reader');
+    assert.equal(updated.email, 'updated@example.com');
+    assert.equal(updated.title, 'Chazzan');
+    assert.equal(updated.phone, edits.phone);
+    assert.equal(updated.hebrewName, edits.hebrewName);
+    assert.equal(updated.role, 'member');
+    assert.equal(updated.shulId, shul.id);
+    assert.deepEqual(updated.settings, { language: 'he' });
+    assert.deepEqual(await (await request('/api/me')).json(), updated);
+    for (const invalid of [null, { id: other.id }, { role: 'admin' }, { shulId: 'other' }, { settings: {} },
+        { title: 'Invented' }, { firstName: '' }, { lastName: ' ' }, { email: 'bad' }, { phone: 123 }, { firstName: 'a'.repeat(255) }]) {
+        assert.equal((await request('/api/me', patchShul(invalid))).status, 400);
+        assert.deepEqual(db.getUser(user.id), updated);
+    }
+    assert.equal((await request('/api/me', patchShul({ firstName: 'Must not save', email: other.email }))).status, 409);
+    assert.deepEqual(db.getUser(user.id), updated);
+    assert.deepEqual(db.getUser(other.id), other);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request('/api/me', patchShul({ firstName: 'Changed' }))).status, 401);
+});

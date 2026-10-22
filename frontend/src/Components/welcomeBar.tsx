@@ -1,18 +1,22 @@
-function WelcomeBar({fName}: {fName?: string}) {
+export function getGreeting(): string {
     let hour = new Date().getHours();
     let greeting = "";
 
     if (hour < 12) {
-        greeting = "Boker Tov"
+        return"Boker Tov"
     } else if (hour < 18) {
-        greeting = "Tazaharayim Tovim"
+        return "Tazaharayim Tovim"
     } else {
-        greeting = "Erev Tov"
+        return "Erev Tov"
     }
+}
+
+function WelcomeBar({fName}: {fName?: string}) {
+    
 
     return (
         <div className="welcomeBar">
-            <h4>{greeting}{fName ? `, ${fName}` : ''}!</h4>
+            <h4>{getGreeting()}{fName ? `, ${fName}` : ''}!</h4>
         </div>
     )
 }
