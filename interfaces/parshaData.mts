@@ -33,6 +33,10 @@ export interface ParshaData {
 
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
+    aliyahCount?: number;
+    defaultAliyahCount?: number;
+    aliyahCountOverride?: number | null;
+    aliyahOptions?: string[][];
 
     /* Assigned users for each aliyah; null means unassigned. */
     readers: (ShulUser | null)[];

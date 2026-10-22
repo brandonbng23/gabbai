@@ -1,4 +1,4 @@
-import type { ReadingLockChange, ReadingOccasionChange, ReadingReaderChange, ShulUser } from './api.ts';
+import type { ReadingCountChange, ReadingLockChange, ReadingOccasionChange, ReadingReaderChange, ShulUser } from './api.ts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
 export type ReadingDrafts = Record<string, ReadingLockChange>;
@@ -25,8 +25,14 @@ export function pendingReadingLocks(drafts: ReadingDrafts, schedule: ParshaObj[]
     });
 }
 
-export function previewReadingLocks(reading: ParshaObj, drafts: ReadingDrafts, occasions: OccasionDrafts = {}, readers: ReaderDrafts = {}): ParshaObj {
+export function previewReadingLocks(reading: ParshaObj, drafts: ReadingDrafts, occasions: OccasionDrafts = {}, readers: ReaderDrafts = {}, counts: CountDrafts = {}): ParshaObj {
     const preview = { ...reading, lockedArr: [...reading.lockedArr], readers: [...(reading.readers ?? [])], manualOccasions: occasions[readingKey(reading)]?.manualOccasions ?? reading.manualOccasions ?? [] };
+    const countChange = counts[readingKey(reading)];
+    if (countChange && reading.aliyahOptions) {
+        preview.aliyahCountOverride = countChange.aliyahCount;
+        preview.aliyahCount = countChange.aliyahCount ?? reading.defaultAliyahCount;
+        preview.psukim = reading.aliyahOptions[(preview.aliyahCount ?? 1) - 1];
+    }
     for (const change of Object.values(drafts)) {
         if (readingKey(change) !== readingKey(reading)) continue;
         if (change.aliyah === undefined) preview.locked = change.locked;
@@ -82,4 +88,20 @@ export function pendingReadingReaders(drafts: ReaderDrafts, schedule: ParshaObj[
         const reading = saved.get(readingKey(change));
         return !reading || (reading.readers[change.aliyah - 1]?.id ?? null) !== change.readerId;
     }).map(({ dateString, desc, aliyah, readerId }) => ({ dateString, desc, aliyah, readerId }));
+}
+
+export type CountDrafts = Record<string, ReadingCountChange>;
+
+export function stageReadingCount(drafts: CountDrafts, saved: ParshaObj, aliyahCount: number | null): CountDrafts {
+    const next = { ...drafts };
+    const key = readingKey(saved);
+    if (aliyahCount === (saved.aliyahCountOverride ?? null)) delete next[key];
+    else next[key] = { dateString: saved.dateString, desc: saved.desc, aliyahCount };
+    return next;
+}
+
+export function pendingReadingCounts(drafts: CountDrafts, schedule: ParshaObj[]): ReadingCountChange[] {
+    const saved = new Map(schedule.map(reading => [readingKey(reading), reading]));
+    return Object.values(drafts).filter(change => !saved.has(readingKey(change))
+        || change.aliyahCount !== (saved.get(readingKey(change))?.aliyahCountOverride ?? null));
 }

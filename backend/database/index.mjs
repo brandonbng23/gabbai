@@ -70,7 +70,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ) STRICT`);
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 5) throw new Error('Database schema is newer than this application');
+            if (version > 6) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -90,6 +90,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 5) {
                 db.exec(readFileSync(new URL('./migrations/005_reading_readers.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(5);
+            }
+            if (version < 6) {
+                db.exec(readFileSync(new URL('./migrations/006_reading_aliyah_counts.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(6);
             }
         });
     } catch (error) {
@@ -111,7 +115,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -119,6 +123,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 throw new TypeError('Invalid reading date');
             }
             text(desc, 'reading name', true);
+            if ('aliyahCount' in patch) {
+                if (patch.aliyahCount !== null && (!Number.isInteger(patch.aliyahCount) || patch.aliyahCount < 1 || patch.aliyahCount > 7))
+                    throw new TypeError('Choose an aliyah count from 1 to 7');
+                return { count: [shulId, dateString, desc, patch.aliyahCount] };
+            }
             if ('manualOccasions' in patch) {
                 const labels = patch.manualOccasions;
                 if (!Array.isArray(labels) || labels.length > 100 || labels.some(label =>
@@ -154,7 +163,16 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 DO UPDATE SET user_id = excluded.user_id`);
             const removeReader = db.prepare(`DELETE FROM reading_readers
                 WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
+            const countStatement = db.prepare(`INSERT INTO reading_aliyah_counts (shul_id, reading_date, reading_name, aliyah_count)
+                VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
+                DO UPDATE SET aliyah_count = excluded.aliyah_count`);
+            const removeCount = db.prepare('DELETE FROM reading_aliyah_counts WHERE shul_id = ? AND reading_date = ? AND reading_name = ?');
             for (const value of values) {
+                if (value.count) {
+                    if (value.count[3] === null) removeCount.run(...value.count.slice(0, 3));
+                    else countStatement.run(...value.count);
+                    continue;
+                }
                 if (value.reader) {
                     const readerId = value.reader[4];
                     if (readerId === null) removeReader.run(...value.reader.slice(0, 4));
@@ -172,6 +190,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         path,
         close: () => db.close(),
         getShul,
+        listReadingAliyahCounts(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, aliyah_count FROM reading_aliyah_counts WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyahCount: row.aliyah_count }));
+        },
         listReadingReaders(shulId) {
             return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title
                 FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id WHERE r.shul_id = ?`)

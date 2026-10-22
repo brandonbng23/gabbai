@@ -1,3 +1,4 @@
+import { ReadingSet } from "../core/readingSet.mts";
 import { Schedule } from "../core/schedule.mts";
 import { Settings } from "../core/settings.mts";
 import { settingsForSchedule } from "./database/settings.mjs";
@@ -18,6 +19,8 @@ export function getShulSchedule(database, shulId, year) {
         if (!Number.isInteger(year) || year < 1 || year > 9999) throw new TypeError('Invalid Hebrew year');
         settings.setHebYear(year);
     }
+    const counts = new Map(database.listReadingAliyahCounts(shulId)
+        .map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading.aliyahCount]));
     const occasions = new Map(database.listReadingOccasions(shulId)
         .map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading.manualOccasions]));
     const readers = new Map();
@@ -33,6 +36,18 @@ export function getShulSchedule(database, shulId, year) {
         locks.get(key).push(lock);
     }
     return new Schedule(settings, settings.getHebYear()).getScheduleData().map(reading => {
+        reading.defaultAliyahCount = reading.psukim.slice(0, 7).filter(value => value && value !== 'null').length;
+        reading.aliyahOptions = Array.from({ length: 7 }, (_, index) => {
+            const count = index + 1;
+            if (count === reading.defaultAliyahCount) return reading.psukim;
+            const localSettings = settingsForSchedule(shul.settings);
+            localSettings.setHebYear(settings.getHebYear());
+            localSettings.setAliyotCount(count);
+            return new ReadingSet(reading.desc, count, localSettings, reading.occassions, settings.getHebYear()).getPsukimArr();
+        });
+        reading.aliyahCountOverride = counts.get(JSON.stringify([reading.dateString, reading.desc])) ?? null;
+        reading.aliyahCount = reading.aliyahCountOverride ?? reading.defaultAliyahCount;
+        reading.psukim = reading.aliyahOptions[reading.aliyahCount - 1];
         for (const lock of locks.get(JSON.stringify([reading.dateString, reading.desc])) ?? []) {
             if (lock.aliyah === 0) reading.locked = lock.locked;
             else reading.lockedArr[lock.aliyah - 1] = lock.locked;

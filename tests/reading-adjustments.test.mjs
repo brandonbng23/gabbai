@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
+import { stageReadingCount, pendingReadingCounts, stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
 
 const reading = {
     id: 1, readers: Array(9).fill(null), manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
@@ -94,4 +94,23 @@ test('reader drafts assign original slots, replace and revert without mutating s
     const removal = stageReadingReader({}, saved, 8, null);
     assert.equal(previewReadingLocks(saved, {}, {}, removal).readers[7], null);
     assert.equal(pendingReadingReaders(removal, [saved])[0].readerId, null);
+});
+
+test('count drafts preview only their reading and reset independently of the schedule rule', () => {
+    const saved = { ...reading, aliyahCount: 3, defaultAliyahCount: 3, aliyahCountOverride: null,
+        aliyahOptions: Array.from({ length: 7 }, (_, index) => Array.from({ length: 9 }, (_, slot) => slot < 7 && slot > index ? 'null' : `verses ${slot}`)) };
+    const other = { ...saved, desc: 'Noach' };
+    const drafts = stageReadingCount({}, saved, 6);
+    const preview = previewReadingLocks(saved, {}, {}, {}, drafts);
+    assert.equal(preview.aliyahCount, 6);
+    assert.equal(preview.psukim[5], 'verses 5');
+    assert.equal(preview.psukim[6], 'null');
+    assert.equal(saved.aliyahCount, 3);
+    assert.equal(previewReadingLocks(other, {}, {}, {}, drafts).aliyahCount, 3);
+    assert.equal(pendingReadingCounts(drafts, [saved]).length, 1);
+    assert.deepEqual(stageReadingCount(drafts, saved, null), {});
+    const overridden = { ...saved, aliyahCount: 6, aliyahCountOverride: 6 };
+    const reset = stageReadingCount({}, overridden, null);
+    assert.equal(previewReadingLocks(overridden, {}, {}, {}, reset).aliyahCount, 3);
+    assert.equal(pendingReadingCounts(reset, [overridden])[0].aliyahCount, null);
 });

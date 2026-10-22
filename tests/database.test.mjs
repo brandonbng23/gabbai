@@ -234,9 +234,10 @@ test('schedule generation uses the saved shul settings and an optional year over
     const expected = new Settings(5787);
     expected.setIL(true);
     expected.setAliyotCount(3);
-    assert.deepEqual(getShulSchedule(db, shul.id), new Schedule(expected, 5787).getScheduleData());
+    const withoutCountMetadata = readings => readings.map(({ aliyahCount, defaultAliyahCount, aliyahCountOverride, aliyahOptions, ...reading }) => reading);
+    assert.deepEqual(withoutCountMetadata(getShulSchedule(db, shul.id)), new Schedule(expected, 5787).getScheduleData());
     expected.setHebYear(5788);
-    assert.deepEqual(getShulSchedule(db, shul.id, 5788), new Schedule(expected, 5788).getScheduleData());
+    assert.deepEqual(withoutCountMetadata(getShulSchedule(db, shul.id, 5788)), new Schedule(expected, 5788).getScheduleData());
     assert.equal(db.getShul(shul.id).settings.hebYear, 5787);
     assert.throws(() => getShulSchedule(db, 'missing'), /not found/);
 });
@@ -281,5 +282,26 @@ test('reader assignments survive reopening and preserve original maftir slot', t
         assert.equal(saved.reader.firstName, reader.firstName);
         db.setReadingLocks(shul.id, [{ ...key, readerId: null }]);
         assert.deepEqual(db.listReadingReaders(shul.id), []);
+    } finally { db.close(); }
+});
+
+test('reading count overrides survive reopening and can return to the schedule rule', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-counts-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Counts', settings: { hebYear: 5787, a: 3 } });
+        db.setReadingLocks(shul.id, [{ ...key, aliyahCount: 5 }]);
+        assert.throws(() => db.setReadingLocks(shul.id, [{ ...key, aliyahCount: 2 }, { ...key, aliyahCount: 8 }]), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingAliyahCounts(shul.id), [{ ...key, aliyahCount: 5 }]);
+        assert.equal(getShulSchedule(db, shul.id).find(reading => reading.desc === key.desc).aliyahCount, 5);
+        db.setReadingLocks(shul.id, [{ ...key, aliyahCount: null }]);
+        assert.equal(getShulSchedule(db, shul.id).find(reading => reading.desc === key.desc).aliyahCount, 3);
     } finally { db.close(); }
 });

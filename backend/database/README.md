@@ -204,3 +204,12 @@ fields per change. Every entry is validated before a single transaction saves
 the batch; a failed publication saves none of the changes. The response contains
 each affected reading once. Reset discards local drafts, and publication updates
 the schedule used by the member-facing pages. Search changes do not discard drafts.
+
+Version 6 adds `reading_aliyah_counts`, keyed by shul and reading date/name.
+The batch adjustments endpoint also accepts `{ dateString, desc, aliyahCount }`.
+An integer from 1 to 7 overrides the schedule rule for that reading; `null`
+removes the override. Counts are limited to the available verse ranges, exclude
+maftir and haftarah, and persist across schedule rule changes. Saved assignments
+and locks for hidden slots are retained. Count changes are applied before
+validating other adjustments, allowing newly visible aliyot to receive readers
+or locks in the same atomic publication.

@@ -2,6 +2,12 @@ import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
+export interface ReadingCountChange {
+    dateString: string;
+    desc: string;
+    aliyahCount: number | null;
+}
+
 export interface ReadingLockChange {
     dateString: string;
     desc: string;
@@ -22,7 +28,7 @@ export interface ReadingReaderChange {
     readerId: string | null;
 }
 
-export async function publishReadingLocks(shulId: string, changes: (ReadingLockChange | ReadingOccasionChange | ReadingReaderChange)[]): Promise<ParshaObj[]> {
+export async function publishReadingLocks(shulId: string, changes: (ReadingLockChange | ReadingOccasionChange | ReadingReaderChange | ReadingCountChange)[]): Promise<ParshaObj[]> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/locks`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

@@ -415,3 +415,45 @@ test('admin reader assignments publish atomically, respect locks and membership,
     db.updateUser(reader.id, { shulId: other.id });
     assert.equal((await load()).readers[7], null, 'Transferred members must not remain visible on the old shul schedule');
 });
+
+test('per-reading aliyah counts override rules independently and publish with new reader slots', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    db.updateUser(user.id, { role: 'admin' });
+    const schedulePath = `/api/schedule?shul=${shul.id}`;
+    const schedule = await (await request(schedulePath)).json();
+    const key = desc => ({ dateString: schedule.find(reading => reading.desc === desc).dateString, desc });
+    const path = `/api/shuls/${shul.id}/readings/locks`;
+    const publish = changes => request(path, patchShul({ changes }));
+    const response = await publish([
+        { ...key('Bereshit'), aliyah: 6, readerId: user.id },
+        { ...key('Bereshit'), aliyahCount: 6 },
+        { ...key('Noach'), aliyahCount: 1 },
+    ]);
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    const bereshit = updated.find(reading => reading.desc === 'Bereshit');
+    assert.equal(bereshit.aliyahCount, 6);
+    assert.equal(bereshit.defaultAliyahCount, 3);
+    assert.equal(bereshit.readers[5].id, user.id);
+    assert.ok(bereshit.psukim[5] && bereshit.psukim[5] !== 'null');
+    assert.equal(bereshit.psukim[6], 'null');
+    assert.equal(updated.find(reading => reading.desc === 'Noach').aliyahCount, 1);
+    assert.deepEqual(bereshit.psukim.slice(7), schedule.find(reading => reading.desc === 'Bereshit').psukim.slice(7));
+    for (const aliyahCount of [0, 8, 2.5, '4', false]) {
+        assert.equal((await publish([{ ...key('Bereshit'), aliyahCount }])).status, 400);
+    }
+    const holiday = schedule.find(reading => reading.aliyahOptions[6].slice(0, 7).filter(value => value && value !== 'null').length < 7);
+    assert.ok(holiday);
+    assert.equal((await publish([{ dateString: holiday.dateString, desc: holiday.desc, aliyahCount: 7 }])).status, 400);
+    assert.equal((await publish([{ ...key('Bereshit'), aliyahCount: 2 }, { ...key('Bereshit'), aliyah: 6, readerId: user.id }])).status, 400);
+    assert.equal(db.listReadingAliyahCounts(shul.id).find(reading => reading.desc === 'Bereshit').aliyahCount, 6);
+    db.updateShulSettings(shul.id, { a: 4 });
+    const refreshed = await (await request(schedulePath)).json();
+    assert.equal(refreshed.find(reading => reading.desc === 'Bereshit').aliyahCount, 6);
+    assert.equal(refreshed.find(reading => reading.desc === 'Noach').aliyahCount, 1);
+    assert.equal(refreshed.find(reading => reading.desc === 'Lech-Lecha').aliyahCount, 4);
+    assert.equal((await publish([{ ...key('Bereshit'), aliyahCount: null }])).status, 200);
+    const reset = await (await request(schedulePath)).json();
+    assert.equal(reset.find(reading => reading.desc === 'Bereshit').aliyahCount, 4);
+    assert.equal(reset.find(reading => reading.desc === 'Bereshit').aliyahCountOverride, null);
+});

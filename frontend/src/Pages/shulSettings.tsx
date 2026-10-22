@@ -6,8 +6,8 @@ import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, u
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
-import { pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
-import type { ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
+import { pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
+import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
@@ -76,6 +76,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
+    const [countDrafts, setCountDrafts] = useState<CountDrafts>({});
     const [occasionDrafts, setOccasionDrafts] = useState<OccasionDrafts>({});
     const [readerDrafts, setReaderDrafts] = useState<ReaderDrafts>({});
     const [users, setUsers] = useState<ShulUser[]>([]);
@@ -205,10 +206,11 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${typeof field.value === 'boolean' ? (field.value ? 'enabled' : 'disabled') : field.value}.`);
 
+    const countChanges = pendingReadingCounts(countDrafts, schedule);
     const readingChanges = pendingReadingLocks(readingDrafts, schedule);
     const occasionChanges = pendingReadingOccasions(occasionDrafts, schedule);
     const readerChanges = pendingReadingReaders(readerDrafts, schedule);
-    const hasReadingChanges = readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0;
+    const hasReadingChanges = countChanges.length > 0 || readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0;
     const hasUnsavedChanges = contactChangeLog.length > 0 || scheduleChangeLog.length > 0 || hasReadingChanges;
 
     useEffect(() => {
@@ -226,6 +228,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const readingAdjustmentChangeLog = readingChanges.map(change =>
         `${change.locked ? 'Lock' : 'Unlock'} ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString})${change.aliyah === undefined ? '' : ` — ${aliyahLabels[change.aliyah - 1]}`}.`);
 
+    for (const change of countChanges) {
+        readingAdjustmentChangeLog.push(`Set ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) to ${change.aliyahCount === null ? 'the schedule rule' : `${change.aliyahCount} aliyot`}.`);
+    }
     for (const change of occasionChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
         const before = saved?.manualOccasions ?? [];
@@ -283,6 +288,14 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         clearFeedback('readings');
     }
 
+    function changeReadingCount(reading: ParshaObj, count: number | null): void {
+        if (busy) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setCountDrafts(previous => stageReadingCount(previous, saved, count));
+        clearFeedback('readings');
+    }
+
     function changeReadingOccasions(reading: ParshaObj, labels: string[]): void {
         if (busy) return;
         const saved = schedule.find(item => readingKey(item) === readingKey(reading));
@@ -304,6 +317,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         setReadingDrafts({});
         setOccasionDrafts({});
         setReaderDrafts({});
+        setCountDrafts({});
         showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
     }
 
@@ -314,11 +328,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         setSaving(true);
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
-            const updated = await publishReadingLocks(shul.id, [...readingChanges, ...occasionChanges, ...readerChanges]);
+            const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges]);
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
             setOccasionDrafts({});
             setReaderDrafts({});
+            setCountDrafts({});
             showFeedback('readings', 'success', 'Reading adjustments published.');
         } catch (failure) {
             showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
@@ -613,10 +628,12 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             .map((reading) => (
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
-                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts)}
+                                                    savedOccasions={reading.manualOccasions ?? []}
+                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
                                                     users={users}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
+                                                    onCountChange={changeReadingCount}
                                                     onOccasionsChange={changeReadingOccasions}
                                                     onReaderChange={changeReadingReader}
                                                 />
@@ -629,12 +646,14 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                 .map((reading) => (
                                                     <SearchResult
                                                         key={`${reading.dateString}:${reading.desc}`}
-                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts)}
+                                                        savedOccasions={reading.manualOccasions ?? []}
+                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
                                                         users={users}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}
-                                                    onOccasionsChange={changeReadingOccasions}
-                                                    onReaderChange={changeReadingReader}
+                                                        onCountChange={changeReadingCount}
+                                                        onOccasionsChange={changeReadingOccasions}
+                                                        onReaderChange={changeReadingReader}
                                                     />
 
                                                 ))}

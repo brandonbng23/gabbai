@@ -1,6 +1,6 @@
 import { reorderManualOccasions } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { UserDropDown } from "./dropdown.tsx";
 import type { ShulUser } from "../api.ts";
 
@@ -64,19 +64,30 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
     )
 }
 
-export function SearchResult({ reading, disabled, users, onLockChange, onOccasionsChange, onReaderChange }: {
+export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onCountChange }: {
     reading: ParshaObj;
+    savedOccasions: string[];
     disabled: boolean;
     users: ShulUser[];
     onLockChange: (reading: ParshaObj, locked: boolean, aliyah?: number) => void;
     onOccasionsChange: (reading: ParshaObj, labels: string[]) => void;
+    onCountChange: (reading: ParshaObj, count: number | null) => void;
     onReaderChange: (reading: ParshaObj, aliyah: number, reader: ShulUser | null) => void;
 }): React.JSX.Element {
+        const countInputId = useId();
+        const maxAliyot = reading.aliyahOptions?.reduce((max, verses, index) =>
+            verses.slice(0, 7).filter(value => value && value !== 'null').length === index + 1 ? index + 1 : max, 1) ?? 7;
+        function updateAliyot(count: number): void {
+            if (!Number.isInteger(count)) return;
+            const nextCount = Math.max(1, Math.min(maxAliyot, count));
+            onCountChange(reading, nextCount === reading.defaultAliyahCount ? null : nextCount);
+        }
         const [expanded, setExpanded] = useState<boolean>(false);
         const [newOccasion, setNewOccasion] = useState<string>("");
         const [draggedOccasion, setDraggedOccasion] = useState<string | null>(null);
         const [dropTarget, setDropTarget] = useState<string | null>(null);
         const manualOccasions = reading.manualOccasions ?? [];
+        const occasionsChanged = JSON.stringify(manualOccasions) !== JSON.stringify(savedOccasions);
         const canReorderOccasions = expanded && !disabled && manualOccasions.length > 1;
         function moveOccasion(source: string, target: string): void {
             if (!canReorderOccasions) return;
@@ -213,34 +224,64 @@ export function SearchResult({ reading, disabled, users, onLockChange, onOccasio
 
                         {expanded ? <>
                             <div className="divider" style={{ width: "97%", margin: "10px"}}></div>
-                            <div className="add-occassions">
-                                <span>Add an Occassion:</span>
-                                <div className="result-occassion occasion-input-tag">
-                                    <input
-                                        type="text"
-                                        aria-label="Add an occasion"
-                                        placeholder="e.g. Josh Cohen's Bar Mitzvah"
-                                        value={newOccasion}
-                                        maxLength={120}
-                                        disabled={disabled}
-                                        onKeyDown={event => {
-                                            if (event.key === 'Enter') {
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                if (!event.nativeEvent.isComposing) addOccasion();
-                                            }
-                                        }}
-                                        onChange={(event) => setNewOccasion(event.currentTarget.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="occasion-add-btn"
-                                        aria-label="Add occasion"
-                                        disabled={disabled || !newOccasion.trim()}
-                                        onClick={addOccasion}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"/></svg>
-                                    </button>
+                            <div className="reading-adjustment-controls">
+                                <div className="add-occassions">
+                                    <span>Add an Occassion:</span>
+                                    <div className="result-occassion occasion-input-tag">
+                                        <input
+                                            type="text"
+                                            aria-label="Add an occasion"
+                                            placeholder="e.g. Josh Cohen's Bar Mitzvah"
+                                            value={newOccasion}
+                                            maxLength={120}
+                                            disabled={disabled}
+                                            onKeyDown={event => {
+                                                if (event.key === 'Enter') {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    if (!event.nativeEvent.isComposing) addOccasion();
+                                                }
+                                            }}
+                                            onChange={(event) => setNewOccasion(event.currentTarget.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="occasion-add-btn"
+                                            aria-label="Add occasion"
+                                            disabled={disabled || !newOccasion.trim()}
+                                            onClick={addOccasion}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"/></svg>
+                                        </button>
+                                    </div>
+                                    <button type="button" className="settings-field-reset"
+                                        aria-label="Reset occasions to last saved value" disabled={disabled || (!newOccasion && !occasionsChanged)}
+                                        onClick={() => {
+                                            setNewOccasion('');
+                                            onOccasionsChange(reading, [...savedOccasions]);
+                                        }}>Reset</button>
                                 </div>
+                                {reading.aliyahOptions && <div className="reading-aliyot-control">
+                                    <label htmlFor={countInputId}>Adjust Aliyot:</label>
+                                    <div className="settings-aliyot-control">
+                                        <input id={countInputId} type="number" min="1" max={maxAliyot} step="1"
+                                            value={reading.aliyahCount} disabled={disabled}
+                                            onChange={event => updateAliyot(Number(event.currentTarget.value))} />
+                                        <div className="slide-container">
+                                            <input type="range" min="1" max={maxAliyot} step="1"
+                                                value={reading.aliyahCount} className="slider" disabled={disabled}
+                                                aria-label={`Aliyot for ${reading.desc} (${reading.gregDate})`}
+                                                onChange={event => updateAliyot(Number(event.currentTarget.value))} />
+                                            <div className="slider-labels" aria-hidden="true">
+                                                {Array.from({ length: maxAliyot }, (_, index) => index + 1).map(value =>
+                                                    <span className="slider-tick" key={value}><span>{value}</span></span>)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" className="settings-field-reset"
+                                        aria-label="Reset aliyot to schedule rule"
+                                        disabled={disabled || reading.aliyahCount === reading.defaultAliyahCount}
+                                        onClick={() => onCountChange(reading, null)}>Reset</button>
+                                </div>}
                             </div>
                             <div className="parsha">
                                 {reading.psukim.map((p: string, index) =>

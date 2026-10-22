@@ -2887,13 +2887,27 @@ input[type="number"] {
     font-weight: 400;
 }
 
+.occasion-input-tag:focus-within {
+    background-color: #add9ff;
+    border-color: #5ca5e5;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 18%);
+}
+
+@media (hover: hover) {
+    .occasion-input-tag:hover {
+        background-color: #add9ff;
+        border-color: #5ca5e5;
+        box-shadow: 0 3px 8px rgb(0 0 0 / 18%);
+    }
+}
+
 .reading-result .parsha {
     display: flex;
     flex-direction: column;
     gap: 5px;
 
-    width: calc(100% - 2 * var(--admin-aliyah-inset));
-    margin-inline: var(--admin-aliyah-inset);
+    width: calc(100% - 50px);
+    margin-inline: 25px;
     padding-bottom: 0;
 
     background-color: #3d3b3f;
@@ -3007,8 +3021,9 @@ input[type="number"] {
     align-items: center;
 
     border-radius: max(0px, calc(var(--result-radius) - var(--admin-aliyah-inset) - 1px));
-    padding: 3px 10px 3px 10px;
-    width: 100%;
+    margin-inline: calc(var(--admin-aliyah-inset) - 25px);
+    padding: 3px calc(25px - var(--admin-aliyah-inset));
+    width: calc(100% + 50px - 2 * var(--admin-aliyah-inset));
 }
 
 .admin-aliyah-hover {
@@ -3405,4 +3420,77 @@ body:has(.content-window-settings) .footer-text {
 .user-dropdown .selected-option > button:focus-visible:not(:disabled) .dropdown-add-icon {
     fill: #1a2a3e;
     opacity: 1;
+}
+
+.reading-adjustment-controls {
+    display: grid;
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.55fr);
+    align-items: start;
+    gap: 12px 32px;
+    margin: 0 25px 22px;
+}
+
+.reading-adjustment-controls .add-occassions {
+    min-width: 0;
+    min-height: 39px;
+    margin: 0;
+    padding: 0;
+}
+
+.reading-adjustment-controls .add-occassions > span {
+    flex-shrink: 0;
+}
+
+.reading-adjustment-controls .settings-field-reset {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.reading-aliyot-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #d2d0d9;
+    font-size: 14px;
+}
+
+.reading-aliyot-control > label {
+    margin: 0;
+    margin-right: 4px;
+}
+
+.reading-aliyot-control .settings-aliyot-control {
+    flex: 1 1 120px;
+    align-items: center;
+    gap: 8px;
+}
+
+.reading-aliyot-control input[type="number"] {
+    flex-basis: 48px;
+    width: 48px;
+    min-height: 32px;
+    padding: 4px 8px;
+}
+
+.reading-aliyot-control .slide-container {
+    padding-top: 0;
+}
+
+.reading-aliyot-rule {
+    flex: 0 0 auto;
+    min-width: 0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.reading-aliyot-rule > span {
+    display: block;
+}
+
+@media (max-width: 800px) {
+    .reading-adjustment-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
