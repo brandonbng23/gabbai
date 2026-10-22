@@ -7,7 +7,7 @@ import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, u
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
-import { pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
+import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
 import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 
@@ -245,18 +245,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     for (const change of countChanges) {
         readingAdjustmentChangeLog.push(`Set ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) to ${change.aliyahCount === null ? 'the schedule rule' : `${change.aliyahCount} aliyot`}.`);
     }
-    for (const change of occasionChanges) {
-        const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
-        const before = saved?.manualOccasions ?? [];
-        const previousOrder = before.filter(label => change.manualOccasions.includes(label));
-        const nextOrder = change.manualOccasions.filter(label => before.includes(label));
-        if (JSON.stringify(previousOrder) !== JSON.stringify(nextOrder))
-            readingAdjustmentChangeLog.push(`Reorder manually added occasions for ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-        for (const label of change.manualOccasions.filter(label => !before.includes(label)))
-            readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-        for (const label of before.filter(label => !change.manualOccasions.includes(label)))
-            readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-    }
+    readingAdjustmentChangeLog.push(...occasionChangeLog(occasionDrafts, schedule));
 
     for (const change of readerChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));

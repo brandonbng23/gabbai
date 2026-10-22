@@ -3444,6 +3444,15 @@ body:has(.content-window-settings) .footer-text {
     gap: 8px;
 }
 
+.occasion-drag-icon {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 10px;
+    fill: currentColor;
+    opacity: .25;
+    pointer-events: none;
+}
+
 .occasion-add-btn:disabled { opacity: .45; cursor: default; }
 
 .occasion-remove-btn {
@@ -3459,7 +3468,7 @@ body:has(.content-window-settings) .footer-text {
     opacity: 1;
 }
 
-.manual-occasion-tag[draggable="true"] { cursor: grab; }
+.manual-occasion-tag[draggable="true"] { cursor: grab; padding-left: 6px; }
 .manual-occasion-tag.is-dragging { opacity: .5; cursor: grabbing; }
 .manual-occasion-tag.is-drop-target {
     outline: 2px solid #f6f5f7;

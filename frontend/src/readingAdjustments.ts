@@ -62,6 +62,28 @@ export function pendingReadingOccasions(drafts: OccasionDrafts, schedule: Parsha
     });
 }
 
+export function occasionChangeLog(drafts: OccasionDrafts, schedule: ParshaObj[]): string[] {
+    const saved = new Map(schedule.map(reading => [readingKey(reading), reading]));
+    return pendingReadingOccasions(drafts, schedule).flatMap(change => {
+        const reading = saved.get(readingKey(change));
+        const before = reading?.manualOccasions ?? [];
+        const after = change.manualOccasions;
+        const target = `${change.desc} (${reading?.gregDate ?? change.dateString})`;
+        if (!reading) return [`Set manually added occasions for ${target} to ${after.length ? after.map(label => `“${label}”`).join(', ') : 'none'}.`];
+        const previousOrder = before.filter(label => after.includes(label));
+        const nextOrder = after.filter(label => before.includes(label));
+        const entries: string[] = [];
+        if (JSON.stringify(previousOrder) !== JSON.stringify(nextOrder)) {
+            entries.push(`Reorder manually added occasions for ${target}: ${after.map(label => `“${label}”`).join(', ')}.`);
+        }
+        for (const label of after.filter(label => !before.includes(label)))
+            entries.push(`Add “${label}” to ${target}.`);
+        for (const label of before.filter(label => !after.includes(label)))
+            entries.push(`Remove “${label}” from ${target}.`);
+        return entries;
+    });
+}
+
 export function reorderManualOccasions(labels: string[], source: string, target: string): string[] {
     const from = labels.indexOf(source);
     const to = labels.indexOf(target);

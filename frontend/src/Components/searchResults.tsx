@@ -188,6 +188,14 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
                                                 if (target !== undefined) moveOccasion(label, target);
                                             }}>
 
+                                            {canReorderOccasions && <svg className="occasion-drag-icon" aria-hidden="true" viewBox="0 0 10 16">
+                                                <circle cx="2" cy="2" r="1.5" />
+                                                <circle cx="8" cy="2" r="1.5" />
+                                                <circle cx="2" cy="8" r="1.5" />
+                                                <circle cx="8" cy="8" r="1.5" />
+                                                <circle cx="2" cy="14" r="1.5" />
+                                                <circle cx="8" cy="14" r="1.5" />
+                                            </svg>}
                                             {label}
                                             {expanded && <button type="button" className="occasion-add-btn occasion-remove-btn"
                                                 aria-label={`Remove ${label}`} disabled={disabled}
