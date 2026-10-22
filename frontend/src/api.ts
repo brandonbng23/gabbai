@@ -48,6 +48,7 @@ export interface ShulSummary {
 }
 
 export interface Shul extends ShulSummary {
+    code: string;
     pictureUrl?: string;
     websiteUrl: string;
     donationUrl: string;

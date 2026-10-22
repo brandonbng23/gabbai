@@ -57,6 +57,17 @@ export function createApp(database, {
         res.json(app.locals.database.listShuls().map(({ id, name }) => ({ id, name })));
     });
 
+    app.get('/api/shuls/by-code/:code', (req, res, next) => {
+        try {
+            const shul = database.getShulByCode(req.params.code);
+            if (!shul) return res.status(404).json({ error: 'No shul matches that code.' });
+            return res.json({ id: shul.id, name: shul.name });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     app.get("/api/shuls/:id", (req, res) => {
         const shul = app.locals.database.getShul(req.params.id);
         if (!shul) return res.status(404).json({ error: "Shul not found" });

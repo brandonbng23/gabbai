@@ -22,6 +22,7 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
             </div>
             <dl className="registration-details">
                 <h5>Shul Information</h5>
+                <div><dt>Shul Code</dt><dd>{shul.code}</dd></div>
                 {shul.address && <div><dt>Address</dt><dd>{shul.address}</dd></div>}
                 {shul.phone && <div><dt>Phone</dt><dd>{shul.phone}</dd></div>}
                 {shul.email && <div><dt>Email</dt><dd><a href={`mailto:${shul.email}`}>{shul.email}</a></dd></div>}

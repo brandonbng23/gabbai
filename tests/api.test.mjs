@@ -25,6 +25,19 @@ const patchShul = body => ({
     body: JSON.stringify(body),
 });
 
+test('shul codes resolve to a shul without exposing user profiles', async t => {
+    const { request, shul, db } = await setup(t, false);
+    const response = await request(`/api/shuls/by-code/${shul.code}`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { id: shul.id, name: shul.name });
+    assert.equal((await request('/api/shuls/by-code/123')).status, 400);
+    assert.equal((await request('/api/shuls/by-code/DEMO')).status, 404);
+    assert.equal((await (await request(`/api/shuls/${shul.id}`)).json()).code, shul.code);
+    const codes = new Set(db.listShuls().map(item => item.code));
+    const unused = Array.from({ length: 676 }, (_, i) => `AA${String.fromCharCode(65 + Math.floor(i / 26))}${String.fromCharCode(65 + i % 26)}`).find(code => !codes.has(code));
+    assert.equal((await request(`/api/shuls/by-code/${unused}`)).status, 404);
+});
+
 test('publishing reading adjustments validates and saves the entire batch atomically', async t => {
     const { request, shul, user, db } = await setup(t, true);
     db.updateUser(user.id, { role: 'admin' });

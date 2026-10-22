@@ -196,6 +196,21 @@ forms are separate follow-up work. The legacy in-memory `User`, `Admin`, and
 
 ## Migrations
 
+Version 10 introduces persistent, unique shul join codes. Version 11 replaces
+numeric codes with four uppercase letters; the demo shul keeps `DEMO`, which is
+reserved from automatic allocation. Existing numeric codes are reassigned once.
+Version 12 restores `DEMO` using the original demo shul snapshot when its user's
+email has changed, preserving edited profiles and other shul codes.
+Codes remain unchanged when contact details or settings are edited. The shul
+information and administration pages display the code.
+
+`GET /api/shuls/by-code/:code` resolves a code to `{ id, name }`. User creation
+can pass `shulCode` instead of `shulId`; the database resolves membership and
+rejects unknown codes before creating the user. Codes accept surrounding spaces
+and are case-insensitive. This supports the future account signup flow;
+authentication and account signup are not implemented yet. Guest reading
+registration continues to use the shul from the reading link.
+
 `schema_migrations` tracks applied numbered SQL migrations. Version 1 initializes
 the four profile/settings tables. Version 2 adds `shul_initial_versions` and
 captures each new shul's initial contact information and settings atomically at

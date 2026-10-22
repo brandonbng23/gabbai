@@ -1,3 +1,4 @@
+import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul, ShulInfo, Settings, ShulUser } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
@@ -14,11 +15,14 @@ import { UserCard } from "../Components/userCard.tsx";
 type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
 
-function SubmissionMessage({ message }: { message: SubmissionFeedback | null }) {
+function SubmissionMessage({ message, onDismiss }: { message: SubmissionFeedback | null; onDismiss?: () => void }) {
     return (
         <div className={`submission-msg${message ? ` submission-msg-${message.tone}` : ''}`}
             role={message?.tone === 'error' ? 'alert' : 'status'} aria-atomic="true">
-            {message?.text}
+            {message && <>
+                <span>{message.text}</span>
+                {message.tone !== 'progress' && onDismiss && <DismissMessageButton onDismiss={onDismiss} />}
+            </>}
         </div>
     );
 }
@@ -545,6 +549,10 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M305 151.1L320 171.8L335 151.1C360 116.5 400.2 96 442.9 96C516.4 96 576 155.6 576 229.1L576 231.7C576 343.9 436.1 474.2 363.1 529.9C350.7 539.3 335.5 544 320 544C304.5 544 289.2 539.4 276.9 529.9C203.9 474.2 64 343.9 64 231.7L64 229.1C64 155.6 123.6 96 197.1 96C239.8 96 280 116.5 305 151.1z"/></svg>
                                 <div><span className="settings-contact-label">Donations</span><span>{shul.donationUrl.replace("https://", "") || 'Not provided'}</span></div>
                             </div>
+                            <div className="shul-card-item">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">{/* Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc. */}<path fill="currentColor" d="M280 88C280 57.1 254.9 32 224 32C193.1 32 168 57.1 168 88C168 118.9 193.1 144 224 144C254.9 144 280 118.9 280 88zM304 300.7L341 350.6C353.8 333.1 369.5 317.9 387.3 305.6L331.1 229.9C306 196 266.3 176 224 176C181.7 176 142 196 116.8 229.9L46.3 324.9C35.8 339.1 38.7 359.1 52.9 369.7C67.1 380.3 87.1 377.3 97.7 363.1L144 300.7L144 576C144 593.7 158.3 608 176 608C193.7 608 208 593.7 208 576L208 416C208 407.2 215.2 400 224 400C232.8 400 240 407.2 240 416L240 576C240 593.7 254.3 608 272 608C289.7 608 304 593.7 304 576L304 300.7zM496 608C575.5 608 640 543.5 640 464C640 384.5 575.5 320 496 320C416.5 320 352 384.5 352 464C352 543.5 416.5 608 496 608zM512 400L512 448L560 448C568.8 448 576 455.2 576 464C576 472.8 568.8 480 560 480L512 480L512 528C512 536.8 504.8 544 496 544C487.2 544 480 536.8 480 528L480 480L432 480C423.2 480 416 472.8 416 464C416 455.2 423.2 448 432 448L480 448L480 400C480 391.2 487.2 384 496 384C504.8 384 512 391.2 512 400z"/></svg>
+                                <div><span className="settings-contact-label">Shul Code</span><span>{shul.code}</span></div>
+                            </div>
                         </div>
                     </aside>
 
@@ -611,7 +619,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetContactChanges} disabled={busy || contactChangeLog.length === 0}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || contactChangeLog.length === 0}>{saving && activeForm === 'info' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.info} />
+                                        <SubmissionMessage message={messages.info} onDismiss={() => clearFeedback('info')} />
                                     </div>
                                 </div>
                             </fieldset>
@@ -687,7 +695,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={busy || !hasReadingChanges}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || !hasReadingChanges}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.readings} />
+                                        <SubmissionMessage message={messages.readings} onDismiss={() => clearFeedback('readings')} />
                                     </div>
                                 </div>
                             </fieldset>
@@ -1048,7 +1056,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetScheduleChanges} disabled={busy || scheduleChangeLog.length === 0}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || scheduleChangeLog.length === 0}>{saving && activeForm === 'schedule' ? 'Saving…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.schedule} />
+                                        <SubmissionMessage message={messages.schedule} onDismiss={() => clearFeedback('schedule')} />
                                     </div>
                                 </div>
                             </fieldset>

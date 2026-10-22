@@ -1,3 +1,4 @@
+import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { useEffect, useState } from 'react';
 import type { JSX, SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
@@ -149,7 +150,10 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                                 <div className="settings-form-footer user-settings-footer">
                                     <div className={`submission-msg${feedback ? ` submission-msg-${feedback.kind}` : ''}`}
                                         role={feedback?.kind === 'error' ? 'alert' : 'status'} aria-live="polite">
-                                        {saving ? 'Saving your profile…' : feedback?.text}
+                                        {(saving || feedback) && <>
+                                            <span>{saving ? 'Saving your profile…' : feedback?.text}</span>
+                                            {!saving && feedback && <DismissMessageButton onDismiss={() => setFeedback(null)} />}
+                                        </>}
                                     </div>
                                     <div className="settings-footer-actions">
                                         <span>Changes take effect after saving.</span>

@@ -45,6 +45,7 @@ export function ensureDemoUser(database) {
     };
     const existing = database.getUserByEmail('demo@example.com');
     if (existing) {
+        database.ensureDemoShulCode(existing.shulId);
         const shul = database.getShul(existing.shulId);
         const changes = Object.fromEntries(Object.entries(profile)
             .filter(([field, value]) => shul[field] !== value));
@@ -54,6 +55,7 @@ export function ensureDemoUser(database) {
         return populateDemoProfiles(database, demo);
     }
     const shul = database.createShul({ ...profile, settings: { hebYear: 5787 } });
+    database.ensureDemoShulCode(shul.id);
     const demo = database.createUser({
         shulId: shul.id,
         firstName: 'Demo',

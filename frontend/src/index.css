@@ -2483,6 +2483,9 @@ body:has(.content-window-settings) {
 }
 
 .shul-admin-page .submission-msg:not(:empty) {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
     width: 100%;
     margin-top: 10px;
     padding: 9px 12px;
@@ -2494,6 +2497,39 @@ body:has(.content-window-settings) {
     line-height: 1.5;
     overflow-wrap: anywhere;
     text-align: left;
+}
+
+.submission-msg > span {
+    flex: 1;
+    min-width: 0;
+}
+
+.submission-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    padding: 5px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    opacity: .65;
+    cursor: pointer;
+}
+
+.submission-dismiss:hover,
+.submission-dismiss:focus-visible {
+    opacity: 1;
+}
+
+.submission-dismiss svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
 }
 
 .shul-admin-page .submission-msg-success:not(:empty) {
@@ -3287,8 +3323,8 @@ input[type="number"] {
 }
 
 .action-icons {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(4, 20px);
     gap: 35px;
     justify-content: flex-start;
     max-width: 185px;
@@ -3305,6 +3341,14 @@ input[type="number"] {
 
     border: none;
     background: none;
+}
+
+.action-icons .edit-user-btn {
+    grid-column: 3;
+}
+
+.action-icons .discard-user-btn {
+    grid-column: 4;
 }
 
 .action-icons svg {

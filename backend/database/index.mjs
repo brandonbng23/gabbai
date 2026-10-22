@@ -1,7 +1,7 @@
 import { validatePicture } from '../pictures.mjs';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,32 @@ import { defaultShulSettings, mergeShulSettings, serializeUserSettings, validate
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
 const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
 const userFields = ['shulId', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'role', 'title'];
+
+function normalizeShulCode(value) {
+    const code = text(value, 'shulCode', true).toUpperCase();
+    if (!/^[A-Z]{4}$/.test(code)) throw new TypeError('Enter a four-letter shul code.');
+    return code;
+}
+
+// Called inside a write transaction so concurrent shul creation cannot reuse a code.
+function assignShulCode(db, shulId) {
+    const used = new Set(db.prepare('SELECT code FROM shul_codes').all().map(row => row.code));
+    const capacity = 26 ** 4;
+    const start = randomInt(capacity);
+    for (let offset = 0; offset < capacity; offset++) {
+        let value = (start + offset) % capacity;
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+            code = String.fromCharCode(65 + value % 26) + code;
+            value = Math.floor(value / 26);
+        }
+        if (code !== 'DEMO' && !used.has(code)) {
+            db.prepare('INSERT INTO shul_codes (shul_id, code) VALUES (?, ?)').run(shulId, code);
+            return;
+        }
+    }
+    throw new Error('All four-letter shul codes have been assigned.');
+}
 
 function text(value, name, required = false) {
     if (typeof value !== 'string' || (required && !value.trim())) {
@@ -42,7 +68,7 @@ function pictureUrl(kind, id, version) {
 
 function decodeShul(row) {
     if (!row) return null;
-    return { id: row.id, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
+    return { id: row.id, code: row.join_code, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
         email: row.email, phone: row.phone, address: row.address,
         ...(row.picture_version ? { pictureUrl: pictureUrl('shuls', row.id, row.picture_version) } : {}),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
@@ -82,7 +108,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 9) throw new Error('Database schema is newer than this application');
+            if (version > 12) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -121,6 +147,20 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/009_user_readings.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(9);
             }
+            if (version < 10) {
+                db.exec(readFileSync(new URL('./migrations/010_shul_codes.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(10);
+            }
+            if (version < 11) {
+                db.exec(readFileSync(new URL('./migrations/011_letter_shul_codes.sql', import.meta.url), 'utf8'));
+                const missing = db.prepare('SELECT id FROM shuls WHERE id NOT IN (SELECT shul_id FROM shul_codes)').all();
+                for (const { id } of missing) assignShulCode(db, id);
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(11);
+            }
+            if (version < 12) {
+                db.exec(readFileSync(new URL('./migrations/012_restore_demo_code.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(12);
+            }
         });
         if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
@@ -128,7 +168,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         throw error;
     }
 
-    const shulQuery = 'SELECT s.*, p.settings_json, pic.version AS picture_version FROM shuls s JOIN shul_settings p ON p.shul_id = s.id LEFT JOIN shul_pictures pic ON pic.shul_id = s.id';
+    const shulQuery = 'SELECT s.*, c.code AS join_code, p.settings_json, pic.version AS picture_version FROM shuls s JOIN shul_codes c ON c.shul_id = s.id JOIN shul_settings p ON p.shul_id = s.id LEFT JOIN shul_pictures pic ON pic.shul_id = s.id';
     const userQuery = `SELECT u.*, p.settings_json, pic.version AS picture_version,
         (SELECT json_group_array(json_object('dateString', reading_date, 'desc', reading_name, 'aliyah', aliyah))
             FROM (SELECT reading_date, reading_name, aliyah FROM reading_readers
@@ -286,6 +326,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 source: row.source, capturedAt: row.captured_at } : null;
         },
         getUser,
+        getShulByCode: code => decodeShul(db.prepare(`${shulQuery} WHERE c.code = ?`).get(normalizeShulCode(code))),
+        ensureDemoShulCode(shulId) {
+            return transaction(() => {
+                requireRecord(getShul(shulId), 'Shul');
+                db.prepare("UPDATE shul_codes SET code = 'DEMO' WHERE shul_id = ?").run(shulId);
+                return getShul(shulId);
+            });
+        },
         getUserByEmail: value => decodeUser(db.prepare(`${userQuery} WHERE u.email = ?`).get(email(value))),
         listShuls: () => db.prepare(`${shulQuery} ORDER BY s.name, s.id`).all().map(decodeShul),
         listShulUsers: shulId => db.prepare(`${userQuery} WHERE u.shul_id = ? ORDER BY u.last_name, u.first_name, u.id`).all(shulId).map(decodeUser),
@@ -301,6 +349,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return transaction(() => {
                 db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
                     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                assignShulCode(db, id);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
                 const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
                 db.prepare(`INSERT INTO shul_initial_versions (shul_id, info_json, settings_json, source)
@@ -345,8 +394,15 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             });
         },
         createUser(input) {
-            validateKeys(input, [...userFields, 'settings'], 'user');
-            const values = userValues(input);
+            validateKeys(input, [...userFields, 'settings', 'shulCode'], 'user');
+            let shulId = input.shulId;
+            if ('shulCode' in input) {
+                if ('shulId' in input) throw new TypeError('Provide a shul code or shul ID, not both.');
+                const shul = db.prepare('SELECT shul_id FROM shul_codes WHERE code = ?').get(normalizeShulCode(input.shulCode));
+                if (!shul) throw new TypeError('No shul matches that code. Check the code and try again.');
+                shulId = shul.shul_id;
+            }
+            const values = userValues({ ...input, shulId });
             const settings = serializeUserSettings(input.settings ?? {});
             const id = randomUUID();
             return transaction(() => {
