@@ -196,6 +196,13 @@ forms are separate follow-up work. The legacy in-memory `User`, `Admin`, and
 
 ## Migrations
 
+`GET /api/users/:id` supplies the read-only user view at `/userView?user=<id>`.
+Only signed-in members and admins from the same shul may access it, including
+when the viewed user is a guest. The response contains name, Hebrew name, title,
+role, optional picture URL, shul name, and assigned-reading count. Email, phone,
+settings, and individual reading assignments are excluded. The view has no edit
+controls or save actions; the eye button in Users & Permissions opens it.
+
 Version 10 introduces persistent, unique shul join codes. Version 11 replaces
 numeric codes with four uppercase letters; the demo shul keeps `DEMO`, which is
 reserved from automatic allocation. Existing numeric codes are reassigned once.

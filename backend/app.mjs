@@ -251,6 +251,22 @@ export function createApp(database, {
     app.patch("/api/shuls/:id/readings/lock", (req, res, next) => publishReadingLocks(req, res, next, false));
     app.patch("/api/shuls/:id/readings/locks", (req, res, next) => publishReadingLocks(req, res, next, true));
 
+    app.get('/api/users/:id', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        const viewer = currentUserId ? database.getUser(currentUserId) : null;
+        if (!viewer) return res.status(401).json({ error: 'Sign in to view user profiles.' });
+        if (!['member', 'admin'].includes(viewer.role))
+            return res.status(403).json({ error: 'Only members and administrators can view user profiles.' });
+        const target = database.getUser(req.params.id);
+        if (!target || target.shulId !== viewer.shulId)
+            return res.status(404).json({ error: 'User not found.' });
+        const { id, firstName, lastName, hebrewName, title, pictureUrl, role } = target;
+        return res.json({ id, firstName, lastName, hebrewName, title, role,
+            ...(pictureUrl ? { pictureUrl } : {}),
+            shulName: database.getShul(target.shulId).name,
+            assignedReadingCount: target.assignedReadings.length });
+    });
+
     // Previews share a sample identity; regular deployments will use an authenticated session.
     app.get("/api/me", (_req, res) => {
         res.set("Cache-Control", "no-store");
@@ -308,7 +324,7 @@ export function createApp(database, {
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/"], (req, res) => {
+    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
     });
 

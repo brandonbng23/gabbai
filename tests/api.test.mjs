@@ -25,6 +25,38 @@ const patchShul = body => ({
     body: JSON.stringify(body),
 });
 
+test('user views are read-only and exclude sensitive fields for members and admins', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const target = db.createUser({ shulId: shul.id, title: 'Mr.', firstName: 'Viewed', lastName: 'Guest',
+        hebrewName: 'Hebrew name', email: 'private@example.com', phone: '555-0100', role: 'guest',
+        settings: { privatePreference: true } });
+    const path = `/api/users/${target.id}`;
+    const expected = { id: target.id, title: target.title, firstName: target.firstName,
+        lastName: target.lastName, hebrewName: target.hebrewName, role: 'guest',
+        shulName: shul.name, assignedReadingCount: 0 };
+    for (const role of ['member', 'admin']) {
+        db.updateUser(user.id, { role });
+        const response = await request(path);
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        assert.deepEqual(await response.json(), expected);
+    }
+    const otherShul = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    const foreign = db.createUser({ shulId: otherShul.id, firstName: 'Other', lastName: 'User', email: 'foreign@example.com' });
+    assert.equal((await request(`/api/users/${foreign.id}`)).status, 404);
+    assert.equal((await request('/api/users/missing')).status, 404);
+    assert.equal((await request('/userView?user=' + target.id)).status, 200);
+    for (const method of ['PATCH', 'PUT', 'DELETE']) {
+        const response = await request(path, { ...patchShul({ firstName: 'Changed' }), method });
+        assert.equal(response.status, 404);
+        assert.deepEqual(db.getUser(target.id), target);
+    }
+    db.updateUser(user.id, { role: 'guest' });
+    assert.equal((await request(path)).status, 403);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request(`/api/users/${anonymous.user.id}`)).status, 401);
+});
+
 test('shul codes resolve to a shul without exposing user profiles', async t => {
     const { request, shul, db } = await setup(t, false);
     const response = await request(`/api/shuls/by-code/${shul.code}`);

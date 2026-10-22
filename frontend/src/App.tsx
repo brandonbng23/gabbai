@@ -9,6 +9,7 @@ import { useEffect, useState } from "react"
 import MyShul from "./Pages/myShul.js"
 import ShulSettings from "./Pages/shulSettings.js"
 import { UserSettings } from "./Pages/userSettings.tsx"
+import { UserView } from "./Pages/userView.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
 
@@ -24,6 +25,8 @@ function App() {
     const isShulPage = window.location.pathname.replace(/\/$/, "") === "/shul";
     const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
     const isUserSettingsPage = window.location.pathname.replace(/\/$/, "") === "/userSettings";
+    const isUserViewPage = window.location.pathname.replace(/\/$/, "") === "/userView";
+    const viewedUserId = new URLSearchParams(window.location.search).get('user') || '';
 
     useEffect(() => {
         const controller = new AbortController();
@@ -79,10 +82,15 @@ function App() {
             <div className="app-layout">
               <Navbar></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage ? ' content-window-settings' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
+              : isUserViewPage ? (
+                user && ['member', 'admin'].includes(user.role)
+                    ? <UserView key={viewedUserId} userId={viewedUserId} />
+                    : <p className="shul-context" role="alert">Only signed-in members and administrators can view user profiles.</p>
+              )
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your shul is not available yet.</p>
               : isShulSettingsPage ? (

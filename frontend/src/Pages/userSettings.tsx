@@ -66,18 +66,18 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
     }
 
     const profileFields = [
-        { label: 'Title', value: user.title },
-        { label: 'Full Name', value: `${user.firstName} ${user.lastName}`.trim() },
+        { label: 'Full Name', value: [user.title, user.firstName, user.lastName].filter(Boolean).join(' ') },
         { label: 'Hebrew Name', value: user.hebrewName },
         { label: 'Email', value: user.email },
         { label: 'Phone', value: user.phone },
         { label: 'Shul', value: shul.name },
+        ...(user.role === 'admin' ? [{ label: 'Role', value: 'Admin' }] : []),
     ];
     return (
         <main className="shul-admin-page user-page">
             <header className="settings-page-header">
                 <div>
-                    <span className="settings-eyebrow">USER MANAGEMENT</span>
+                    <span className="settings-eyebrow">PROFILE MANAGEMENT</span>
                     <h1>My Preferences</h1>
                     <p>Manage your profile and personal preferences.</p>
                 </div>
@@ -95,7 +95,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                         </div>
                         <dl className="settings-contact-grid user-profile-fields">
                             {profileFields.map(field => (
-                                <div key={field.label}>
+                                <div key={field.label} className={field.label === 'Hebrew Name' && user.role !== 'admin' ? 'user-profile-hebrew-name' : undefined}>
                                     <dt className="settings-contact-label">{field.label}</dt>
                                     <dd>{field.value || '-'}</dd>
                                 </div>
