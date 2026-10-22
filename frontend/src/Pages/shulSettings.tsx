@@ -219,8 +219,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     }, [hasUnsavedChanges]);
 
     const aliyahLabels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
+    const readingDates = new Map(schedule.map(reading => [readingKey(reading), reading.gregDate]));
     const readingAdjustmentChangeLog = readingChanges.map(change =>
-        `${change.locked ? 'Lock' : 'Unlock'} ${change.desc} (${change.dateString})${change.aliyah === undefined ? '' : ` — ${aliyahLabels[change.aliyah - 1]}`}.`);
+        `${change.locked ? 'Lock' : 'Unlock'} ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString})${change.aliyah === undefined ? '' : ` — ${aliyahLabels[change.aliyah - 1]}`}.`);
 
     for (const change of occasionChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
@@ -228,11 +229,11 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         const previousOrder = before.filter(label => change.manualOccasions.includes(label));
         const nextOrder = change.manualOccasions.filter(label => before.includes(label));
         if (JSON.stringify(previousOrder) !== JSON.stringify(nextOrder))
-            readingAdjustmentChangeLog.push(`Reorder manually added occasions for ${change.desc} (${change.dateString}).`);
+            readingAdjustmentChangeLog.push(`Reorder manually added occasions for ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
         for (const label of change.manualOccasions.filter(label => !before.includes(label)))
-            readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${change.dateString}).`);
+            readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
         for (const label of before.filter(label => !change.manualOccasions.includes(label)))
-            readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${change.dateString}).`);
+            readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
     }
 
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);

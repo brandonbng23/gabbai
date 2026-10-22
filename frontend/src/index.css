@@ -2906,6 +2906,9 @@ input[type="number"] {
     flex-direction: row;
     margin-left: 25px;
     padding-bottom: 15px;
+
+    font-size: 15px;
+    color: #d2d0d9;
 }
 
 .occasion-input-tag {
