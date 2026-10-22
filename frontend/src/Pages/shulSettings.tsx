@@ -22,6 +22,15 @@ function SubmissionMessage({ message }: { message: SubmissionFeedback | null }) 
     );
 }
 
+function SettingsNoResults() {
+    return (
+        <div className="settings-no-results" role="status">
+            <h3>Oy Gevalt!</h3>
+            <p>No Results. Try a Different Search Phrase</p>
+        </div>
+    );
+}
+
 function FieldReset({ label, changed, onReset }: { label: string; changed: boolean; onReset: () => void }) {
     return (
         <div className="settings-field-reset-row">
@@ -93,7 +102,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [nameClick, setNameClick] = useState<boolean>(false);
 
     function searchUsers(usersToSort: ShulUser[]): ShulUser[] {
-        return usersToSort.filter((u: ShulUser) => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch))
+        return usersToSort.filter((u: ShulUser) => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.trim().toLowerCase()))
     }
 
     function sortUsers(): ShulUser[] {
@@ -201,6 +210,10 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
     const [search, setSearch] = useState<string>("");
+    const matchingReadings = schedule.filter(reading => reading.searchTerms.some(term =>
+        term.toLowerCase().includes(search.trim().toLowerCase())));
+    const matchingUsers = searchUsers(sortUsers());
+
 
     const busy = saving || restoring !== null;
 
@@ -330,7 +343,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     async function updateShulInfo(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (busy) return;
+        if (busy || contactChangeLog.length === 0) return;
         setActiveForm('info');
         setSaving(true);
         showFeedback('info', 'progress', 'Publishing changes…');
@@ -366,7 +379,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     async function updateShulSchedule(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (busy) return;
+        if (busy || scheduleChangeLog.length === 0) return;
         setActiveForm('schedule');
         setSaving(true);
         showFeedback('schedule', 'progress', 'Saving schedule settings…');
@@ -492,8 +505,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                     <div className="settings-footer-actions">
                                         <span>Changes appear after publishing.</span>
                                         <div className="settings-footer-buttons">
-                                            <button className="settings-reset-btn" type="button" onClick={resetContactChanges} disabled={contactChangeLog.length === 0}>Reset changes</button>
-                                            <button className="submit-btn" type="submit">{saving && activeForm === 'info' ? 'Publishing…' : 'Publish Changes'}</button>
+                                            <button className="settings-reset-btn" type="button" onClick={resetContactChanges} disabled={busy || contactChangeLog.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={busy || contactChangeLog.length === 0}>{saving && activeForm === 'info' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
                                         <SubmissionMessage message={messages.info} />
                                     </div>
@@ -525,9 +538,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                 </div>
 
                                 <div className="results">
-                                        {search ? schedule
-                                            .filter((reading) => reading.searchTerms.some((term) =>
-                                                term.toLowerCase().includes(search.trim().toLowerCase())))
+                                        {search.trim() && matchingReadings.length === 0 && <SettingsNoResults />}
+                                        {search ? matchingReadings
                                             .map((reading) => (
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
@@ -559,8 +571,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                     <div className="settings-footer-actions">
                                         <span>Changes take effect after publishing.</span>
                                         <div className="settings-footer-buttons">
-                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={readingChanges.length === 0}>Reset changes</button>
-                                            <button className="submit-btn" type="submit" disabled={readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
+                                            <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={busy || readingChanges.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={busy || readingChanges.length === 0}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
                                         <SubmissionMessage message={messages.readings} />
                                     </div>
@@ -863,7 +875,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                     <span>Annual Maftir</span>
                                                 </label>
 
-                                                <label className={!triMaftir && !tradMaftir ? 'is-slected' : ''}>
+                                                <label className={!triMaftir && !tradMaftir ? 'is-selected' : ''}>
                                                     <input
                                                         name="maftir"
                                                         type="radio"
@@ -920,8 +932,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                     <div className="settings-footer-actions">
                                         <span>Changes take effect after publishing.</span>
                                         <div className="settings-footer-buttons">
-                                            <button className="settings-reset-btn" type="button" onClick={resetScheduleChanges} disabled={scheduleChangeLog.length === 0}>Reset changes</button>
-                                            <button className="submit-btn" type="submit">{saving && activeForm === 'schedule' ? 'Saving…' : 'Publish Changes'}</button>
+                                            <button className="settings-reset-btn" type="button" onClick={resetScheduleChanges} disabled={busy || scheduleChangeLog.length === 0}>Reset changes</button>
+                                            <button className="submit-btn" type="submit" disabled={busy || scheduleChangeLog.length === 0}>{saving && activeForm === 'schedule' ? 'Saving…' : 'Publish Changes'}</button>
                                         </div>
                                         <SubmissionMessage message={messages.schedule} />
                                     </div>
@@ -936,7 +948,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         </div>
                         <div className="settings-users" aria-busy={usersLoading}>
                             <div className="user-search">
-                                <label htmlFor="user-search">Search users</label>
+                                <label htmlFor="user-search">Search Users by Name</label>
                                 <div className="reading-search-control">
                                 <input
                                     id="user-search"
@@ -952,7 +964,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
                             <div className="user-list">
                                 
-                                {searchUsers(sortUsers()).map((u: ShulUser, index) => {
+                                {!usersLoading && !usersError && userSearch.trim() && matchingUsers.length === 0 && <SettingsNoResults />}
+                                {matchingUsers.map((u: ShulUser, index) => {
                                     return index % 10 === 0 ? <>
                                         {index !== 0 ? <br></br> : null}
                                         <div className="list-heading">
@@ -992,6 +1005,17 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                     </> : <> <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick} ></UserCard> </>;
                                 })}
                                     
+                            </div>
+                            <div className="settings-form-footer">
+                                <ChangeLog changes={[]} />
+                                <div className="settings-footer-actions">
+                                    <span>Changes take effect after publishing.</span>
+                                    <div className="settings-footer-buttons">
+                                        <button className="settings-reset-btn" type="button" disabled>Reset changes</button>
+                                        <button className="submit-btn" type="button" disabled>Publish Changes</button>
+                                    </div>
+                                    <SubmissionMessage message={null} />
+                                </div>
                             </div>
                         </div>
                     </section>
