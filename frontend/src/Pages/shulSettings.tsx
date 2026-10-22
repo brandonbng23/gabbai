@@ -12,6 +12,7 @@ import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingRead
 import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
+import InfoIcon  from "../Components/infoTip.tsx"
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -1099,7 +1100,7 @@ export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading 
                                     return index % 10 === 0 ? <>
                                         {index !== 0 ? <br></br> : null}
                                         <div className="list-heading">
-                                            <div>
+                                            <div className="user-name-heading">
                                                 <button
                                                     onClick={() => {
                                                         setUserSort("name")
@@ -1109,7 +1110,22 @@ export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading 
                                                     style={{ color: "#bdbcc3", fontWeight: "800"}}
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M130.4 268.2C135.4 280.2 147 288 160 288L480 288C492.9 288 504.6 280.2 509.6 268.2C514.6 256.2 511.8 242.5 502.7 233.3L342.7 73.3C330.2 60.8 309.9 60.8 297.4 73.3L137.4 233.3C128.2 242.5 125.5 256.2 130.5 268.2zM130.4 371.7C125.4 383.7 128.2 397.4 137.3 406.6L297.3 566.6C309.8 579.1 330.1 579.1 342.6 566.6L502.6 406.6C511.8 397.4 514.5 383.7 509.5 371.7C504.5 359.7 492.9 352 480 352L160 352C147.1 352 135.4 359.8 130.4 371.8z"/></svg>
-                                                        Name</button>
+                                                        Name
+                                                        </button>
+                                                <InfoIcon message="Click on a name to toggle name formatting"
+                                                    iconStyle={{ width: '14px', height: '14px', fontSize: '9px' }}
+                                                    style={{
+                                                        width: '220px',
+                                                        left: '50%',
+                                                        right: 'auto',
+                                                        top: 'calc(100% + 10px)',
+                                                        transform: 'translateX(-50%)',
+                                                        backgroundColor: 'var(--settings-surface)',
+                                                        color: '#f6f5f7',
+                                                        border: '1px solid var(--settings-border)',
+                                                        fontSize: '13px',
+                                                        zIndex: 350,
+                                                    }} />
                                             </div>
                                             <div>
                                                 <button

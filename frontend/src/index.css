@@ -3303,6 +3303,16 @@ input[type="number"] {
     gap: 4px;
 }
 
+.user-name-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.user-name-heading .field-btn {
+    width: auto;
+}
+
 .field-btn svg {
     display: block;
     flex-shrink: 0;
