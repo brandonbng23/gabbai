@@ -85,13 +85,39 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     const members = users.filter(user => user.role === 'member');
     const admins = users.filter(user => user.role === 'admin');
-    const [userSort, setUserSort] = useState<string>("");
+    const [userSort, setUserSort] = useState<'name' | 'email' | 'role'>("name");
+    const [nameSortClicks, setNameSortClicks] = useState<number>(0);
+    const [emailSortClicks, setEmailSortClicks] = useState<number>(0);
+    const [roleSortClicks, setRoleSortClicks] = useState<number>(0);
     const [nameClick, setNameClick] = useState<boolean>(false);
 
-    /*
-    function sortAlphaLastName(): ShulUser[] {
-        const names = members.lastName.
-    } */
+    function sortUsers(): ShulUser[] {
+        if (userSort === "name") {
+            if (nameSortClicks % 2 === 1) {
+                return users.sort((a, b) => b.lastName.localeCompare(a.lastName));
+            } 
+        } else if (userSort === "email") {
+            if (emailSortClicks % 2 === 0) {
+                return users.sort((a, b) => a.email.localeCompare(b.email));
+            } else {
+                return users.sort((a, b) => b.email.localeCompare(a.email));
+            }
+        } else if (userSort === "role") {
+            if (roleSortClicks % 2 === 0) {
+                return [
+                    ...users.filter((u: ShulUser) => u.role === "admin"),
+                    ...users.filter((u: ShulUser) => u.role === "member")
+                ]
+            } else {
+                return [
+                    ...users.filter((u: ShulUser) => u.role === "member"),
+                    ...users.filter((u: ShulUser) => u.role === "admin")
+                ]
+            }
+        } 
+
+        return users.sort((a, b) => a.lastName.localeCompare(b.lastName));
+    }
 
     const [name, setName] = useState<string>(shul.name);
     const [address, setAddress] = useState<string>(shul.address);
@@ -906,14 +932,40 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         <div className="settings-users" aria-busy={usersLoading}>
                             <div className="admin-list">
                                 
-                                {users.map((u: ShulUser, index) => {
+                                {sortUsers().map((u: ShulUser, index) => {
                                     return index % 10 === 0 ? <>
                                         {index !== 0 ? <br></br> : null}
                                         <div className="list-heading">
-                                            <div style={{ width: "30%"}}>Member Name</div>
-                                            <div style={{ width: "35%"}}>Email</div>
-                                            <div style={{width: "16%"}}>Role</div>
-                                            <div style={{width: "14%"}}>Actions</div>
+                                            <div>
+                                                <button
+                                                    onClick={() => {
+                                                        setUserSort("name")
+                                                        setNameSortClicks(nameSortClicks+1)
+                                                    }}
+                                                    className="field-btn"
+                                                    style={{ color: "#bdbcc3", fontWeight: "800"}}
+                                                    >Name</button>
+                                            </div>
+                                            <div>
+                                                <button
+                                                    onClick={() => {
+                                                        setUserSort("email")
+                                                        setEmailSortClicks(emailSortClicks+1)}}
+                                                    className="field-btn"
+                                                    style={{ color: "#bdbcc3", fontWeight: "800"}}
+                                                    >Email</button>
+                                            </div>
+                                            <div>
+                                                <button
+                                                    onClick={() => {
+                                                        setUserSort("role")
+                                                        setRoleSortClicks(roleSortClicks+1)
+                                                    }}
+                                                    className="field-btn"
+                                                    style={{ color: "#bdbcc3", fontWeight: "800"}}
+                                                    >Role</button>
+                                            </div>
+                                            <div>Actions</div>
                                         </div>
                                         <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
                                         <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick}></UserCard>

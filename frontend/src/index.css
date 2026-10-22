@@ -2949,9 +2949,21 @@ input[type="number"] {
     height: 25px;
 }
 
+.list-heading,
+.user-card,
+.user-card-hover {
+    display: grid;
+    grid-template-columns: minmax(0, 30fr) minmax(0, 35fr) minmax(0, 16fr) minmax(0, 19fr);
+}
+
+.list-heading > div,
+.user-card > div,
+.user-card-hover > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .user-card, .user-card-hover {
-    display: flex;
-    flex-direction: row;
     align-items: center;
     height: 40px;
 
@@ -2966,8 +2978,6 @@ input[type="number"] {
 }
 
 .list-heading {
-    display: flex;
-    flex-direction: row;
     align-items: center;
     height: 20px;
 
@@ -2978,10 +2988,22 @@ input[type="number"] {
     color: #bdbcc3;
 }
 
+.field-btn {
+    padding: 0;
+    color: white;
+    background: none;
+    border: none;
+    width: 100%;
+    height: 100%;
+    text-align: left;
+}
+
 .action-icons {
     display: flex;
     flex-direction: row;
     gap: 35px;
+    justify-content: flex-start;
+    max-width: 185px;
 
     width: 100%;
     height: 100%;
@@ -2989,7 +3011,9 @@ input[type="number"] {
 
 .action-icons button {
     width: 20px;
-    height: 20x;
+    height: 20px;
+    padding: 0;
+    flex-shrink: 0;
 
     border: none;
     background: none;
