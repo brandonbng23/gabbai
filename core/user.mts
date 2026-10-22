@@ -26,6 +26,7 @@ export class User implements UserData {
     role: UserData['role'];
     title: string;
     settings: Record<string, unknown>;
+    assignedReadings: UserData['assignedReadings'];
 
     get firstName(): string { return this.firstN; }
     get lastName(): string { return this.lastN; }
@@ -38,6 +39,7 @@ export class User implements UserData {
         this.role = profile.role ?? 'member';
         this.title = profile.title ?? '';
         this.settings = profile.settings ?? {};
+        this.assignedReadings = profile.assignedReadings ?? [];
         this.firstN = firstN;
         this.lastN = lastN;
         this.email = email;
@@ -50,7 +52,7 @@ export class User implements UserData {
             id: this.id, shulId: this.shulId,
             firstName: this.firstName, lastName: this.lastName,
             hebrewName: this.hebrewName, email: this.email, phone: this.phone,
-            role: this.role, title: this.title, settings: this.settings,
+            role: this.role, title: this.title, settings: this.settings, assignedReadings: this.assignedReadings,
         };
     }
 

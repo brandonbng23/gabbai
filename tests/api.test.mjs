@@ -401,7 +401,7 @@ test('admin reader assignments publish atomically, respect locks and membership,
     const response = await request(path, patchShul({ changes: [assignment, { ...key, manualOccasions: ['Birthday'] }] }));
     assert.equal(response.status, 200);
     const [updated] = await response.json();
-    assert.deepEqual(updated.readers[7], { id: reader.id, firstName: 'Josh', lastName: 'Cohen', email: reader.email, role: 'member', title: 'Rabbi' });
+    assert.deepEqual(updated.readers[7], { id: reader.id, firstName: 'Josh', lastName: 'Cohen', email: reader.email, role: 'member', title: 'Rabbi', assignedReadings: [{ ...key, aliyah: 8 }] });
     assert.equal(updated.readers[0], null);
     assert.equal((await load()).readers[7].id, reader.id);
     assert.deepEqual(db.listReadingReaders(other.id), []);
@@ -546,7 +546,7 @@ test('users can edit only their own profile fields and failed edits preserve sav
     const { request, shul, user, db } = await setup(t, true);
     const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Member', email: 'taken@example.com' });
     db.setUserSettings(user.id, { language: 'he' });
-    const edits = { title: 'Chazzan', firstName: ' Updated ', lastName: ' Reader ', hebrewName: 'Yehoshua', email: 'UPDATED@EXAMPLE.COM', phone: '(202) 555-0101' };
+    const edits = { title: 'Chazan', firstName: ' Updated ', lastName: ' Reader ', hebrewName: 'Yehoshua', email: 'UPDATED@EXAMPLE.COM', phone: '(202) 555-0101' };
     const response = await request('/api/me', patchShul(edits));
     assert.equal(response.status, 200);
     const updated = await response.json();
@@ -554,7 +554,7 @@ test('users can edit only their own profile fields and failed edits preserve sav
     assert.equal(updated.firstName, 'Updated');
     assert.equal(updated.lastName, 'Reader');
     assert.equal(updated.email, 'updated@example.com');
-    assert.equal(updated.title, 'Chazzan');
+    assert.equal(updated.title, 'Chazan');
     assert.equal(updated.phone, edits.phone);
     assert.equal(updated.hebrewName, edits.hebrewName);
     assert.equal(updated.role, 'member');
@@ -659,4 +659,25 @@ test('profile and shul form saves commit pictures and fields atomically', async 
     response = await request(path, patchShul({ picture: null }));
     assert.equal((await response.json()).pictureUrl, undefined);
     assert.equal(db.getPicture('shuls', shul.id), null);
+});
+
+test('user reading lists are available to the current user and owning admin without nested profiles', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
+    const registration = await request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(assignment));
+    assert.equal(registration.status, 201);
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, [assignment]);
+    assert.equal((await request('/api/me', patchShul({ assignedReadings: [] }))).status, 400);
+    db.updateUser(user.id, { role: 'admin' });
+    const users = await (await request(`/api/shuls/${shul.id}/users`)).json();
+    assert.deepEqual(users.find(item => item.id === user.id).assignedReadings, [assignment]);
+    assert.ok(users.every(item => !('settings' in item)));
+    const schedule = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reader = schedule.find(item => item.desc === reading.desc).readers[0];
+    assert.deepEqual(reader.assignedReadings, [assignment]);
+    assert.ok(reader.assignedReadings.every(item => !('reader' in item)), 'Reading summaries must not contain nested users');
+    db.setReadingLocks(shul.id, [{ ...assignment, readerId: null }]);
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
 });

@@ -256,3 +256,14 @@ The user and shul profile PATCH endpoints accept an optional `picture` value:
 a PNG data URL to replace the image, or `null` to remove it. Picture changes and
 profile fields commit in one transaction, so failed saves retain the old image
 and fields. Missing or unreadable pictures display initials.
+
+Version 9 indexes assignments by user. User profiles and the administrator's
+shul-user list expose `assignedReadings`, an array of `{ dateString, desc, aliyah }`
+ordered by date, reading name, and aliyah number. The list is derived directly
+from `reading_readers`, scoped to the user's current shul. Registration,
+reassignment, and removal update it automatically; users without assignments
+receive an empty array. Stored assignments to temporarily hidden aliyot remain
+associated with the user. This list cannot be edited through profile updates.
+The array is always defined, including on schedule reader summaries and core
+user profiles. Entries contain only reading identifiers, never nested user
+profiles, so serialization stays nonrecursive.

@@ -403,3 +403,38 @@ test('user and shul picture bytes survive reopening and can be removed independe
         assert.ok(db.getShul(shul.id).pictureUrl);
     } finally { db.close(); }
 });
+
+test('user reading associations follow assignments, survive reopening and stay within current membership', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-user-readings-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let reader;
+    let replacement;
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const maftir = { ...first, aliyah: 8 };
+    const later = { dateString: '2026-10-17', desc: 'Noach', aliyah: 9 };
+    try {
+        shul = db.createShul({ name: 'User readings', settings: { hebYear: 5787 } });
+        reader = db.createUser({ ...guest(shul.id), role: 'guest' });
+        replacement = db.createUser({ ...guest(shul.id), email: 'replacement@example.com' });
+        assert.deepEqual(reader.assignedReadings, []);
+        db.setReadingLocks(shul.id, [later, maftir, first].map(reading => ({ ...reading, readerId: reader.id })));
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.getUserByEmail(reader.email).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.listShulUsers(shul.id).find(user => user.id === reader.id).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, []);
+        assert.throws(() => db.updateUser(reader.id, { assignedReadings: [] }), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [first, maftir, later]);
+        db.setReadingLocks(shul.id, [{ ...maftir, readerId: replacement.id }, { ...first, readerId: null }]);
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [later]);
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, [maftir]);
+        const other = db.createShul({ name: 'New membership', settings: { hebYear: 5787 } });
+        db.updateUser(replacement.id, { shulId: other.id });
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, []);
+    } finally { db.close(); }
+});

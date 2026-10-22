@@ -92,8 +92,8 @@ export class ReadingSet {
         return this.aliyot.map((a: Aliyah) => {
             const reader = a.getReader();
             if (!reader) return null;
-            const { id, firstName, lastName, email, role, title } = reader;
-            return { id, firstName, lastName, email, role, title };
+            const { id, firstName, lastName, email, role, title, assignedReadings } = reader;
+            return { id, firstName, lastName, email, role, title, assignedReadings };
         });
     }
 

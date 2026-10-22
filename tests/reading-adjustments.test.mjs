@@ -75,7 +75,7 @@ test('manual occasion reordering preserves labels and publishes only a changed o
 });
 
 test('reader drafts assign original slots, replace and revert without mutating saved assignments', () => {
-    const reader = { id: 'one', firstName: 'Josh', lastName: 'Cohen', email: 'one@example.com', role: 'member', title: 'Mr.' };
+    const reader = { id: 'one', firstName: 'Josh', lastName: 'Cohen', email: 'one@example.com', role: 'member', title: 'Mr.', assignedReadings: [] };
     const other = { ...reader, id: 'two', firstName: 'David' };
     let draft = stageReadingReader({}, reading, 8, reader);
     let preview = previewReadingLocks(reading, {}, {}, draft);

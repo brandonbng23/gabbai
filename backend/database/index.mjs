@@ -53,6 +53,7 @@ function decodeUser(row) {
     return { id: row.id, shulId: row.shul_id, firstName: row.first_name, lastName: row.last_name,
         hebrewName: row.hebrew_name, email: row.email, phone: row.phone, role: row.role, title: row.title,
         ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}),
+        assignedReadings: JSON.parse(row.assigned_readings_json ?? '[]'),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
@@ -81,7 +82,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 8) throw new Error('Database schema is newer than this application');
+            if (version > 9) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -116,6 +117,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/008_profile_pictures.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(8);
             }
+            if (version < 9) {
+                db.exec(readFileSync(new URL('./migrations/009_user_readings.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(9);
+            }
         });
         if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
@@ -124,7 +129,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
     }
 
     const shulQuery = 'SELECT s.*, p.settings_json, pic.version AS picture_version FROM shuls s JOIN shul_settings p ON p.shul_id = s.id LEFT JOIN shul_pictures pic ON pic.shul_id = s.id';
-    const userQuery = 'SELECT u.*, p.settings_json, pic.version AS picture_version FROM users u JOIN user_settings p ON p.user_id = u.id LEFT JOIN user_pictures pic ON pic.user_id = u.id';
+    const userQuery = `SELECT u.*, p.settings_json, pic.version AS picture_version,
+        (SELECT json_group_array(json_object('dateString', reading_date, 'desc', reading_name, 'aliyah', aliyah))
+            FROM (SELECT reading_date, reading_name, aliyah FROM reading_readers
+                WHERE user_id = u.id AND shul_id = u.shul_id
+                ORDER BY reading_date, reading_name, aliyah)) AS assigned_readings_json
+        FROM users u JOIN user_settings p ON p.user_id = u.id LEFT JOIN user_pictures pic ON pic.user_id = u.id`;
     const getShul = id => decodeShul(db.prepare(`${shulQuery} WHERE s.id = ?`).get(id));
     const getUser = id => decodeUser(db.prepare(`${userQuery} WHERE u.id = ?`).get(id));
     function requireRecord(record, name) {
@@ -241,12 +251,20 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyahCount: row.aliyah_count }));
         },
         listReadingReaders(shulId) {
-            return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title, pic.version AS picture_version
-                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id LEFT JOIN user_pictures pic ON pic.user_id = u.id WHERE r.shul_id = ?`)
-                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah,
-                    reader: { id: row.id, firstName: row.first_name, lastName: row.last_name,
-                        email: row.email, role: row.role, title: row.title,
-                        ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}) } }));
+            const rows = db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title, pic.version AS picture_version
+                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id
+                LEFT JOIN user_pictures pic ON pic.user_id = u.id WHERE r.shul_id = ?
+                ORDER BY r.reading_date, r.reading_name, r.aliyah`).all(shulId);
+            const assignedByUser = new Map();
+            for (const row of rows) {
+                if (!assignedByUser.has(row.id)) assignedByUser.set(row.id, []);
+                assignedByUser.get(row.id).push({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah });
+            }
+            return rows.map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah,
+                reader: { id: row.id, firstName: row.first_name, lastName: row.last_name,
+                    email: row.email, role: row.role, title: row.title,
+                    assignedReadings: assignedByUser.get(row.id) ?? [],
+                    ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}) } }));
         },
         listReadingOccasions(shulId) {
             return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')

@@ -1,3 +1,9 @@
+export interface UserReading {
+    dateString: string;
+    desc: string;
+    aliyah: number;
+}
+
 export interface User {
     id: string;
     shulId: string;
@@ -10,6 +16,8 @@ export interface User {
     title: string;
     pictureUrl?: string;
     settings: Record<string, unknown>;
+    // Derived from saved assignments; never includes nested reader profiles.
+    assignedReadings: UserReading[];
 }
 
-export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl'>;
+export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl' | 'assignedReadings'>;

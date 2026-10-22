@@ -85,7 +85,7 @@ export async function updateShulSettings(id: string, settings: SettingsPatch): P
     return response.json();
 }
 
-export type { User, ShulUser } from '../../interfaces/user.mts';
+export type { User, ShulUser, UserReading } from '../../interfaces/user.mts';
 
 export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
 

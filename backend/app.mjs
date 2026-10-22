@@ -110,7 +110,7 @@ export function createApp(database, {
         }
         if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
         return res.json(app.locals.database.listShulUsers(req.params.id).map(
-            ({ id, firstName, lastName, email, role, title, pictureUrl }) => ({ id, firstName, lastName, email, role, title, ...(pictureUrl ? { pictureUrl } : {}) })
+            ({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings }) => ({ id, firstName, lastName, email, role, title, assignedReadings, ...(pictureUrl ? { pictureUrl } : {}) })
         ));
     });
 
