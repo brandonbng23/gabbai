@@ -121,7 +121,7 @@ export class Aliyah {
         this.flagged = false;
     }
 
-    /* ??? Mutates reader field to reset to field default string "available" */
+    /* Clears the assigned reader. */
     removeReader(): void {
         this.reader?.removeReading(this);
         this.reader = null;

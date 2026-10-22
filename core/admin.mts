@@ -16,7 +16,7 @@ export class Admin extends User {
     key: string;
 
     constructor(firstN: string, lastN: string, email: string, password: string, title: string, shul: Shul, key: string) {
-        super(firstN, lastN, email, password);
+        super(firstN, lastN, email, password, { role: 'admin', title });
         this.title = title;
         this.shul = shul;
         this.key = key;

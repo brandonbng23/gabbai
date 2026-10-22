@@ -2975,6 +2975,7 @@ input[type="number"] {
     width: 100%;
 
     font-weight: 800;
+    color: #bdbcc3;
 }
 
 .action-icons {
@@ -2998,6 +2999,10 @@ input[type="number"] {
     width: 20px;
     height: 20px;
     fill: white;
+}
+
+.action-icons button:hover svg {
+    fill: #1a2a3e;
 }
 
 .footer {

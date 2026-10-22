@@ -1,3 +1,4 @@
+import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
@@ -63,18 +64,7 @@ export async function updateShulSettings(id: string, settings: SettingsPatch): P
     return response.json();
 }
 
-export interface User {
-    id: string;
-    shulId: string;
-    firstName: string;
-    lastName: string;
-    hebrewName: string;
-    email: string;
-    phone: string;
-    role: 'member' | 'admin';
-    title: string;
-    settings: Record<string, unknown>;
-}
+export type { User, ShulUser } from '../../interfaces/user.mts';
 
 export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
 
@@ -121,7 +111,6 @@ export async function getCurrentUser(signal: AbortSignal): Promise<User | null> 
 }
 
 
-export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title'>;
 
 export async function getShulUsers(id: string, signal: AbortSignal): Promise<ShulUser[]> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/users`, { signal, cache: 'no-store' });

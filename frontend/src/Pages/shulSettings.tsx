@@ -85,6 +85,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
 
     const members = users.filter(user => user.role === 'member');
     const admins = users.filter(user => user.role === 'admin');
+    const [userSort, setUserSort] = useState<string>("");
 
     const [name, setName] = useState<string>(shul.name);
     const [address, setAddress] = useState<string>(shul.address);
@@ -898,18 +899,21 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         </div>
                         <div className="settings-users" aria-busy={usersLoading}>
                             <div className="admin-list">
-                                <div className="list-heading">
-                                    <div style={{ width: "30%"}}>Member Name</div>
-                                    <div style={{ width: "35%"}}>Email</div>
-                                    <div style={{width: "15%"}}>Role</div>
-                                    <div style={{width: "15%"}}>Actions</div>
-                                </div>
-                                <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
-                                {admins.map((u: ShulUser) => <UserCard user={u}></UserCard>)}
-                            </div>
-
-                            <div className="member-list">
-                                {members.map((u: ShulUser) => <UserCard user={u}></UserCard>)}
+                                
+                                {users.map((u: ShulUser, index) => {
+                                    return index % 10 === 0 ? <>
+                                        {index !== 0 ? <br></br> : null}
+                                        <div className="list-heading">
+                                            <div style={{ width: "30%"}}>Member Name</div>
+                                            <div style={{ width: "35%"}}>Email</div>
+                                            <div style={{width: "16%"}}>Role</div>
+                                            <div style={{width: "14%"}}>Actions</div>
+                                        </div>
+                                        <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
+                                        <UserCard user={u}></UserCard>
+                                    </> : <> <UserCard user={u}></UserCard> </>;
+                                })}
+                                    
                             </div>
                         </div>
                     </section>

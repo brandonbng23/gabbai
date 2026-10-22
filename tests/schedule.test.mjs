@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { Settings } from '../core/settings.mts';
 import { Schedule } from '../core/schedule.mts';
 import { ReadingSet } from '../core/readingSet.mts';
+import { User } from '../core/user.mts';
 
 const visibleAliyot = reading => reading.psukim.slice(0, 7)
     .filter(verses => verses && verses !== 'null').length;
@@ -114,4 +115,30 @@ test('book categories ignore hidden aliyot and special maftir', () => {
             assert.equal(special.getBook(), 'Genesis');
         }
     }
+});
+
+test('reading data contains user profiles and null slots without credentials or circular references', () => {
+    const schedule = new Schedule(new Settings(5787), 5787);
+    const reading = schedule.getScheduleData()[0];
+    assert.equal(reading.readers.length, 9);
+    assert.ok(reading.readers.every(reader => reader === null));
+    const readings = new ReadingSet('Bereshit', 7, new Settings(5787), [], 5787);
+    const user = new User('Joshua', 'Rosen', 'joshua@example.com', 'private-password', {
+        id: 'user-123', shulId: 'shul-123', title: 'Rabbi',
+    });
+    readings.setReader(8, user);
+    user.addReading(readings.aliyot[7]);
+    const data = JSON.parse(JSON.stringify(readings.getReaderArr()));
+    assert.equal(data.length, 9);
+    assert.equal(data[0], null);
+    assert.equal(data[7].id, 'user-123');
+    assert.equal(data[7].firstName, 'Joshua');
+    assert.equal(data[7].lastName, 'Rosen');
+    assert.equal(data[7].title, 'Rabbi');
+    assert.deepEqual(Object.keys(data[7]).sort(), ['id', 'firstName', 'lastName', 'email', 'role', 'title'].sort());
+    assert.ok(!('password' in data[7]));
+    assert.ok(!('readings' in data[7]));
+    readings.removeReader(8);
+    assert.equal(readings.getReaderArr()[7], null);
+    assert.deepEqual(user.getReadings(), []);
 });

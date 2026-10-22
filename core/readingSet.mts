@@ -1,3 +1,4 @@
+import type { ShulUser } from '../interfaces/user.mts';
 import { Settings } from "./settings.mts"
 import { Aliyah } from "./aliyah.mts";
 import { User } from "./user.mts";
@@ -86,9 +87,14 @@ export class ReadingSet {
         return this.aliyot[a-1].getReader();
     }
 
-    /* Returns array of each aliyah's reader as a string */
-    getReaderArr(): string[] {
-        return this.aliyot.map((a: Aliyah): string => a.getReader()?.nameToString() ?? "");
+    /* Returns serializable assigned user profiles, preserving unassigned slots. */
+    getReaderArr(): (ShulUser | null)[] {
+        return this.aliyot.map((a: Aliyah) => {
+            const reader = a.getReader();
+            if (!reader) return null;
+            const { id, firstName, lastName, email, role, title } = reader;
+            return { id, firstName, lastName, email, role, title };
+        });
     }
 
     /* Assigns (mutates) a reader to argued aliyah

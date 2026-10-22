@@ -1,21 +1,9 @@
 import React, { useState } from "react";
 import InfoIcon from "./infoTip.tsx"
 
-/* Identifcal to ParshaData interface (gabbai/interfaces/parshaData.mts) */
-export interface ParshaObj {
-    id: number;
-    hDate: string;
-    gregDate: string;
-    desc: string;
-    occassions: string[];
-    locked: boolean;
-    lockedArr: boolean[];
-    psukim: string[];
-    book: string;
-    readers: string[];
-    searchTerms: string[];
-    dateString: string;
-}
+export type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
+import type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
+import type { ShulUser } from '../../../interfaces/user.mts';
 
 export interface Aliyah {
     parshaId: number;
@@ -23,7 +11,7 @@ export interface Aliyah {
     psukim: string;
     available: boolean;
     locked: boolean;
-    reader: string;
+    reader: ShulUser | null;
 }
 
 

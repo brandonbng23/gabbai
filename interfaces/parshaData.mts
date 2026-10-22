@@ -1,3 +1,5 @@
+import type { ShulUser } from './user.mts';
+
 export interface ParshaData {
     /* @interface ParshaData: object storing parsha data as an object to be easily returned as JSON */
 
@@ -29,8 +31,8 @@ export interface ParshaData {
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
 
-    /* Array of strings repersenting reads for each aliyah of parsha */
-    readers: string[];
+    /* Assigned users for each aliyah; null means unassigned. */
+    readers: (ShulUser | null)[];
 
     /* Array of strings that should allow this parsha to surface when filtering through parshiyot */
     searchTerms: string[];

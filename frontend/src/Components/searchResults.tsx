@@ -3,7 +3,8 @@ import React, { useState } from "react";
 
 function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void }): React.JSX.Element {
     const [hovered, setHovered] = useState<boolean>(false);
-    const hasReader = props.reader.trim().length > 0;
+    const hasReader = props.reader != null;
+    const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
     const aliyahLabel = (
@@ -28,7 +29,7 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
                                 : <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M416 160C416 124.7 444.7 96 480 96C515.3 96 544 124.7 544 160L544 192C544 209.7 558.3 224 576 224C593.7 224 608 209.7 608 192L608 160C608 89.3 550.7 32 480 32C409.3 32 352 89.3 352 160L352 224L192 224C156.7 224 128 252.7 128 288L128 512C128 547.3 156.7 576 192 576L448 576C483.3 576 512 547.3 512 512L512 288C512 252.7 483.3 224 448 224L416 224L416 160z"/></svg>
                             }
                         </button>
-                        : <svg role="img" aria-label={`Assigned to ${props.reader}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M286 368C384.5 368 464.3 447.8 464.3 546.3C464.3 562.7 451 576 434.6 576L78 576C61.6 576 48.3 562.7 48.3 546.3C48.3 447.8 128.1 368 226.6 368L286 368zM585.7 169.9C593.5 159.2 608.5 156.8 619.2 164.6C629.9 172.4 632.3 187.4 624.5 198.1L522.1 338.9C517.9 344.6 511.4 348.3 504.4 348.7C497.4 349.1 490.4 346.5 485.5 341.4L439.1 293.4C429.9 283.9 430.1 268.7 439.7 259.5C449.2 250.3 464.4 250.6 473.6 260.1L500.1 287.5L585.7 169.8zM256.3 312C190 312 136.3 258.3 136.3 192C136.3 125.7 190 72 256.3 72C322.6 72 376.3 125.7 376.3 192C376.3 258.3 322.6 312 256.3 312z"/></svg>
+                        : <svg role="img" aria-label={`Assigned to ${readerName}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M286 368C384.5 368 464.3 447.8 464.3 546.3C464.3 562.7 451 576 434.6 576L78 576C61.6 576 48.3 562.7 48.3 546.3C48.3 447.8 128.1 368 226.6 368L286 368zM585.7 169.9C593.5 159.2 608.5 156.8 619.2 164.6C629.9 172.4 632.3 187.4 624.5 198.1L522.1 338.9C517.9 344.6 511.4 348.3 504.4 348.7C497.4 349.1 490.4 346.5 485.5 341.4L439.1 293.4C429.9 283.9 430.1 268.7 439.7 259.5C449.2 250.3 464.4 250.6 473.6 260.1L500.1 287.5L585.7 169.8zM256.3 312C190 312 136.3 258.3 136.3 192C136.3 125.7 190 72 256.3 72C322.6 72 376.3 125.7 376.3 192C376.3 258.3 322.6 312 256.3 312z"/></svg>
                     }
                 </div>
             </div>
@@ -36,7 +37,7 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
             <div style={{ width: "15%" }}>{aliyahLabel}</div>
 
             <div style={{ width: "15%" }}>
-                {hasReader ? props.reader : props.locked ? "Locked" : "Available"}
+                {hasReader ? readerName : props.locked ? "Locked" : "Available"}
             </div>
 
             <div style={{ width: "25%" }}>
@@ -91,12 +92,12 @@ export function SearchResult({ reading, disabled, onLockChange }: {
                             </div>
 
                             <span className="result-readers">
-                                <span className="result-available-total">{reading.readers.filter((r: string, index) => !r && Boolean(reading.psukim[index]) && reading.psukim[index] !== "null" && !locked && !reading.lockedArr[index]).length}</span>
+                                <span className="result-available-total">{reading.readers.filter((r, index) => !r && Boolean(reading.psukim[index]) && reading.psukim[index] !== "null" && !locked && !reading.lockedArr[index]).length}</span>
                                 Aliyot<br></br>available
                             </span>
 
                             <span className="result-readers">
-                                <span className="result-reader-total">{reading.readers.filter((r: string, index) => r !== "" && Boolean(reading.psukim[index]) && reading.psukim[index] !== "null").length}</span>
+                                <span className="result-reader-total">{reading.readers.filter((r, index) => r != null && Boolean(reading.psukim[index]) && reading.psukim[index] !== "null").length}</span>
                                 Registered<br></br>readers
                             </span>
 
