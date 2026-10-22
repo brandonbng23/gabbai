@@ -2994,7 +2994,8 @@ input[type="number"] {
 .user-dropdown .selections > button:hover,
 .user-dropdown .selections > button:focus-visible {
     background: #66b1f2;
-    color: #152b40;
+    color: #ffffff;
+    font-weight: 700;
 }
 
 .user-dropdown .dropdown-empty { display: block; padding: 8px 12px; }
