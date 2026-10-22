@@ -107,14 +107,16 @@ already uses while binding to `0.0.0.0`.
 Each user belongs to exactly one shul through `users.shul_id`. Querying users by
 that field supplies the shul's membership list; no second list needs syncing.
 The user's role is `guest`, `member`, or `admin`, with an optional administrator title.
-Guests use the registration form's first name, last name, Hebrew name, and email
-fields; phone and title remain optional. Guests can be assigned as readers but
+Guest registration requires a predefined title, first name, last name, and email.
+Hebrew name is optional; phone is not collected. Titles are shared between the
+form and backend in `interfaces/titles.mts`. Guests can be assigned as readers but
 have no administrator permissions. Version 7 extends the role constraint while
 preserving existing profiles, settings, and reader assignments. Online registration uses `POST /api/shuls/:id/readings/register` with
 `{ dateString, desc, aliyah }` for the current profile, or those fields plus
-`guest: { firstName, lastName, hebrewName?, email }` for a guest. Guest requests
+`guest: { title, firstName, lastName, hebrewName?, email }` for a guest. Guest requests
 cannot set a user ID or role. Matching guest details can reuse a guest in the
-same shul, without modifying their profile or granting account access. Existing
+same shul without granting account access. Older matching guest profiles with
+no title receive the selected title on their next successful registration. Existing
 member/admin emails and conflicting guest details require the associated profile.
 Availability checks and guest creation/assignment run in one write transaction;
 locked, hidden, missing, or already assigned aliyot cannot be registered.

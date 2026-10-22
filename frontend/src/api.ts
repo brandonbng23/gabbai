@@ -1,3 +1,4 @@
+import type { UserTitle } from '../../interfaces/titles.mts';
 import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
@@ -138,6 +139,7 @@ export async function getShulUsers(id: string, signal: AbortSignal): Promise<Shu
 }
 
 export interface GuestRegistration {
+    title: UserTitle;
     firstName: string;
     lastName: string;
     hebrewName: string;

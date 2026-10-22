@@ -514,26 +514,30 @@ test('anonymous guest registration validates details, reuses matching guests and
     const reading = readings.find(item => item.desc === 'Bereshit');
     const base = { dateString: reading.dateString, desc: reading.desc };
     const post = body => request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(body));
-    const guest = { firstName: 'Visitor', lastName: 'Cohen', hebrewName: 'Yehoshua', email: 'visitor@example.com' };
+    const guest = { title: 'Mr.', firstName: 'Visitor', lastName: 'Cohen', hebrewName: 'Yehoshua', email: 'visitor@example.com' };
     const initialUsers = db.listShulUsers(shul.id).length;
     assert.equal((await post({ ...base, aliyah: 1 })).status, 401);
-    for (const invalid of [{ ...guest, email: 'invalid' }, { ...guest, firstName: '' }, { ...guest, role: 'admin' }, { ...guest, email: user.email }]) {
+    for (const invalid of [{ ...guest, title: undefined }, { ...guest, title: '' }, { ...guest, title: 'Invented' }, { ...guest, firstName: undefined }, { ...guest, lastName: undefined }, { ...guest, email: undefined }, { ...guest, email: 'invalid' }, { ...guest, firstName: '' }, { ...guest, role: 'admin' }, { ...guest, email: user.email }]) {
         assert.ok([400, 409].includes((await post({ ...base, aliyah: 1, guest: invalid })).status));
         assert.equal(db.listShulUsers(shul.id).length, initialUsers);
     }
     assert.equal((await post({ ...base, aliyah: 1, guest })).status, 201);
     const visitor = db.listShulUsers(shul.id).find(item => item.email === guest.email);
     assert.equal(visitor.role, 'guest');
+    assert.equal(visitor.title, 'Mr.');
     assert.equal(visitor.hebrewName, guest.hebrewName);
     assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, email: 'VISITOR@EXAMPLE.COM' } })).status, 201);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 1);
     assert.equal(db.listReadingReaders(shul.id).find(item => item.aliyah === 2).reader.id, visitor.id);
     assert.equal((await post({ ...base, aliyah: 3, guest: { ...guest, firstName: 'Different' } })).status, 409);
     assert.equal(db.getUser(visitor.id).firstName, guest.firstName);
-    const attempts = await Promise.all(['one', 'two'].map(name => post({ ...base, aliyah: 3, guest: { ...guest, email: `${name}@example.com` } })));
+    const attempts = await Promise.all(['one', 'two'].map(name => post({ ...base, aliyah: 3, guest: { ...guest, hebrewName: undefined, email: `${name}@example.com` } })));
     assert.deepEqual(attempts.map(response => response.status).sort(), [201, 409]);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2, 'Failed competing registration creates no guest');
     assert.equal(db.listReadingReaders(shul.id).length, 3);
+    const optionalHebrewReader = db.listReadingReaders(shul.id).find(item => item.aliyah === 3).reader;
+    assert.equal(db.getUser(optionalHebrewReader.id).hebrewName, '');
+    assert.equal(optionalHebrewReader.title, 'Mr.');
     assert.equal((await post({ ...base, aliyah: 4, guest: { ...guest, email: 'hidden@example.com' } })).status, 400);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2);
 });

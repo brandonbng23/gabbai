@@ -39,7 +39,7 @@ export function createApp(database, {
                 return res.status(400).json({ error: 'Choose a reading and aliyah from 1 to 9.' });
             if (!database.getShul(req.params.id)) return res.status(404).json({ error: 'Shul not found' });
             if ('guest' in req.body) {
-                validateKeys(guest, ['firstName', 'lastName', 'hebrewName', 'email'], 'guest');
+                validateKeys(guest, ['title', 'firstName', 'lastName', 'hebrewName', 'email'], 'guest');
                 for (const [key, value] of Object.entries(guest)) {
                     if (typeof value !== 'string' || value.length > 254)
                         throw new TypeError(`${key} must be a string of at most 254 characters`);

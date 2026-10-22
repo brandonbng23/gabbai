@@ -766,42 +766,96 @@ h4 {
     margin-bottom: 25px;
 }
 
+#guest-registration {
+    width: 100%;
+    min-width: 0;
+    margin-top: 16px;
+}
+
+.aliyah-registration {
+    --registration-accent: #66B1F2;
+    --registration-hover: #8bc8ff;
+    --registration-text: #262626;
+    --registration-muted: #858585;
+    --registration-surface: #f5f8fb;
+    color: var(--registration-text);
+    font-family: Inter, sans-serif;
+}
+
+.guest-registration-fields {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
 .registration-names {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 3.5fr));
+    gap: 12px;
 }
 
 .registration-item {
     display: flex;
     flex-direction: column;
-    margin-right: 20px;
+    min-width: 0;
 }
-
-.registration-item input {
-     height: 20px;
-     outline: none;
-     background-color: #f5f8fb;
-     margin-bottom: 15px;
-     border: none;
-     border-bottom: 1px solid black;
-}
-
-.registration-item input.name[type=text] {
-    width: 295px;
-}
-
-.registration-item input.h-name {
-    width: 610px;
-}
-
-.registration-item input[type=email] {
-    width: 610px;
-}
-
 
 .registration-label {
+    color: #676767;
     font-size: 12px;
     padding-bottom: 4px;
+}
+
+.registration-item input,
+.registration-item select {
+    width: 100%;
+    min-width: 0;
+    height: 28px;
+    margin: 0;
+    padding: 2px 4px;
+    border: none;
+    border-bottom: 1px solid black;
+    outline: none;
+    background-color: var(--registration-surface);
+    color: var(--registration-text);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.registration-item select {
+    appearance: none;
+    padding-right: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23676767' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+}
+
+.registration-item input::placeholder,
+.registration-item select:required:invalid {
+    color: var(--registration-muted);
+    opacity: 1;
+}
+
+.registration-item select option {
+    color: var(--registration-text);
+}
+
+.registration-item input:disabled,
+.registration-item select:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.registration-details dl {
+    margin: 0;
+}
+
+.registration-aliyah-label {
+    margin-right: 8px;
 }
 
 .fine-print {
@@ -896,13 +950,12 @@ h4 {
     isolation: isolate;
     margin-top: 15px;
     margin-inline: auto;
-    width: 490px;
+    width: min(490px, 100%);
     height: 37.5px;
 
     text-align: center;
 
-    background: #f5f8fb;
-;
+    background: var(--registration-surface);
     border-radius: 25px;
 }
 
@@ -912,7 +965,7 @@ h4 {
     inset: 0 auto 0 0;
     width: 50%;
     border-radius: inherit;
-    background-color: #66B1F2;
+    background-color: var(--registration-accent);
     pointer-events: none;
     transform: translateX(0);
     transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -936,7 +989,7 @@ h4 {
 
 .register-option,
 .register-option-focus {
-    width: 245px;
+    width: 50%;
     height: 37.5px;
     padding: 3px 7.5px 3px 7.5px;
 
@@ -946,9 +999,9 @@ h4 {
     text-align: center;
 
     font-family: Fustat;
-    font-size: 20px;
+    font-size: clamp(12px, 2.5vw, 20px);
     font-weight: 500;
-    color: #262626;
+    color: var(--registration-text);
     background-color: transparent;
     cursor: pointer;
     transition: color 150ms ease;
@@ -956,6 +1009,16 @@ h4 {
 
 .register-option-focus {
     color: white;
+}
+
+.register-option:focus-visible {
+    outline: 2px solid var(--registration-accent);
+    outline-offset: 3px;
+}
+
+.register-option:disabled {
+    opacity: .5;
+    cursor: not-allowed;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -968,13 +1031,14 @@ h4 {
 .register-switch-info {
     font-family: Inter;
     font-size: 11px;
-    color: grey;
+    color: var(--registration-muted);
 }
 
 .aliyah-registration h1 {
     margin: 24px 0 12px;
     font-size: clamp(26px, 3vw, 36px);
     font-weight: 700;
+    font-family: Fustat, sans-serif;
 }
 
 .aliyah-registration h2 {
@@ -993,7 +1057,7 @@ h4 {
     gap: 16px;
     padding: 20px;
     border-radius: 10px;
-    background: #f5f8fb;
+    background: var(--registration-surface);
     overflow-wrap: anywhere;
 }
 
@@ -1039,7 +1103,9 @@ h4 {
 }
 
 .registration-details h5 {
+    margin: 0;
     font-weight: 700;
+    font-family: Fustat, sans-serif;
 }
 
 .registration-details dt {
@@ -1062,18 +1128,19 @@ h4 {
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background: #66B1F2;
+    background: var(--registration-accent);
     color: white;
+    font: inherit;
     font-weight: 600;
     cursor: pointer;
 }
 
 .registration-confirm:hover:enabled {
-    background: #8bc8ff;
+    background: var(--registration-hover);
 }
 
 .registration-confirm:focus-visible {
-    outline: 3px solid #66B1F2;
+    outline: 2px solid var(--registration-accent);
     outline-offset: 3px;
 }
 

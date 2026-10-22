@@ -1,3 +1,4 @@
+import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -259,17 +260,21 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 validateReading();
                 let id = readerId;
                 if (guest) {
+                    if (!userTitles.includes(guest.title)) throw new TypeError('Choose a title from the list.');
                     const values = userValues({ ...guest, shulId, role: 'guest' });
                     const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
                     const existing = existingId ? getUser(existingId) : null;
                     if (existing) {
                         if (existing.role !== 'guest' || existing.shulId !== shulId || existing.firstName !== values[1]
-                            || existing.lastName !== values[2] || existing.hebrewName !== values[3]) {
+                            || existing.lastName !== values[2] || existing.hebrewName !== values[3]
+                            || (existing.title && existing.title !== values[7])) {
                             const error = new Error('This email already has a profile with different details. Register with that profile or use another email.');
                             error.status = 409;
                             throw error;
                         }
                         id = existing.id;
+                        if (!existing.title) db.prepare("UPDATE users SET title = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+                            .run(values[7], id);
                     } else {
                         id = randomUUID();
                         db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
