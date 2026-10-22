@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { openDatabase } from '../backend/database/index.mjs';
+import { ensureDemoUser } from '../backend/database/demo.mjs';
 import { settingsForSchedule } from '../backend/database/settings.mjs';
 import { getShulSchedule } from '../backend/schedule.mjs';
 import { Schedule } from '../core/schedule.mts';
@@ -18,6 +19,113 @@ function setup(t) {
 }
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
+
+test('reading locks survive reopening and remain tied to their shul, date, and original slot', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-locks-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'locks.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let other;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Locks', settings: { hebYear: 5787 } });
+        other = db.createShul({ name: 'Other', settings: { hebYear: 5787 } });
+        db.setReadingLock(shul.id, { ...key, locked: true });
+        db.setReadingLock(shul.id, { ...key, aliyah: 8, locked: true });
+        db.setReadingLock(shul.id, { ...key, locked: false });
+        for (const invalid of [{ ...key, locked: 1 }, { ...key, locked: true, aliyah: 10 },
+            { ...key, dateString: '2026-02-30', locked: true }]) {
+            assert.throws(() => db.setReadingLock(shul.id, invalid), TypeError);
+        }
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingLocks(other.id), []);
+        const locks = db.listReadingLocks(shul.id);
+        assert.equal(locks.length, 2);
+        assert.equal(locks.find(lock => lock.aliyah === 0).locked, false);
+        assert.equal(locks.find(lock => lock.aliyah === 8).locked, true);
+        assert.ok(locks.every(lock => lock.dateString === key.dateString && lock.desc === key.desc));
+    } finally { db.close(); }
+});
+
+test('first saved shul versions survive edits, reopening, and repeated migrations', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-initial-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'shul.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let initial;
+    try {
+        shul = db.createShul({ name: 'Original Shul', address: 'First address', settings: { hebYear: 5787, a: 3 } });
+        initial = db.getInitialShulVersion(shul.id);
+        assert.equal(initial.source, 'creation');
+        assert.equal(initial.info.name, 'Original Shul');
+        assert.deepEqual(initial.settings, shul.settings);
+        db.updateShul(shul.id, { name: 'New name', address: 'New address' });
+        db.updateShulSettings(shul.id, { a: 7, yontifs: { rh2: false } });
+        assert.deepEqual(db.getInitialShulVersion(shul.id), initial);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getInitialShulVersion(shul.id), initial);
+        assert.equal(db.getShul(shul.id).name, 'New name');
+        assert.equal(db.getInitialShulVersion('missing'), null);
+    } finally { db.close(); }
+});
+
+test('legacy shuls retain their earliest available version without inventing history', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-legacy-initial-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'legacy.sqlite');
+    const legacy = new DatabaseSync(path);
+    const settings = JSON.stringify(new Settings(5787));
+    legacy.exec(`CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY);
+        INSERT INTO schema_migrations VALUES (1);`);
+    legacy.exec(readFileSync(new URL('../backend/database/migrations/001_profiles.sql', import.meta.url), 'utf8'));
+    legacy.prepare('INSERT INTO shuls (id, name) VALUES (?, ?)').run('legacy', 'Earliest available');
+    legacy.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run('legacy', settings);
+    legacy.close();
+    let db = openDatabase(path);
+    let initial;
+    try {
+        initial = db.getInitialShulVersion('legacy');
+        assert.equal(initial.source, 'migration');
+        assert.equal(initial.info.name, 'Earliest available');
+        db.updateShul('legacy', { name: 'Later change' });
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try { assert.deepEqual(db.getInitialShulVersion('legacy'), initial); }
+    finally { db.close(); }
+});
+
+test('demo startup refreshes existing shul information while preserving settings and memberships', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    const expected = db.getShul(demo.shulId);
+    db.updateShul(demo.shulId, {
+        name: 'Old Demo Name', websiteUrl: '', donationUrl: '', email: '', phone: '', address: '',
+    });
+    db.updateShulSettings(demo.shulId, { hebYear: 5788, a: 3, il: true });
+    db.setUserSettings(demo.id, { language: 'he' });
+    db.updateUser(demo.id, { role: 'member' });
+    const savedSettings = db.getShul(demo.shulId).settings;
+    assert.equal(ensureDemoUser(db).id, demo.id);
+    assert.equal(db.getUser(demo.id).role, 'admin');
+    const refreshed = db.getShul(demo.shulId);
+    for (const field of ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address']) {
+        assert.equal(refreshed[field], expected[field]);
+    }
+    assert.deepEqual(refreshed.settings, savedSettings);
+    assert.deepEqual(db.getUser(demo.id).settings, { language: 'he' });
+    assert.equal(db.getUserShul(demo.id).id, demo.shulId);
+    assert.deepEqual(db.getShul(unrelated.id), unrelated);
+    assert.equal(db.listShuls().length, 2);
+    assert.equal(db.listShulUsers(demo.shulId).length, 1);
+    ensureDemoUser(db);
+    assert.deepEqual(db.getShul(demo.shulId), refreshed);
+});
 
 test('profiles, membership, and independent preferences survive reopening and migration reruns', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-database-'));
@@ -126,9 +234,123 @@ test('schedule generation uses the saved shul settings and an optional year over
     const expected = new Settings(5787);
     expected.setIL(true);
     expected.setAliyotCount(3);
-    assert.deepEqual(getShulSchedule(db, shul.id), new Schedule(expected, 5787).getScheduleData());
+    const withoutCountMetadata = readings => readings.map(({ aliyahCount, defaultAliyahCount, aliyahCountOverride, aliyahOptions, ...reading }) => reading);
+    assert.deepEqual(withoutCountMetadata(getShulSchedule(db, shul.id)), new Schedule(expected, 5787).getScheduleData());
     expected.setHebYear(5788);
-    assert.deepEqual(getShulSchedule(db, shul.id, 5788), new Schedule(expected, 5788).getScheduleData());
+    assert.deepEqual(withoutCountMetadata(getShulSchedule(db, shul.id, 5788)), new Schedule(expected, 5788).getScheduleData());
     assert.equal(db.getShul(shul.id).settings.hebYear, 5787);
     assert.throws(() => getShulSchedule(db, 'missing'), /not found/);
+});
+
+test('manual occasions persist across reopening and invalid mixed publications do not partially write', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-occasions-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Occasions', settings: { hebYear: 5787 } });
+        db.setReadingLocks(shul.id, [{ ...key, manualOccasions: ['Birthday'] }]);
+        assert.throws(() => db.setReadingLocks(shul.id, [{ ...key, locked: true },
+            { ...key, manualOccasions: ['Invalid', 'invalid'] }]), TypeError);
+        assert.deepEqual(db.listReadingLocks(shul.id), []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingOccasions(shul.id), [{ ...key, manualOccasions: ['Birthday'] }]);
+    } finally { db.close(); }
+});
+
+test('reader assignments survive reopening and preserve original maftir slot', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-readers-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul, reader;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 8 };
+    try {
+        shul = db.createShul({ name: 'Readers', settings: { hebYear: 5787 } });
+        reader = db.createUser(guest(shul.id));
+        db.setReadingLocks(shul.id, [{ ...key, readerId: reader.id }]);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const [saved] = db.listReadingReaders(shul.id);
+        assert.equal(saved.aliyah, 8);
+        assert.equal(saved.reader.id, reader.id);
+        assert.equal(saved.reader.firstName, reader.firstName);
+        db.setReadingLocks(shul.id, [{ ...key, readerId: null }]);
+        assert.deepEqual(db.listReadingReaders(shul.id), []);
+    } finally { db.close(); }
+});
+
+test('reading count overrides survive reopening and can return to the schedule rule', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-counts-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    const key = { dateString: '2026-10-10', desc: 'Bereshit' };
+    try {
+        shul = db.createShul({ name: 'Counts', settings: { hebYear: 5787, a: 3 } });
+        db.setReadingLocks(shul.id, [{ ...key, aliyahCount: 5 }]);
+        assert.throws(() => db.setReadingLocks(shul.id, [{ ...key, aliyahCount: 2 }, { ...key, aliyahCount: 8 }]), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listReadingAliyahCounts(shul.id), [{ ...key, aliyahCount: 5 }]);
+        assert.equal(getShulSchedule(db, shul.id).find(reading => reading.desc === key.desc).aliyahCount, 5);
+        db.setReadingLocks(shul.id, [{ ...key, aliyahCount: null }]);
+        assert.equal(getShulSchedule(db, shul.id).find(reading => reading.desc === key.desc).aliyahCount, 3);
+    } finally { db.close(); }
+});
+
+test('guest profiles use registration fields and support role changes', t => {
+    const { db, shul } = setup(t);
+    const profile = db.createUser({ ...guest(shul.id), role: 'guest', hebrewName: 'Yehoshua ben Shlomo' });
+    assert.equal(profile.role, 'guest');
+    assert.equal(profile.hebrewName, 'Yehoshua ben Shlomo');
+    assert.equal(profile.phone, '');
+    assert.equal(profile.title, '');
+    assert.equal(db.listShulUsers(shul.id).find(user => user.id === profile.id).role, 'guest');
+    assert.equal(db.updateUser(profile.id, { role: 'member' }).role, 'member');
+    assert.equal(db.updateUser(profile.id, { role: 'guest' }).role, 'guest');
+    for (const field of ['firstName', 'lastName', 'email']) {
+        assert.throws(() => db.updateUser(profile.id, { [field]: '' }), TypeError);
+    }
+});
+
+test('guest role migration preserves existing users, settings, assignments and constraints', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-migration-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    const legacy = new DatabaseSync(path);
+    legacy.exec('PRAGMA foreign_keys = ON; CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY)');
+    for (const name of ['001_profiles', '002_initial_shul_versions', '003_reading_locks', '004_reading_occasions', '005_reading_readers', '006_reading_aliyah_counts']) {
+        legacy.exec(readFileSync(new URL(`../backend/database/migrations/${name}.sql`, import.meta.url), 'utf8'));
+    }
+    legacy.exec(`INSERT INTO schema_migrations VALUES (6);
+        INSERT INTO shuls (id, name) VALUES ('legacy-shul', 'Legacy');
+        INSERT INTO shul_settings (shul_id, settings_json) VALUES ('legacy-shul', '{}');
+        INSERT INTO users (id, shul_id, first_name, last_name, email, role) VALUES ('legacy-user', 'legacy-shul', 'Josh', 'Cohen', 'legacy@example.com', 'admin');
+        INSERT INTO user_settings (user_id, settings_json) VALUES ('legacy-user', '{"language":"he"}');
+        INSERT INTO reading_readers VALUES ('legacy-shul', '2026-10-10', 'Bereshit', 1, 'legacy-user');`);
+    legacy.close();
+    let db = openDatabase(path);
+    try {
+        const user = db.getUser('legacy-user');
+        assert.equal(user.role, 'admin');
+        assert.deepEqual(user.settings, { language: 'he' });
+        assert.equal(db.listReadingReaders('legacy-shul')[0].reader.id, user.id);
+        db.updateUser(user.id, { role: 'guest' });
+        assert.throws(() => db.createUser({ ...guest('missing'), email: 'missing@example.com', role: 'guest' }), /FOREIGN KEY/);
+        assert.throws(() => db.createUser({ ...guest('legacy-shul'), email: user.email, role: 'guest' }), /UNIQUE/);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getUser('legacy-user').role, 'guest');
+        assert.equal(db.listReadingReaders('legacy-shul')[0].reader.role, 'guest');
+        assert.deepEqual(db.getUser('legacy-user').settings, { language: 'he' });
+    } finally { db.close(); }
 });

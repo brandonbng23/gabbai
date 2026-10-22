@@ -1,3 +1,4 @@
+import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -28,7 +29,7 @@ function shulValues(input) {
 
 function userValues(input) {
     const role = input.role ?? 'member';
-    if (!['member', 'admin'].includes(role)) throw new TypeError('role must be member or admin');
+    if (!['member', 'admin', 'guest'].includes(role)) throw new TypeError('role must be member, admin, or guest');
     return [text(input.shulId, 'shulId', true), text(input.firstName, 'firstName', true),
         text(input.lastName, 'lastName', true), text(input.hebrewName ?? '', 'hebrewName'),
         email(input.email), text(input.phone ?? '', 'phone'), role, text(input.title ?? '', 'title')];
@@ -68,14 +69,44 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) STRICT`);
+        // Rebuilding users must preserve dependent settings and reader assignments.
+        const migrateGuests = (db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0) < 7;
+        if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 1) throw new Error('Database schema is newer than this application');
+            if (version > 7) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
             }
+            if (version < 2) {
+                db.exec(readFileSync(new URL('./migrations/002_initial_shul_versions.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(2);
+            }
+            if (version < 3) {
+                db.exec(readFileSync(new URL('./migrations/003_reading_locks.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(3);
+            }
+            if (version < 4) {
+                db.exec(readFileSync(new URL('./migrations/004_reading_occasions.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(4);
+            }
+            if (version < 5) {
+                db.exec(readFileSync(new URL('./migrations/005_reading_readers.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(5);
+            }
+            if (version < 6) {
+                db.exec(readFileSync(new URL('./migrations/006_reading_aliyah_counts.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(6);
+            }
+            if (version < 7) {
+                db.exec(readFileSync(new URL('./migrations/007_guest_role.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(7);
+                if (db.prepare('PRAGMA foreign_key_check').all().length)
+                    throw new Error('Guest role migration would violate foreign keys');
+            }
         });
+        if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
         db.close();
         throw error;
@@ -90,10 +121,116 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         return record;
     }
 
+    function setReadingLocks(shulId, patches) {
+        if (!Array.isArray(patches) || patches.length === 0 || patches.length > 1000) {
+            throw new TypeError('Provide between 1 and 1000 reading lock changes');
+        }
+        const values = patches.map(patch => {
+            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            const { dateString, desc, locked, aliyah = 0 } = patch;
+            if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
+                || !Number.isFinite(Date.parse(dateString))
+                || new Date(dateString).toISOString().slice(0, 10) !== dateString) {
+                throw new TypeError('Invalid reading date');
+            }
+            text(desc, 'reading name', true);
+            if ('aliyahCount' in patch) {
+                if (patch.aliyahCount !== null && (!Number.isInteger(patch.aliyahCount) || patch.aliyahCount < 1 || patch.aliyahCount > 7))
+                    throw new TypeError('Choose an aliyah count from 1 to 7');
+                return { count: [shulId, dateString, desc, patch.aliyahCount] };
+            }
+            if ('manualOccasions' in patch) {
+                const labels = patch.manualOccasions;
+                if (!Array.isArray(labels) || labels.length > 100 || labels.some(label =>
+                    typeof label !== 'string' || !label.trim() || label !== label.trim() || label.length > 120)
+                    || new Set(labels.map(label => label.toLowerCase())).size !== labels.length) {
+                    throw new TypeError('Provide up to 100 unique occasions, each between 1 and 120 characters');
+                }
+                return { occasions: [shulId, dateString, desc, JSON.stringify(labels)] };
+            }
+            if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
+            if ('readerId' in patch) {
+                if (aliyah < 1) throw new TypeError('A reader must be assigned to an aliyah from 1 to 9');
+                if (patch.readerId !== null) {
+                    const reader = typeof patch.readerId === 'string' ? getUser(patch.readerId) : null;
+                    if (!reader || reader.shulId !== shulId) throw new TypeError('Choose a user from this shul');
+                }
+                return { reader: [shulId, dateString, desc, aliyah, patch.readerId] };
+            }
+            if (typeof locked !== 'boolean') throw new TypeError('locked must be a boolean');
+            return [shulId, dateString, desc, aliyah, Number(locked)];
+        });
+        return transaction(() => {
+            requireRecord(getShul(shulId), 'Shul');
+            const statement = db.prepare(`INSERT INTO reading_locks (shul_id, reading_date, reading_name, aliyah, locked)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET locked = excluded.locked`);
+            const occasionsStatement = db.prepare(`INSERT INTO reading_occasions (shul_id, reading_date, reading_name, occasions_json)
+                VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
+                DO UPDATE SET occasions_json = excluded.occasions_json`);
+            const readerStatement = db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
+                VALUES (?, ?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET user_id = excluded.user_id`);
+            const removeReader = db.prepare(`DELETE FROM reading_readers
+                WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
+            const countStatement = db.prepare(`INSERT INTO reading_aliyah_counts (shul_id, reading_date, reading_name, aliyah_count)
+                VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
+                DO UPDATE SET aliyah_count = excluded.aliyah_count`);
+            const removeCount = db.prepare('DELETE FROM reading_aliyah_counts WHERE shul_id = ? AND reading_date = ? AND reading_name = ?');
+            for (const value of values) {
+                if (value.count) {
+                    if (value.count[3] === null) removeCount.run(...value.count.slice(0, 3));
+                    else countStatement.run(...value.count);
+                    continue;
+                }
+                if (value.reader) {
+                    const readerId = value.reader[4];
+                    if (readerId === null) removeReader.run(...value.reader.slice(0, 4));
+                    else {
+                        if (getUser(readerId)?.shulId !== shulId) throw new TypeError('Choose a user from this shul');
+                        readerStatement.run(...value.reader);
+                    }
+                } else if (value.occasions) occasionsStatement.run(...value.occasions);
+                else statement.run(...value);
+            }
+        });
+    }
+
     return {
         path,
         close: () => db.close(),
         getShul,
+        listReadingAliyahCounts(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, aliyah_count FROM reading_aliyah_counts WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyahCount: row.aliyah_count }));
+        },
+        listReadingReaders(shulId) {
+            return db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title
+                FROM reading_readers r JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id WHERE r.shul_id = ?`)
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyah: row.aliyah,
+                    reader: { id: row.id, firstName: row.first_name, lastName: row.last_name,
+                        email: row.email, role: row.role, title: row.title } }));
+        },
+        listReadingOccasions(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
+                    manualOccasions: JSON.parse(row.occasions_json) }));
+        },
+        listReadingLocks(shulId) {
+            return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
+                .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
+                    aliyah: row.aliyah, locked: Boolean(row.locked) }));
+        },
+        setReadingLocks,
+        setReadingLock(shulId, patch) {
+            return setReadingLocks(shulId, [patch]);
+        },
+        getInitialShulVersion(id) {
+            const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
+            return row ? { info: JSON.parse(row.info_json), settings: JSON.parse(row.settings_json),
+                source: row.source, capturedAt: row.captured_at } : null;
+        },
         getUser,
         getUserByEmail: value => decodeUser(db.prepare(`${userQuery} WHERE u.email = ?`).get(email(value))),
         listShuls: () => db.prepare(`${shulQuery} ORDER BY s.name, s.id`).all().map(decodeShul),
@@ -111,7 +248,46 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
                     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
+                const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
+                db.prepare(`INSERT INTO shul_initial_versions (shul_id, info_json, settings_json, source)
+                    VALUES (?, ?, ?, 'creation')`).run(id, JSON.stringify(info), JSON.stringify(settings));
                 return getShul(id);
+            });
+        },
+        registerReading(shulId, { dateString, desc, aliyah, readerId, guest }, validateReading) {
+            return transaction(() => {
+                // Validate availability while holding the write lock, before creating a guest.
+                validateReading();
+                let id = readerId;
+                if (guest) {
+                    if (!userTitles.includes(guest.title)) throw new TypeError('Choose a title from the list.');
+                    const values = userValues({ ...guest, shulId, role: 'guest' });
+                    const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
+                    const existing = existingId ? getUser(existingId) : null;
+                    if (existing) {
+                        if (existing.role !== 'guest' || existing.shulId !== shulId || existing.firstName !== values[1]
+                            || existing.lastName !== values[2] || existing.hebrewName !== values[3]
+                            || (existing.title && existing.title !== values[7])) {
+                            const error = new Error('This email already has a profile with different details. Register with that profile or use another email.');
+                            error.status = 409;
+                            throw error;
+                        }
+                        id = existing.id;
+                        if (!existing.title) db.prepare("UPDATE users SET title = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+                            .run(values[7], id);
+                    } else {
+                        id = randomUUID();
+                        db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                        db.prepare("INSERT INTO user_settings (user_id, settings_json) VALUES (?, '{}')").run(id);
+                    }
+                } else if (!id || getUser(id)?.shulId !== shulId) {
+                    const error = new Error('Sign in with a profile from this shul.');
+                    error.status = 403;
+                    throw error;
+                }
+                db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
+                    VALUES (?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id);
             });
         },
         createUser(input) {

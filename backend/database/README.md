@@ -48,14 +48,14 @@ backend to loopback; browser API requests use the same-origin Vite proxy.
 
 The frontend loads the current user from `/api/me`, reads their assigned shul
 from `/api/shuls/:id`, and generates its schedule from saved settings. The user's
-membership is the only source of the active shul; URL parameters and browser
-storage cannot override it. Shul changes will belong in the future user settings
-page. Without a current user, the frontend prompts for sign-in.
+membership selects their active shul. Without a current user, a `shul` URL
+parameter allows viewing that shul's public schedule and guest registration.
+Shul changes for signed-in users will belong in the future user settings page.
 My Shul displays the saved profile and reading preferences. The development
-user's first name appears in the greeting and their details prefill the guest
-form. Profiles/settings are read-only in the frontend for now; editing and real
-login need authenticated write endpoints. Registration submission remains a
-separate feature.
+user's first name appears in the greeting. The guest form starts blank so it
+does not accidentally submit the signed-in profile's email as a guest. Profiles/settings are read-only in the frontend for now; editing and real
+login need authenticated write endpoints. Online registration supports both
+the current profile and guest details.
 
 ## Render preview
 
@@ -77,6 +77,12 @@ to use it. For an existing Render web service, set these values manually:
 Preview mode supplies a shared Demo User and Demo Shul so the frontend works
 before login is built. Records are created at server startup if missing; existing
 demo settings are preserved on subsequent starts when the database survives.
+Demo contact information is synchronized from `backend/database/demo.mjs` on
+startup, including for existing demo records. This synchronization is limited to
+the demo user's shul and does not change saved reading settings or user preferences.
+The frontend fetches the saved shul profile on page load, so refresh the page
+after updating a profile in the database. Editing the demo seed requires a server
+restart (or a Render redeploy) to apply its updated information.
 The demo user belongs to its own demo shul; unrelated users are never selected.
 The frontend still derives its shul only from that user's membership, with no
 shul selector or shul/year banner.
@@ -100,7 +106,21 @@ already uses while binding to `0.0.0.0`.
 
 Each user belongs to exactly one shul through `users.shul_id`. Querying users by
 that field supplies the shul's membership list; no second list needs syncing.
-The user's role is `member` or `admin`, with an optional administrator title.
+The user's role is `guest`, `member`, or `admin`, with an optional administrator title.
+Guest registration requires a predefined title, first name, last name, and email.
+Hebrew name is optional; phone is not collected. Titles are shared between the
+form and backend in `interfaces/titles.mts`. Guests can be assigned as readers but
+have no administrator permissions. Version 7 extends the role constraint while
+preserving existing profiles, settings, and reader assignments. Online registration uses `POST /api/shuls/:id/readings/register` with
+`{ dateString, desc, aliyah }` for the current profile, or those fields plus
+`guest: { title, firstName, lastName, hebrewName?, email }` for a guest. Guest requests
+cannot set a user ID or role. Matching guest details can reuse a guest in the
+same shul without granting account access. Older matching guest profiles with
+no title receive the selected title on their next successful registration. Existing
+member/admin emails and conflicting guest details require the associated profile.
+Availability checks and guest creation/assignment run in one write transaction;
+locked, hidden, missing, or already assigned aliyot cannot be registered.
+Responses contain only confirmation, and failed registrations save no changes.
 Email addresses are normalized and unique across users, regardless of case.
 Moving a user to another shul changes this same membership field.
 
@@ -169,5 +189,41 @@ forms are separate follow-up work. The legacy in-memory `User`, `Admin`, and
 ## Migrations
 
 `schema_migrations` tracks applied numbered SQL migrations. Version 1 initializes
-the four profile/settings tables in a transaction and is safe to reopen. Extend
-the migration runner for subsequent versions; do not edit an applied migration.
+the four profile/settings tables. Version 2 adds `shul_initial_versions` and
+captures each new shul's initial contact information and settings atomically at
+creation. Later saves never replace that snapshot. Existing shuls receive their
+current saved values as the earliest available snapshot, marked `migration`;
+values overwritten before this migration cannot be reconstructed.
+
+`GET /api/shuls/:id/initial-version` is restricted to that shul's administrator.
+The admin form loads the snapshot as unsaved edits; normal profile/settings save
+endpoints apply those edits after review. Reset controls instead restore the
+latest saved values, either per field, per section, or across the whole form.
+Migrations run transactionally and are safe to reopen; do not edit an applied migration.
+
+Version 3 adds `reading_locks`, keyed by shul, reading date/name, and aliyah slot.
+Slot 0 stores the whole-reading lock; slots 1–7 are aliyot, 8 is maftir, and 9 is
+haftarah. Schedule generation overlays saved locks onto the reading data, with
+new readings unlocked by default. Whole-reading locks preserve individual locks
+so those choices remain when the reading is unlocked.
+
+`PATCH /api/shuls/:id/readings/lock` accepts `{ dateString, desc, locked, aliyah? }`.
+It requires an administrator of that shul and validates that the reading and
+optional aliyah exist in its current schedule. Omit `aliyah` to lock the whole
+reading. The response contains the updated reading.
+
+The admin UI keeps reading adjustments as local drafts and publishes them with
+`PATCH /api/shuls/:id/readings/locks`, accepting `{ changes: [...] }` with the same
+fields per change. Every entry is validated before a single transaction saves
+the batch; a failed publication saves none of the changes. The response contains
+each affected reading once. Reset discards local drafts, and publication updates
+the schedule used by the member-facing pages. Search changes do not discard drafts.
+
+Version 6 adds `reading_aliyah_counts`, keyed by shul and reading date/name.
+The batch adjustments endpoint also accepts `{ dateString, desc, aliyahCount }`.
+An integer from 1 to 7 overrides the schedule rule for that reading; `null`
+removes the override. Counts are limited to the available verse ranges, exclude
+maftir and haftarah, and persist across schedule rule changes. Saved assignments
+and locks for hidden slots are retained. Count changes are applied before
+validating other adjustments, allowing newly visible aliyot to receive readers
+or locks in the same atomic publication.

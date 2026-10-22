@@ -25,8 +25,8 @@ export class Settings {
 
     /* @field yRespect: boolean repersenting yontif aliyot Count. Subscribe to traditional 
      * Yontif count (true) for each Yontif or preset, regular (this.a) Aliyot count (false) 
-     * during Yontifs. If true, High Holiday Aliyot Count becomes true. If false, High 
-     * Holiday Aliyot Count does NOT become false @default: true (traditional count) */
+     * during Yontifs. High Holiday counts are controlled separately by hhRespect.
+     * @default: true (traditional count) */
     yRespect: boolean = true;
 
     /* @field yontifs: Object repersenting observed Yontifs. For each Yontif, indicates if a 

@@ -1,6 +1,7 @@
+import type { User as UserData } from '../interfaces/user.mts';
 import { Aliyah } from "./aliyah.mts"
 
-export class User {
+export class User implements UserData {
     /* @class Repersents a user in its most basic form */
     
     /* @field firstN: string repersenting a user's first name */
@@ -18,11 +19,39 @@ export class User {
     /* @field readings: Array of Aliyah instances repersenting the readings a user has been assigned */
     readings: Aliyah[] = [];
 
-    constructor(firstN: string, lastN: string, email: string, password: string) {
+    id: string;
+    shulId: string;
+    hebrewName: string;
+    phone: string;
+    role: UserData['role'];
+    title: string;
+    settings: Record<string, unknown>;
+
+    get firstName(): string { return this.firstN; }
+    get lastName(): string { return this.lastN; }
+
+    constructor(firstN: string, lastN: string, email: string, password: string, profile: Partial<UserData> = {}) {
+        this.id = profile.id ?? crypto.randomUUID();
+        this.shulId = profile.shulId ?? '';
+        this.hebrewName = profile.hebrewName ?? '';
+        this.phone = profile.phone ?? '';
+        this.role = profile.role ?? 'member';
+        this.title = profile.title ?? '';
+        this.settings = profile.settings ?? {};
         this.firstN = firstN;
         this.lastN = lastN;
         this.email = email;
         this.password = password;
+    }
+
+    /* Serialize a profile without credentials or circular assigned readings. */
+    toJSON(): UserData {
+        return {
+            id: this.id, shulId: this.shulId,
+            firstName: this.firstName, lastName: this.lastName,
+            hebrewName: this.hebrewName, email: this.email, phone: this.phone,
+            role: this.role, title: this.title, settings: this.settings,
+        };
     }
 
     /* Accesses User's first name */

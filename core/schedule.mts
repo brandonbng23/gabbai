@@ -219,69 +219,27 @@ export class Schedule {
      * @param desc: string repersenting name of reading occassion
      * @returns integer (3-7) repersenting how many aliyot will be read, not including maftir and haftarah */
     calculateAliyot(desc: string): number {
-            // 5 Aliyot Yontifs
-            if (["Sukkot I",
-                 "Sukkot II",
-                 "Shmini Atzeret",
-                 "Pesach I",
-                 "Pesach II",
-                 "Pesach VII",
-                 "Pesach VIII",
-                 "Shavuot I",
-                 "Shavuot II"].includes(desc) && !desc.includes("Shabbat")) {
-                if (this.settings.getYRespect()) {
-                    return 5;
-                } else if (this.settings.getAliyotCount() > 5) {
-                    return 5;
-                } 
+        const configured = this.settings.getAliyotCount();
+        const isShabbat = desc.includes("Shabbat");
 
-            // 5 Aliyot Yontif Shabbat (excluding Rosh Hashana)
-            } else if (desc.includes("Shabbat") &&
-                !(desc.includes("Rosh Hashana") || desc.includes("Yom Kippur")) || desc.includes("Simchat Torah")) {
-                
-                if (this.settings.getYRespect()) {
-                    return 7;
-                }
-            }
-            
-            // Rosh Hashana (5 Aliyot High Holiday)
-            if (desc.includes("Rosh Hashana") && !desc.includes("Shabbat")) {
-                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
-                    return 5;
-                } else if (this.settings.getAliyotCount() > 5) {
-                    return 5;
-                }
+        // High Holiday preferences are independent of other Yontif preferences.
+        if (desc.includes("Rosh Hashana") || desc.includes("Yom Kippur")) {
+            const traditional = isShabbat ? 7 : desc.includes("Yom Kippur") ? 6 : 5;
+            return this.settings.getHhRespect() ? traditional : Math.min(configured, traditional);
+        }
 
-            // Rosh Hashana Shabbat
-            } else if (desc.includes("Rosh Hashana") && desc.includes("Shabbat")) {
-                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
-                    return 7;
-                } 
-            }
+        if (desc.includes("Simchat Torah")) {
+            return this.settings.getYRespect() ? 7 : configured;
+        }
 
-            // Yom Kippur (6 Aliyot High Holiday)
-            if (desc == "Yom Kippur") {
-                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
-                    return 6;
-                } else if (this.settings.getAliyotCount() > 6) {
-                    return 6;
-                }
+        const isYontif = ["Sukkot", "Shmini Atzeret", "Pesach", "Shavuot"]
+            .some(holiday => desc.includes(holiday));
+        if (isYontif) {
+            const traditional = isShabbat ? 7 : 5;
+            return this.settings.getYRespect() ? traditional : Math.min(configured, traditional);
+        }
 
-            // Yom Kippur Shabbat
-            } else if (desc == "Yom Kippur Shabbat") {
-                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
-                    return 7;
-                }
-            }
-            
-            // Simchat Torah (7 Aliyot High Holiday)
-            if (desc == "Simchat Torah") {
-                if (this.settings.getYRespect() || this.settings.getHhRespect()) {
-                    return 7;
-                } 
-            }
-                    
-        return this.settings.getAliyotCount();
+        return configured;
     }
 
     /* Rewrite this entire method. Can be done cleaner and it appears to yield some issues - rosh chodesh and chanukah never

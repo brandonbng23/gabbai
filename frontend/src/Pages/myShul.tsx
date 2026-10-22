@@ -1,4 +1,4 @@
-import type { Shul } from '../api';
+import type { Shul } from '../api.js';
 
 function publicLink(value: string): string | undefined {
     try {
@@ -9,7 +9,7 @@ function publicLink(value: string): string | undefined {
     }
 }
 
-export default function MyShul({ shul }: { shul: Shul }) {
+export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
     const settings = shul.settings;
     const website = publicLink(shul.websiteUrl);
     const donation = publicLink(shul.donationUrl);
@@ -19,10 +19,10 @@ export default function MyShul({ shul }: { shul: Shul }) {
             <dl className="registration-details">
                 <h5>Shul Information</h5>
                 {shul.address && <div><dt>Address</dt><dd>{shul.address}</dd></div>}
-                {shul.email && <div><dt>Email</dt><dd>{shul.email}</dd></div>}
                 {shul.phone && <div><dt>Phone</dt><dd>{shul.phone}</dd></div>}
-                {website && <div><dt>Website</dt><dd><a href={website}>Visit website</a></dd></div>}
-                {donation && <div><dt>Donations</dt><dd><a href={donation}>Support your shul</a></dd></div>}
+                {shul.email && <div><dt>Email</dt><dd><a href={`mailto:${shul.email}`}>{shul.email}</a></dd></div>}
+                {website && <div><dt>Website</dt><dd><a href={website}>{website}</a></dd></div>}
+                {donation && <div><dt>Donations</dt><dd><a href={donation}>{donation}</a></dd></div>}
                 {!shul.address && !shul.email && !shul.phone && !website && !donation
                     && <div>Contact information hasn’t been added yet.</div>}
             </dl>
@@ -33,7 +33,7 @@ export default function MyShul({ shul }: { shul: Shul }) {
                 <div><dt>Aliyot</dt><dd>{settings.a}</dd></div>
                 <div><dt>Reading Cycle</dt><dd>{settings.triennial.tri ? 'Triennial' : 'Annual'}</dd></div>
                 <div><dt>Maftir</dt><dd>{settings.triennial.triMaftir ? 'Triennial' : settings.triennial.tradMaftir ? 'Traditional' : 'Disabled'}</dd></div>
-                <div><dt>Traditional Holiday Aliyah Counts</dt><dd>{settings.yRespect ? 'Enabled' : 'Disabled'}</dd></div>
+                <div><dt>Traditional Yontif Aliyah Counts</dt><dd>{settings.yRespect ? 'Enabled' : 'Disabled'}</dd></div>
             </dl>
         </main>
     );

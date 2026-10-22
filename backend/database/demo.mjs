@@ -1,12 +1,28 @@
 // Shared sample identity for local development and explicitly enabled previews.
 export function ensureDemoUser(database) {
+    const profile = {
+        name: 'Demo Shul',
+        websiteUrl: 'https://demoshul.org',
+        donationUrl: 'https://demoshul.org/contribute',
+        email: 'shalom@demoshul.org',
+        phone: '(443) 613-1818',
+        address: '36 Khavish Road 21201 Baltimore, Maryland',
+    };
     const existing = database.getUserByEmail('demo@example.com');
-    if (existing) return existing;
-    const shul = database.createShul({ name: 'Demo Shul', settings: { hebYear: 5787 } });
+    if (existing) {
+        const shul = database.getShul(existing.shulId);
+        const changes = Object.fromEntries(Object.entries(profile)
+            .filter(([field, value]) => shul[field] !== value));
+        if (Object.keys(changes).length) database.updateShul(existing.shulId, changes);
+        // Keep existing demo accounts in sync with the demo's administrator role.
+        return existing.role === 'admin' ? existing : database.updateUser(existing.id, { role: 'admin' });
+    }
+    const shul = database.createShul({ ...profile, settings: { hebYear: 5787 } });
     return database.createUser({
         shulId: shul.id,
         firstName: 'Demo',
         lastName: 'User',
         email: 'demo@example.com',
+        role: 'admin',
     });
 }

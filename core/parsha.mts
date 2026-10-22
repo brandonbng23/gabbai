@@ -121,7 +121,7 @@ export class Parsha {
                     )
                 )
             ];
-        } else if (this.desc.toLowerCase().includes("shmini")) {
+        } else if (/^shmini atzeret(?:\s|$)/i.test(this.desc)) {
             occassions = [...occassions, "Shmini Atzeret"];
         } else if (this.desc.toLowerCase().includes("simchat")) {
             occassions = [...occassions, "Simchat Torah"];
@@ -284,8 +284,9 @@ export class Parsha {
             gregDate: this.formatGregDateViewString(this.gregDate ?? new Date()),
             desc: this.desc,
             occassions: this.findOccassions(),
-            locked: id % 2 === 0 ? true : false,//this.readingSet.getLockStatus(),
-            lockedArr: [true, false, true, false, false, true, true, true, false], //this.readingSet.getLockStatusArr(),
+            manualOccasions: [],
+            locked: this.readingSet.getLockStatus(),
+            lockedArr: this.readingSet.getLockStatusArr(),
             psukim: this.readingSet.getPsukimArr(),
             book: this.readingSet.getBook(),
             readers: this.readingSet.getReaderArr(),
