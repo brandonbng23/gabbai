@@ -10,6 +10,7 @@ import MyShul from "./Pages/myShul.js"
 import ShulSettings from "./Pages/shulSettings.js"
 import { UserSettings } from "./Pages/userSettings.tsx"
 import { UserView } from "./Pages/userView.tsx"
+import { LoadingSkeleton } from "./Components/loadingSkeleton.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
 
@@ -85,7 +86,7 @@ function App() {
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
-              ) : loading ? <p className="shul-context" role="status">Loading your shul…</p>
+              ) : loading ? <LoadingSkeleton page variant={isShulSettingsPage || isUserSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserViewPage ? (
                 user && ['member', 'admin'].includes(user.role)
                     ? <UserView key={viewedUserId} userId={viewedUserId} />
@@ -94,7 +95,7 @@ function App() {
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your shul is not available yet.</p>
               : isShulSettingsPage ? (
-                user?.role === 'admin' ? <ShulSettings shul={shul} schedule={schedule} onSaved={setShul}
+                user?.role === 'admin' ? <ShulSettings shul={shul} schedule={schedule} scheduleLoading={scheduleLoading} scheduleError={scheduleError} onSaved={setShul}
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
@@ -102,7 +103,7 @@ function App() {
                 user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : <>
               <WelcomeBar fName={user?.firstName}></WelcomeBar>
-              {scheduleLoading ? <p className="shul-context" role="status">Loading your schedule…</p>
+              {scheduleLoading ? <LoadingSkeleton variant="schedule" />
               : scheduleError ? <p className="shul-context" role="alert">{scheduleError}</p>
               : <Schedule
                 shulId={shulId} parshiyot = {schedule}>

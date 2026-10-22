@@ -5,6 +5,7 @@ import { registerForReading } from '../api.js';
 import type { GuestRegistration, User } from '../api.js';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import InfoIcon from '../Components/infoTip.tsx';
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 
 interface RegistrationProps {
     shulId?: string;
@@ -89,7 +90,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     }
 
     let heading = `Register for ${parsha?.desc ?? 'a reading'}`;
-    if (loading) heading = 'Loading registration…';
+    if (loading) heading = 'Aliyah Registration';
     else if (!validSelection) heading = 'Oy Gevalt!';
     else if (locked || unavailable) heading = 'Registration has Closed';
     if (registered) heading = 'Registration confirmed';
@@ -102,12 +103,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
             {registered ? (
                 <p role="status">You’re registered for {aliyahLabels[aliyah - 1]} of {parsha?.desc} on {parsha?.gregDate}.</p>
             ) : loading ? (
-                <div className="registration-details registration-details-loading" role="status" aria-label="Loading registration details">
-                    <h5 aria-hidden="true">Aliyah Summary</h5>
-                    <dl aria-hidden="true">
-                        {['Date', 'Parsha', 'Aliyah', 'Psukim'].map(label => <div key={label}><dt>{label}</dt><dd>&nbsp;</dd></div>)}
-                    </dl>
-                </div>
+                <LoadingSkeleton variant="registration" />
             ) : error ? (
                 <p role="alert">{error}</p>
             ) : !validSelection || !parsha ? (

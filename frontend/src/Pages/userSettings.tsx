@@ -95,7 +95,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                         </div>
                         <dl className="settings-contact-grid user-profile-fields">
                             {profileFields.map(field => (
-                                <div key={field.label} className={field.label === 'Hebrew Name' && user.role !== 'admin' ? 'user-profile-hebrew-name' : undefined}>
+                                <div key={field.label} className={field.label === 'Hebrew Name' ? 'user-profile-hebrew-name' : undefined}>
                                     <dt className="settings-contact-label">{field.label}</dt>
                                     <dd>{field.value || '-'}</dd>
                                 </div>

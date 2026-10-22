@@ -11,6 +11,7 @@ import { SearchResult } from "../Components/searchResults.tsx";
 import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
 import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 
 type SettingsSection = 'info' | 'schedule' | 'readings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -68,10 +69,12 @@ function RestoreMenu({ section, disabled, onRestore }: { section: string; disabl
     );
 }
 
-export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated }: {
+export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated }: {
     shul: Shul;
     onSaved: (shul: Shul) => void;
     schedule: ParshaObj[];
+    scheduleLoading?: boolean;
+    scheduleError?: string | null;
     onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
@@ -631,7 +634,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
                         </div>
                         <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
-                            <fieldset className="shul-edit" disabled={busy}>
+                            <fieldset className="shul-edit" disabled={busy || scheduleLoading || Boolean(scheduleError)}>
                                 <legend className="visually-hidden">Reading adjustments</legend>
                                 <div className="reading-search">
                                     <label htmlFor="reading-search">Search by Parsha or Yontif name</label>
@@ -649,6 +652,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                 </div>
 
                                 <div className="results">
+                                        {scheduleLoading ? <LoadingSkeleton variant="readings" />
+                                        : scheduleError ? <p role="alert">{scheduleError}</p>
+                                        : <>
                                         {search.trim() && matchingReadings.length === 0 && <SettingsNoResults />}
                                         {search ? matchingReadings
                                             .map((reading) => (
@@ -685,6 +691,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                 ))}
                                         </>
                                         }
+                                        </>}
                                 </div>
 
                                 <div className="settings-form-footer">
@@ -1084,6 +1091,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                             </div>
 
                             <div className="user-list">
+                                {usersLoading && <LoadingSkeleton variant="users" />}
+                                {usersError && <p role="alert">{usersError}</p>}
                                 
                                 {!usersLoading && !usersError && userSearch.trim() && matchingUsers.length === 0 && <SettingsNoResults />}
                                 {matchingUsers.map((u: ShulUser, index) => {

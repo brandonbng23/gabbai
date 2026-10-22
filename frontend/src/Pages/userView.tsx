@@ -3,6 +3,7 @@ import type { JSX } from 'react';
 import { getJson } from '../api.js';
 import type { UserViewProfile } from '../api.js';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 
 export function UserView({ userId }: { userId: string }): JSX.Element {
     const [profile, setProfile] = useState<UserViewProfile | null>(null);
@@ -40,7 +41,7 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
                 </div>
             </header>
             {!userId || error ? <p className="shul-context" role="alert">{error || 'Choose a user to view.'}</p>
-                : !profile ? <p className="shul-context" role="status">Loading user profile…</p>
+                : !profile ? <LoadingSkeleton variant="profile" />
                 : <div className="shul-settings">
                     <div className="settings-view">
                         <section className="shul-card" aria-labelledby="user-profile-heading">
