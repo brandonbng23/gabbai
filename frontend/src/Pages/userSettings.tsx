@@ -134,6 +134,10 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                                 ))}
                                 </div>
                                 <div className="settings-form-footer user-settings-footer">
+                                    <div className={`submission-msg${feedback ? ` submission-msg-${feedback.kind}` : ''}`}
+                                        role={feedback?.kind === 'error' ? 'alert' : 'status'} aria-live="polite">
+                                        {saving ? 'Saving your profile…' : feedback?.text}
+                                    </div>
                                     <div className="settings-footer-actions">
                                         <span>Changes take effect after saving.</span>
                                         <div className="settings-footer-buttons">
@@ -146,10 +150,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                                                 {saving ? 'Saving…' : 'Save Changes'}
                                             </button>
                                         </div>
-                                        <div className={`submission-msg${feedback ? ` submission-msg-${feedback.kind}` : ''}`}
-                                            role={feedback?.kind === 'error' ? 'alert' : 'status'} aria-live="polite">
-                                            {saving ? 'Saving your profile…' : feedback?.text}
-                                        </div>
+
                                     </div>
                                 </div>
                             </fieldset>
