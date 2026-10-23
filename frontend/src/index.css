@@ -3682,8 +3682,8 @@ input[type="number"] {
 
 .reading-card-body {
     display: flex;
-    flex-direction: column;
-    align-items: start;
+    flex-wrap: wrap;
+    align-items: baseline;
     gap: 4px 18px;
     font-size: 14px;
     line-height: 1.5;
