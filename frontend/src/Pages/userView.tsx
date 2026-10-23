@@ -36,7 +36,7 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
         <main className="shul-admin-page user-page">
             <header className="settings-page-header">
                 <div>
-                    <span className="settings-eyebrow">YOUR CONGREGATION</span>
+                    <span className="settings-eyebrow">VISIT PROFILE</span>
                     <h1>User Profile</h1>
                 </div>
             </header>
