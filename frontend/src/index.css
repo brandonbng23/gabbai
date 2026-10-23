@@ -3578,7 +3578,7 @@ input[type="number"] {
 .reading-card-body {
     display: flex;
     flex-direction: row;
-    gap: 28px;
+    gap: 3.75%;
 }
 
 .reading-card-header > h3 {
