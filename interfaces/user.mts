@@ -22,7 +22,7 @@ export interface User {
 
 export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl' | 'assignedReadings'>;
 
-export type UserViewProfile = Pick<User, 'id' | 'firstName' | 'lastName' | 'hebrewName' | 'title' | 'pictureUrl' | 'role'> & {
+export type UserViewProfile = Pick<User, 'id' | 'firstName' | 'lastName' | 'hebrewName' | 'title' | 'pictureUrl' | 'role' | 'assignedReadings'> & {
     shulName: string;
     assignedReadingCount: number;
 };

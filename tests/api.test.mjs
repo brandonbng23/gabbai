@@ -183,7 +183,7 @@ test('user views are read-only and exclude sensitive fields for members and admi
     const path = `/api/users/${target.id}`;
     const expected = { id: target.id, title: target.title, firstName: target.firstName,
         lastName: target.lastName, hebrewName: target.hebrewName, role: 'guest',
-        shulName: shul.name, assignedReadingCount: 0 };
+        shulName: shul.name, assignedReadings: [], assignedReadingCount: 0 };
     for (const role of ['member', 'admin']) {
         db.updateUser(user.id, { role });
         const response = await request(path);
@@ -201,6 +201,12 @@ test('user views are read-only and exclude sensitive fields for members and admi
         assert.equal(response.status, 404);
         assert.deepEqual(db.getUser(target.id), target);
     }
+    const assignment = { dateString: '2027-10-30', desc: 'Bereshit', aliyah: 1 };
+    db.setReadingLocks(shul.id, [{ ...assignment, readerId: target.id }]);
+    const profile = await (await request(path)).json();
+    assert.deepEqual(profile.assignedReadings, [assignment]);
+    assert.equal(profile.assignedReadingCount, 1);
+    assert.ok(!('email' in profile) && !('phone' in profile) && !('settings' in profile));
     db.updateUser(user.id, { role: 'guest' });
     assert.equal((await request(path)).status, 403);
     const anonymous = await setup(t, false);

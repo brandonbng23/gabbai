@@ -336,6 +336,7 @@ export function createApp(database, {
         return res.json({ id, firstName, lastName, hebrewName, title, role,
             ...(pictureUrl ? { pictureUrl } : {}),
             shulName: database.getShul(target.shulId).name,
+            assignedReadings: target.assignedReadings,
             assignedReadingCount: target.assignedReadings.length });
     });
 
