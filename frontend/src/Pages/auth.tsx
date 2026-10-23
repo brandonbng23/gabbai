@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { SubmitEvent } from 'react';
+import type { KeyboardEvent, SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
 
 function authReturnPath(value: string | null): string {
@@ -62,6 +62,7 @@ function ShulCodeField() {
                 id={index === 0 ? 'auth-shulCode' : `auth-shulCode-${index + 1}`}
                 className={`auth-code-letter${letter ? ' auth-code-letter-filled' : ''}`} value={letter} type="text" inputMode="text"
                 required pattern="[A-Z]" maxLength={4} autoCapitalize="characters" autoComplete="off" spellCheck={false}
+                data-1p-ignore="true" data-lpignore="true" data-bwignore="true"
                 aria-label={`Shul code, letter ${index + 1} of 4`} aria-describedby="auth-code-hint"
                 onFocus={event => event.currentTarget.select()}
                 onChange={event => {
@@ -174,6 +175,24 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
         }
     }
 
+    function navigateFields(event: KeyboardEvent<HTMLFormElement>): void {
+        if (event.key !== 'Enter' || event.defaultPrevented || event.nativeEvent.isComposing
+            || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        const field = event.target;
+        if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)
+            || (field instanceof HTMLInputElement && ['checkbox', 'search', 'hidden'].includes(field.type))) return;
+        event.preventDefault();
+        if (busy || event.repeat || !field.reportValidity()) return;
+        const fields = Array.from(event.currentTarget.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+            'input:enabled:not([type="hidden"]):not([type="checkbox"]):not([type="search"]), select:enabled',
+        ));
+        const index = fields.indexOf(field);
+        if (index < 0) return;
+        const nextField = fields[index + 1];
+        if (nextField) nextField.focus();
+        else event.currentTarget.requestSubmit();
+    }
+
     async function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         if (busy) return;
@@ -207,7 +226,7 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
             <span className="settings-eyebrow">WELCOME TO GABBAI</span>
             <h1 id="auth-heading">{signup ? 'Create your account' : 'Sign in'}</h1>
             <p>{signup ? 'Enter your shul code or search for your congregation to get started.' : 'Your shul, readings, and preferences in one place.'}</p>
-            <form onSubmit={submit}>
+            <form onSubmit={submit} onKeyDown={navigateFields}>
                 <fieldset disabled={busy}>
                     <legend className="visually-hidden">{signup ? 'Create account' : 'Sign in'}</legend>
                     {signup && <>
