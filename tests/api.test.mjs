@@ -703,7 +703,7 @@ test('profile registration reserves an available aliyah and rejects locked, hidd
     assert.equal(db.listReadingReaders(other.id).length, 0);
 });
 
-test('anonymous guest registration validates details, reuses matching guests and never overwrites existing identities', async t => {
+test('anonymous guest registration identifies guests by email and updates their submitted profile details', async t => {
     const { request, shul, user, db } = await setup(t, false);
     const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
     const reading = readings.find(item => item.desc === 'Bereshit');
@@ -721,11 +721,18 @@ test('anonymous guest registration validates details, reuses matching guests and
     assert.equal(visitor.role, 'guest');
     assert.equal(visitor.title, 'Mr.');
     assert.equal(visitor.hebrewName, guest.hebrewName);
-    assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, email: 'VISITOR@EXAMPLE.COM' } })).status, 201);
+    assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, title: 'Dr.', firstName: 'Different', lastName: 'Spelling', hebrewName: 'Updated Hebrew', email: ' VISITOR@EXAMPLE.COM ' } })).status, 201);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 1);
     assert.equal(db.listReadingReaders(shul.id).find(item => item.aliyah === 2).reader.id, visitor.id);
-    assert.equal((await post({ ...base, aliyah: 3, guest: { ...guest, firstName: 'Different' } })).status, 409);
-    assert.equal(db.getUser(visitor.id).firstName, guest.firstName);
+    assert.equal(db.getUser(visitor.id).firstName, 'Different');
+    assert.equal(db.getUser(visitor.id).lastName, 'Spelling');
+    assert.equal(db.getUser(visitor.id).hebrewName, 'Updated Hebrew');
+    assert.equal(db.getUser(visitor.id).title, 'Dr.');
+    assert.equal(db.getUser(visitor.id).assignedReadings.length, 2);
+    assert.ok(db.listReadingReaders(shul.id).every(item => item.reader.firstName === 'Different'));
+    const savedVisitor = db.getUser(visitor.id);
+    assert.equal((await post({ ...base, aliyah: 1, guest })).status, 409);
+    assert.deepEqual(db.getUser(visitor.id), savedVisitor, 'Unavailable readings must not overwrite guest details');
     const attempts = await Promise.all(['one', 'two'].map(name => post({ ...base, aliyah: 3, guest: { ...guest, hebrewName: undefined, email: `${name}@example.com` } })));
     assert.deepEqual(attempts.map(response => response.status).sort(), [201, 409]);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2, 'Failed competing registration creates no guest');

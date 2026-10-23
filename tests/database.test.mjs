@@ -20,6 +20,44 @@ function setup(t) {
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
 
+test('guest email unifies reading registrations across dates and survives reopening', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-email-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'guests.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let visitor;
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const second = { dateString: '2026-10-17', desc: 'Noach', aliyah: 2 };
+    try {
+        shul = db.createShul({ name: 'Guest readings', settings: { hebYear: 5787 } });
+        db.registerReading(shul.id, { ...first, guest: { title: 'Mr.', firstName: 'Josh', lastName: 'Cohen', hebrewName: 'Yehoshua', email: 'josh@example.com' } }, () => {});
+        visitor = db.getUserByEmail('josh@example.com');
+        db.registerReading(shul.id, { ...second, guest: { title: 'Dr.', firstName: 'Joshua', lastName: 'Kohen', email: ' JOSH@EXAMPLE.COM ' } }, () => {});
+        assert.equal(db.listShulUsers(shul.id).length, 1);
+        assert.ok(db.listReadingReaders(shul.id).every(item => item.reader.id === visitor.id));
+        const foreign = db.createShul({ name: 'Other shul', settings: { hebYear: 5787 } });
+        assert.throws(() => db.registerReading(foreign.id, { ...first, guest: { title: 'Mr.', ...guest(shul.id) } }, () => {}), /another shul/);
+        assert.deepEqual(db.listReadingReaders(foreign.id), []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.getUserByEmail('JOSH@example.com');
+        assert.equal(saved.id, visitor.id);
+        assert.equal(saved.firstName, 'Joshua');
+        assert.equal(saved.lastName, 'Kohen');
+        assert.equal(saved.title, 'Dr.');
+        assert.equal(saved.hebrewName, visitor.hebrewName);
+        assert.deepEqual(saved.assignedReadings, [first, second]);
+        assert.throws(() => db.registerReading(shul.id, { ...first, guest: { title: 'Rabbi', firstName: 'Must not save', lastName: 'Failed', hebrewName: '', email: saved.email } }, () => {}), /UNIQUE/);
+        assert.deepEqual(db.getUser(saved.id), saved, 'Failed assignment rolls back profile changes');
+        const third = { dateString: '2026-10-24', desc: 'Lech-Lecha', aliyah: 1 };
+        db.registerReading(shul.id, { ...third, guest: { title: 'Dr.', firstName: 'Joshua', lastName: 'Kohen', hebrewName: '', email: saved.email } }, () => {});
+        assert.equal(db.getUser(saved.id).hebrewName, '', 'An explicitly blank Hebrew name replaces the saved name');
+        assert.equal(db.getUser(saved.id).assignedReadings.length, 3);
+    } finally { db.close(); }
+});
+
 test('optional membership migration preserves profiles and discarded accounts survive reopening', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-membership-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));

@@ -438,16 +438,20 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                     const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
                     const existing = existingId ? getUser(existingId) : null;
                     if (existing) {
-                        if (existing.role !== 'guest' || existing.shulId !== shulId || existing.firstName !== values[1]
-                            || existing.lastName !== values[2] || existing.hebrewName !== values[3]
-                            || (existing.title && existing.title !== values[7])) {
-                            const error = new Error('This email already has a profile with different details. Register with that profile or use another email.');
+                        // Email identifies a guest even if later forms use different names or omit Hebrew details.
+                        if (existing.role !== 'guest' || existing.shulId !== shulId) {
+                            const error = new Error('This email is associated with a member, administrator, or another shul. Register with that profile or use another email.');
                             error.status = 409;
                             throw error;
                         }
                         id = existing.id;
-                        if (!existing.title) db.prepare("UPDATE users SET title = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
-                            .run(values[7], id);
+                        const hebrewName = Object.hasOwn(guest, 'hebrewName') ? values[3] : existing.hebrewName;
+                        if (existing.firstName !== values[1] || existing.lastName !== values[2]
+                            || existing.hebrewName !== hebrewName || existing.title !== values[7]) {
+                            db.prepare(`UPDATE users SET first_name = ?, last_name = ?, hebrew_name = ?, title = ?,
+                                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`)
+                                .run(values[1], values[2], hebrewName, values[7], id);
+                        }
                     } else {
                         id = randomUUID();
                         db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)

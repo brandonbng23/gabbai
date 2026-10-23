@@ -122,13 +122,18 @@ have no administrator permissions. Version 7 extends the role constraint while
 preserving existing profiles, settings, and reader assignments. Online registration uses `POST /api/shuls/:id/readings/register` with
 `{ dateString, desc, aliyah }` for the current profile, or those fields plus
 `guest: { title, firstName, lastName, hebrewName?, email }` for a guest. Guest requests
-cannot set a user ID or role. Matching guest details can reuse a guest in the
-same shul without granting account access. Older matching guest profiles with
-no title receive the selected title on their next successful registration. Existing
-member/admin emails and conflicting guest details require the associated profile.
+cannot set a user ID or role. Email identifies an existing guest in the same
+shul, regardless of later name/title differences or omitted Hebrew names. All
+registrations using that normalized email share one user and reading history.
+A successful registration replaces the guest's saved title and names with the
+latest submitted details without granting account access. An omitted Hebrew name
+is preserved; an explicitly blank value clears it. Existing
+member/admin emails or profiles from another shul require the associated profile.
 Availability checks and guest creation/assignment run in one write transaction;
 locked, hidden, missing, or already assigned aliyot cannot be registered.
-Responses contain only confirmation, and failed registrations save no changes.
+Responses contain only confirmation, and failed registrations save no changes,
+including no profile updates. Member/admin profiles are never overwritten by
+guest registration.
 Email addresses are normalized and unique across users, regardless of case.
 Moving a user to another shul changes this same membership field.
 
