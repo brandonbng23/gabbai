@@ -4,8 +4,8 @@ import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { useEffect, useState } from 'react';
 import type { JSX, SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
-import { updateCurrentUser } from '../api.js';
-import type { Shul, User, UserProfile } from '../api.js';
+import { cancelReading, updateCurrentUser } from '../api.js';
+import type { Shul, User, UserProfile, UserReading } from '../api.js';
 import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
 import { getGreeting } from "../Components/welcomeBar.tsx"
 
@@ -23,7 +23,12 @@ function profileValues(user: User): UserProfile {
         hebrewName: user.hebrewName, email: user.email, phone: user.phone };
 }
 
-export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul | null; onSaved: (user: User) => void }): JSX.Element {
+export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
+    user: User;
+    shul: Shul | null;
+    onSaved: (user: User) => void;
+    onReadingCancelled: (dateString: string, desc: string, aliyah: number) => void;
+}): JSX.Element {
     const [draft, setDraft] = useState<UserProfile>(() => profileValues(user));
     const [saving, setSaving] = useState(false);
     const [pictureBusy, setPictureBusy] = useState(false);
@@ -67,6 +72,12 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul |
         }
     }
 
+    async function cancelAssignedReading(reading: UserReading): Promise<void> {
+        if (!user.shulId) throw new Error('Join a shul to manage your readings.');
+        await cancelReading(user.shulId, reading.dateString, reading.desc, reading.aliyah);
+        onReadingCancelled(reading.dateString, reading.desc, reading.aliyah);
+    }
+
     const profileFields = [
         { label: 'Full Name', value: [user.title, user.firstName, user.lastName].filter(Boolean).join(' ') },
         { label: 'Hebrew Name', value: user.hebrewName },
@@ -104,7 +115,8 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul |
                             ))}
                         </dl>
                     </section>
-                    <UserReadingStats user={user} />
+                    <UserReadingStats user={user} onCancelReading={user.shulId ? cancelAssignedReading : undefined}
+                        cancellationDisabled={saving} />
                     <section className="settings-panel" aria-labelledby="user-details-heading">
                         <div className="settings-section-header">
                             <div>

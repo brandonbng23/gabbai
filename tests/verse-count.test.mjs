@@ -38,7 +38,7 @@ test('assigned verse details resolve the assignment year and respect aliyah-coun
     const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 3 };
     db.setReadingLocks(shul.id, [{ ...assignment, readerId: user.id }]);
     let details = getAssignedReadingDetails(db, db.getUser(user.id));
-    assert.deepEqual(details, [{ ...assignment, psukim: reading.psukim[2], verseCount: reading.verseCounts[2] }]);
+    assert.deepEqual(details, [{ ...assignment, gregDate: reading.gregDate, hDate: reading.hDate, psukim: reading.psukim[2], verseCount: reading.verseCounts[2] }]);
     assert.ok(details[0].verseCount > 0);
     db.setReadingLocks(shul.id, [{ dateString: reading.dateString, desc: reading.desc, aliyahCount: 2 }]);
     const combined = getShulSchedule(db, shul.id, 5787).find(item => item.desc === reading.desc);
@@ -53,5 +53,5 @@ test('assigned verse details resolve the assignment year and respect aliyah-coun
     assert.equal(triennial[0].psukim, 'Genesis 2:20-2:25');
     assert.equal(triennial[0].verseCount, 6);
     const missing = getAssignedReadingDetails(db, { ...user, assignedReadings: [{ ...assignment, desc: 'Missing' }] });
-    assert.deepEqual(missing, [{ ...assignment, desc: 'Missing', psukim: null, verseCount: null }]);
+    assert.deepEqual(missing, [{ ...assignment, desc: 'Missing', gregDate: null, hDate: null, psukim: null, verseCount: null }]);
 });

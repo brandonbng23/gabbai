@@ -1,9 +1,16 @@
 import { useId } from 'react';
 import type { JSX } from 'react';
-import type { ShulUser, UserReading } from '../api.js';
+import type { UserReading } from '../api.js';
+import type { ReaderCardUser } from './userCard.tsx';
+import { ReadingCard } from './reading.tsx';
 
-export function UserReadingStats({ user }: { user: Pick<ShulUser, 'assignedReadings'> }): JSX.Element {
+export function UserReadingStats({ user, onCancelReading, cancellationDisabled = false }: {
+    user: ReaderCardUser;
+    onCancelReading?: (reading: UserReading) => Promise<void>;
+    cancellationDisabled?: boolean;
+}): JSX.Element {
     const headingId = useId();
+    const upcomingReadings = user.assignedReadings.filter(reading => new Date(reading.dateString) > new Date());
     return (
         <section className="shul-card user-stats" aria-labelledby={headingId}>
             <header className="settings-summary-heading">
@@ -40,6 +47,18 @@ export function UserReadingStats({ user }: { user: Pick<ShulUser, 'assignedReadi
                     </div>
                     <span className="stat-label">Upcoming<br></br>Readings</span>
                 </div>
+            </div>
+            <div className="activity-readings">
+                <h2 id={`${headingId}-upcoming`}>Upcoming Readings</h2>
+                {upcomingReadings.length > 0 ? (
+                    <div className="reading-list" role="region" aria-labelledby={`${headingId}-upcoming`} tabIndex={0}>
+                        {upcomingReadings.map(reading => (
+                            <ReadingCard key={`${reading.dateString}-${reading.desc}-${reading.aliyah}`}
+                                user={user} reading={reading} onCancelReading={onCancelReading}
+                                cancellationDisabled={cancellationDisabled} />
+                        ))}
+                    </div>
+                ) : <p className="activity-readings-empty">No upcoming readings.</p>}
             </div>
         </section>
     );

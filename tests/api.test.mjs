@@ -205,7 +205,7 @@ test('user views are read-only and exclude sensitive fields for members and admi
     const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
     db.setReadingLocks(shul.id, [{ ...assignment, readerId: target.id }]);
     const profile = await (await request(path)).json();
-    assert.deepEqual(profile.assignedReadings, [{ ...assignment, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }]);
+    assert.deepEqual(profile.assignedReadings, [{ ...assignment, gregDate: reading.gregDate, hDate: reading.hDate, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }]);
     assert.ok(profile.assignedReadings[0].verseCount > 0);
     assert.equal(profile.assignedReadingCount, 1);
     assert.ok(!('email' in profile) && !('phone' in profile) && !('settings' in profile));
@@ -932,7 +932,7 @@ test('user reading lists are available to the current user and owning admin with
     assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
     const registration = await request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(assignment));
     assert.equal(registration.status, 201);
-    const details = [{ ...assignment, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }];
+    const details = [{ ...assignment, gregDate: reading.gregDate, hDate: reading.hDate, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }];
     assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, details);
     const saved = await request('/api/me', patchShul({ firstName: 'Updated reader' }));
     assert.equal(saved.status, 200);

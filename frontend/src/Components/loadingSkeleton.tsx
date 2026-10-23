@@ -38,6 +38,14 @@ function ReadingStats() {
                 </div>
             </div>)}
         </div>
+        <div className="activity-readings">
+            <h3><Block width="140px" /></h3>
+            <div className="reading-list">
+                {Array.from({ length: 3 }, (_, index) => <div className="reading-card" key={index}>
+                    <Block width="70%" className="skeleton-title" />
+                </div>)}
+            </div>
+        </div>
     </div>;
 }
 

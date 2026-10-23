@@ -2,7 +2,9 @@ export interface UserReading {
     dateString: string;
     desc: string;
     aliyah: number;
-    // Resolved verse details are included by the user profile endpoint.
+    // Resolved dates and verse details are included by the user profile endpoint.
+    gregDate?: string | null;
+    hDate?: string | null;
     psukim?: string | null;
     verseCount?: number | null;
 }

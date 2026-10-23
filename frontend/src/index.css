@@ -3486,11 +3486,20 @@ input[type="number"] {
     gap: 12px;
 }
 
-.user-stats .settings-summary-heading h2 {
+.user-stats h2 {
     display: block;
     height: auto;
+    margin: 0;
     padding: 0;
     border: 0;
+    color: inherit;
+    font-size: 25px;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.user-stats .activity-readings > h2 {
+    margin-bottom: 14px;
 }
 
 .user-stats .stat-group {
@@ -3543,6 +3552,190 @@ input[type="number"] {
     background: rgb(155, 222, 155);
     border-color: green;
     color: green;
+}
+
+.reading-card {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 240px;
+    gap: 15px;
+    max-width: 100%;
+    min-width: 500px;
+    padding: 18px;
+    border: 1px solid var(--settings-border);
+    border-radius: 12px;
+    background: #3a393d;
+    overflow-wrap: anywhere;
+}
+
+.reading-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.reading-card-body {
+    display: flex;
+    flex-direction: row;
+    gap: 28px;
+}
+
+.reading-card-header > h3 {
+    min-width: 0;
+}
+
+.reading-card-header > .schedule-assigned-reader {
+    margin-left: auto;
+    margin-right: 20px;
+}
+
+.reading-card .assigned-reader-trigger:focus-visible,
+.reading-card .reader-remove-btn:focus-visible {
+    outline: 2px solid var(--settings-accent);
+    outline-offset: 3px;
+}
+
+.reading-card-error {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: #f5b1b1;
+}
+
+.activity-readings {
+    min-width: 0;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--settings-border);
+}
+
+.activity-readings h3 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: inherit;
+}
+
+.reading-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #77737e transparent;
+}
+
+.reading-list:focus-visible {
+    outline: 2px solid var(--settings-accent);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.reading-card h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.activity-readings-empty {
+    margin: 0;
+    color: var(--settings-muted);
+    font-size: 14px;
+}
+
+.reading-removal-dialog {
+    width: min(440px, calc(100% - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    padding: 28px;
+    border: 1px solid #646167;
+    border-radius: 18px;
+    background: #302f30;
+    color: #f6f5f7;
+    font-family: Fustat, sans-serif;
+    box-shadow: 0 24px 80px #0006;
+    overflow-wrap: anywhere;
+}
+
+.reading-removal-dialog::backdrop {
+    background: #08090bb8;
+}
+
+.reading-removal-eyebrow {
+    color: #bdbcc4;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+}
+
+.reading-removal-dialog h2 {
+    display: block;
+    height: auto;
+    margin: 8px 0 16px;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font-size: 25px;
+    font-weight: 650;
+    line-height: 1.2;
+}
+
+.reading-removal-dialog p {
+    margin: 0 0 12px;
+    color: #dddbe2;
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.reading-removal-dialog .reading-removal-note {
+    color: #bdbcc4;
+    font-size: 13px;
+}
+
+.reading-removal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.reading-removal-actions button {
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.reading-removal-keep {
+    background: #3d3b3f;
+    color: #f6f5f7;
+}
+
+.reading-removal-keep:hover {
+    background: #4b484e;
+}
+
+.reading-removal-actions .reading-removal-confirm {
+    border-color: #f5b1b1;
+    background: #f5b1b1;
+    color: #3b1e1e;
+}
+
+.reading-removal-confirm:hover {
+    background: #ffcccc;
+}
+
+.reading-removal-actions button:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 3px;
 }
 
 .footer {
@@ -3757,6 +3950,7 @@ body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-
     width: max-content;
     max-width: min(280px, 70vw);
     padding-top: 8px;
+    font-family: Fustat, sans-serif;
 }
 
 .assigned-reader-preview[hidden] {
@@ -4402,14 +4596,14 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     font-size: 13px;
     color: #f5b1b1;
 }
-.schedule-page .schedule-assigned-reader .assigned-reader-trigger {
+.schedule-assigned-reader .assigned-reader-trigger {
     display: flex;
     align-items: center;
     gap: 8px;
     width: 100%;
     border-radius: 7px;
 }
-.schedule-page .schedule-assigned-reader .assigned-reader-trigger > span:last-child {
+.schedule-assigned-reader .assigned-reader-trigger > span:last-child {
     min-width: 0;
     overflow-wrap: anywhere;
 }

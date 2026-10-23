@@ -68,9 +68,9 @@ export function getShulSchedule(database, shulId, year) {
 export function getAssignedReadingDetails(database, user) {
     const schedules = new Map();
     return user.assignedReadings.map(assignment => {
-        if (!user.shulId) return { ...assignment, psukim: null, verseCount: null };
+        if (!user.shulId) return { ...assignment, gregDate: null, hDate: null, psukim: null, verseCount: null };
         const date = new Date(`${assignment.dateString}T12:00:00Z`);
-        if (!Number.isFinite(date.getTime())) return { ...assignment, psukim: null, verseCount: null };
+        if (!Number.isFinite(date.getTime())) return { ...assignment, gregDate: null, hDate: null, psukim: null, verseCount: null };
         const year = new HDate(date).getFullYear();
         if (!schedules.has(year)) {
             schedules.set(year, new Map(getShulSchedule(database, user.shulId, year)
@@ -80,6 +80,8 @@ export function getAssignedReadingDetails(database, user) {
         const psukim = reading?.psukim[assignment.aliyah - 1];
         return {
             ...assignment,
+            gregDate: reading?.gregDate ?? null,
+            hDate: reading?.hDate ?? null,
             psukim: psukim && psukim !== 'null' ? psukim : null,
             verseCount: reading?.verseCounts[assignment.aliyah - 1] ?? null,
         };

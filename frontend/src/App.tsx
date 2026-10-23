@@ -120,7 +120,8 @@ function App() {
                     : <p className="shul-context" role="alert">Only signed-in members and administrators can view user profiles.</p>
               )
               : isUserSettingsPage ? (
-                user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
+                user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser}
+                    onReadingCancelled={handleReadingCancelled} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
               )
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your account is not associated with a shul. Contact your shul administrator.</p>

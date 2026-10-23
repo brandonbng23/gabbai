@@ -77,7 +77,9 @@ export function UserCard({ user, nameClick, setNameClick, onRoleChange, onDiscar
     )
 }
 
-export function ReaderCard( {user}: {user: ShulUser} ): React.JSX.Element {
+export type ReaderCardUser = Omit<ShulUser, 'email'>;
+
+export function ReaderCard( {user}: {user: ReaderCardUser} ): React.JSX.Element {
     return (
         <div className="reader-card">
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", height: "45px", gap: "15px"}}>
