@@ -1161,10 +1161,6 @@ h4 {
     padding-bottom: 15px;
 }
 
-.filterBar-collapsed > span:empty {
-    display: none;
-}
-
 .default-filters {
     display: flex;
     flex-direction: row;
@@ -1275,16 +1271,6 @@ h4 {
 .filter-label {
     font-size: 12px;
     padding-bottom: 4px;
-}
-
-.advanced-filter-label {
-    margin-left: 20px;
-    margin-top: 17px;
-    padding-right: 3px;
-
-    font-size: 15px;
-    font-weight: 600;
-    font-family: Fustat;
 }
 
 .filter input[type=text]::placeholder {
@@ -3541,8 +3527,13 @@ input[type="number"] {
     gap: 8px 24px;
 }
 
-body:has(.content-window-settings) .footer-text {
+body:has(.content-window-settings, .content-window-schedule) .footer-text {
     color: #dedce3;
+}
+
+body:has(.content-window-settings, .content-window-schedule) .footer-link:hover,
+body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-visible {
+    color: #8bc8ff;
 }
 
 @media (max-width: 1200px) {
@@ -4073,6 +4064,364 @@ body:has(.content-window-settings) .footer-text {
 @media (max-width: 540px) {
     .auth-pair, .auth-name-fields { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
+/* Original schedule layout, with the shared dark palette. */
+html:has(.content-window-schedule), body:has(.content-window-schedule) {
+    background: #464545;
+}
+.schedule-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    color: #f6f5f7;
+    font-family: Fustat, sans-serif;
+}
+.schedule-page .filterBar, .schedule-page .parsha,
+.content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
+    border: 1px solid #504f52;
+    background: #302f30;
+}
+.schedule-page .welcomeBar {
+    background: transparent;
+    border: 0;
+}
+.schedule-page .parsha {
+    height: auto;
+    min-height: 0;
+    flex-shrink: 0;
+    padding-bottom: 12px;
+}
+.schedule-page .parsha:has(> .parsha-content) {
+    gap: 12px;
+    padding-bottom: 0;
+}
+.schedule-page .parsha-content {
+    padding-bottom: .75%;
+    min-width: 0;
+}
+.schedule-page :is(.pandora-box, .pandora-box-hover) {
+    height: auto;
+    min-height: 40px;
+}
+.schedule-page h3, .schedule-page .welcomeBar h4 {
+    color: #f6f5f7;
+}
+.schedule-page .filter-label {
+    color: #bdbcc4;
+}
+.schedule-page .filterBar {
+    padding: 16px;
+    gap: 16px;
+}
+.schedule-page .default-filters {
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin: 0;
+}
+.schedule-page .schedule-filter-field {
+    min-width: 0;
+    flex: 1 1 160px;
+}
+.schedule-page .default-filters > .schedule-filter-field:first-child {
+    flex-basis: 240px;
+}
+.schedule-page .filter {
+    margin: 0;
+}
+.schedule-page .filter-label {
+    padding-bottom: 6px;
+    font-weight: 600;
+}
+.schedule-page .filterButtons {
+    width: auto;
+    margin: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.schedule-page .filterButtons > button {
+    min-height: 44px;
+    width: auto;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.schedule-page .filter input {
+    height: 44px;
+    min-width: 0;
+    padding: 10px 13px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background-color: #3d3b3f;
+    color: #f6f5f7;
+    font: inherit;
+    color-scheme: dark;
+}
+.schedule-page .filter input:focus {
+    border-color: #8bc8ff;
+}
+.schedule-page .filter input:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 2px;
+}
+.schedule-page .filter input[type=text] {
+    width: 100%;
+    padding-right: 40px;
+    background-position: right 13px center;
+    background-image: url('./Assets/magnifying-glass-solid-full-white.svg');
+}
+.schedule-page .filter input::placeholder {
+    color: #a6a3ad;
+}
+.schedule-page .filter input[type=date] {
+    width: 100%;
+    max-width: 100%;
+    background-image: none;
+}
+.schedule-page .filter input[type=date][data-empty="true"] {
+    color: #a6a3ad;
+}
+.schedule-page .filter input[type=date]::-webkit-datetime-edit {
+    color: inherit;
+}
+.schedule-page .filter input[type=date]::-webkit-calendar-picker-indicator {
+    opacity: .8;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 3px #0008);
+}
+.schedule-page .clear-button {
+    border-color: #8a8790;
+    background: transparent;
+    color: #dddce3;
+}
+.schedule-page .clear-button:disabled {
+    border-color: #646167;
+    background: transparent;
+    color: #88858e;
+    cursor: default;
+}
+.schedule-page .clear-button:disabled:hover {
+    border-color: #646167;
+    color: #88858e;
+}
+.schedule-page .clear-button:hover:enabled {
+    border-color: #66B1F2;
+    background: #66B1F2;
+    color: white;
+}
+.schedule-page .show-advanced-link {
+    height: auto;
+    padding: 0;
+    background: transparent;
+    color: #8bc8ff;
+    cursor: pointer;
+}
+.schedule-page .advanced-filters {
+    height: auto;
+    padding: 16px 0 0;
+    border-top: 1px solid #504f52;
+    gap: 16px;
+}
+.schedule-page .date-range-filter {
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+}
+.schedule-page .advanced-filters .divider {
+    width: 100%;
+    margin: 0;
+}
+.schedule-page .book-filter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 8px;
+    margin: 0;
+}
+.schedule-page .book-filter > div {
+    flex: 1 1 auto;
+}
+.schedule-page .book-filter button {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+.schedule-page .advanced-filters .divider, .schedule-page .parsha .divider {
+    border-color: #646167;
+}
+.schedule-page :is(.book-filter-btn-off, .book-filter-btn-active) {
+    border-color: #8a8790;
+    background: transparent;
+    color: #dddce3;
+}
+.schedule-page .book-filter-btn-active {
+    border-color: #8bc8ff;
+    background: #8bc8ff25;
+    color: #a6d5ff;
+}
+.schedule-page :is(.book-filter-btn-off, .book-filter-btn-active):hover {
+    border-color: #66B1F2;
+    background: #66B1F2;
+    color: white;
+}
+.schedule-page .swap-fields {
+    flex: 0 0 32px;
+    height: 44px;
+    margin: 0;
+    background-size: 20px;
+    background-color: transparent;
+    filter: invert(1) drop-shadow(0 2px 3px #0008);
+}
+.schedule-page .swap-fields:enabled {
+    cursor: pointer;
+}
+.schedule-page .swap-fields:disabled {
+    opacity: .35;
+    cursor: default;
+}
+.schedule-page .range-error {
+    height: auto;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #f5b1b120;
+}
+.schedule-page .error-message {
+    color: #f5b1b1;
+}
+.schedule-page .notices {
+    align-self: center;
+    width: calc(100% - 10px);
+    margin-top: 5px;
+    background: linear-gradient(115deg, #527fa5, #525761 85%);
+    border: 1px solid #8bc8ff40;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px #0005, 0 2px 5px #0003;
+}
+.schedule-page .notices:empty {
+    display: none;
+}
+.schedule-page .parsha-title .info-tip {
+    color: #bdbcc4;
+}
+.schedule-page .parsha-dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 15px;
+    margin-right: 2.5%;
+}
+.schedule-page .parsha-dates .heb {
+    padding: 0;
+}
+.schedule-page :is(.pandora-box, .pandora-box-hover) > button {
+    cursor: pointer;
+}
+.schedule-page .parsha-title .hover-tip {
+    border: 1px solid #646167;
+    background: #252428;
+    color: #f6f5f7;
+}
+.schedule-page .pandora-box {
+    color: #f6f5f7;
+}
+.schedule-page .pandora-box > button {
+    border-color: #8bc8ff;
+    background: transparent;
+    color: #a6d5ff;
+}
+.schedule-page .aliyah:focus-within {
+    background: #66B1F2;
+    color: white;
+}
+.schedule-page .aliyah:focus-within .pandora-box {
+    color: white;
+}
+.schedule-page .aliyah:focus-within .pandora-box > button {
+    border-color: white;
+    color: white;
+}
+.schedule-page :is(svg, .info-icon) {
+    filter: drop-shadow(0 2px 3px #0008);
+}
+.schedule-page button:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 3px;
+}
+.schedule-page .no-results h3 {
+    margin: 0 0 8px;
+}
+.content-window-schedule .skeleton-state {
+    --skeleton-base: #45464a;
+    --skeleton-shine: #56585d;
+}
+/* Keep the original desktop column; allow controls to wrap on smaller screens. */
+@media (max-width: 1000px) {
+    .content-window-schedule {
+        width: calc(100% - var(--content-offset) - 20px);
+    }
+    .schedule-page .welcomeBar, .schedule-page .filterBar, .schedule-page .parsha,
+    .content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
+        width: calc(100% - 20px);
+        margin-left: 20px;
+    }
+}
+@media (max-width: 620px) {
+    .navbar .dashboard-label, .navbar .vert-divider, .navbar .navbar-toggler {
+        display: none;
+    }
+    .navbar .navbar-brand {
+        font-size: 26px;
+    }
+    .navbar .container-fluid {
+        flex-wrap: nowrap;
+    }
+    .navbar .alpha-btn {
+        margin-left: 12px;
+        margin-right: auto;
+        flex-shrink: 0;
+    }
+    .navbar-account-actions {
+        flex-shrink: 0;
+    }
+    .schedule-page .welcomeBar h4 {
+        overflow-wrap: anywhere;
+    }
+    .schedule-page .default-filters > div {
+        min-width: 0;
+        width: 100%;
+    }
+    .schedule-page .default-filters > .schedule-filter-field {
+        flex-basis: 100%;
+    }
+    .schedule-page .filter input[type=text] {
+        width: 100%;
+    }
+    .schedule-page .filterButtons {
+        width: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .schedule-page :is(.pandora-box, .pandora-box-hover) {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+    .schedule-page :is(.pandora-box, .pandora-box-hover) > button,
+    .schedule-page :is(.pandora-box, .pandora-box-hover) .locked {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .schedule-page .no-results {
+        width: calc(100% - 20px);
+        margin-left: 20px;
+        text-align: center;
+    }
+}
+
 .account-password-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .account-password-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
 .account-password-footer > span { color: var(--settings-muted); font-size: 12px; }

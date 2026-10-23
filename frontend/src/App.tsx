@@ -30,6 +30,7 @@ function App() {
     const isUserViewPage = window.location.pathname.replace(/\/$/, "") === "/userView";
     const authPath = window.location.pathname.replace(/\/$/, '');
     const isAuthPage = authPath === '/signin' || authPath === '/signup';
+    const isSchedulePage = !isRegistrationPage && !isShulPage && !isShulSettingsPage && !isUserSettingsPage && !isUserViewPage && !isAuthPage;
     const viewedUserId = new URLSearchParams(window.location.search).get('user') || '';
 
     useEffect(() => {
@@ -95,7 +96,7 @@ function App() {
             <div className="app-layout">
               <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isShulSettingsPage || isUserSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
@@ -114,14 +115,14 @@ function App() {
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
-              ) : isShulPage ? <MyShul shul={shul} /> : <>
+              ) : isShulPage ? <MyShul shul={shul} /> : <main className="schedule-page">
               <WelcomeBar fName={user?.firstName}></WelcomeBar>
               {scheduleLoading ? <LoadingSkeleton variant="schedule" />
               : scheduleError ? <p className="shul-context" role="alert">{scheduleError}</p>
               : <Schedule
                 shulId={shulId} parshiyot = {schedule}>
               </Schedule>}
-              </>}
+              </main>}
             </div>
         </div>
           <Footer></Footer>
