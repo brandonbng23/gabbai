@@ -3476,10 +3476,25 @@ input[type="number"] {
     fill: white;
 }
 
+.shul-card.user-stats {
+    background: var(--settings-surface);
+}
+
 .user-reading-stats {
-    display: flex;
-    flex-direction: row;
-    gap: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 12px;
+}
+
+.user-stats .settings-summary-heading h2 {
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
+}
+
+.user-stats .stat-group {
+    min-width: 0;
 }
 
 .reading-stat {
@@ -3510,6 +3525,12 @@ input[type="number"] {
     background: #8bc8ff;
     border-color: #347fc1;
     color: #347fc1;
+}
+
+.verses-stat {
+    background: rgb(220, 139, 224);
+    border-color: rgb(160, 2, 188);
+    color: rgb(160, 2, 188);
 }
 
 .upcoming-stat {

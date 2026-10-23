@@ -932,7 +932,11 @@ test('user reading lists are available to the current user and owning admin with
     assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
     const registration = await request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(assignment));
     assert.equal(registration.status, 201);
-    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, [assignment]);
+    const details = [{ ...assignment, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }];
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, details);
+    const saved = await request('/api/me', patchShul({ firstName: 'Updated reader' }));
+    assert.equal(saved.status, 200);
+    assert.deepEqual((await saved.json()).assignedReadings, details, 'Saving a profile preserves the resolved reading statistics');
     assert.equal((await request('/api/me', patchShul({ assignedReadings: [] }))).status, 400);
     db.updateUser(user.id, { role: 'admin' });
     const users = await (await request(`/api/shuls/${shul.id}/users`)).json();

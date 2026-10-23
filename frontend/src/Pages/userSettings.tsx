@@ -1,4 +1,5 @@
 import { AccountSecurity } from '../Components/accountSecurity.tsx';
+import { UserReadingStats } from '../Components/userReadingStats.tsx';
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { useEffect, useState } from 'react';
 import type { JSX, SubmitEvent } from 'react';
@@ -103,6 +104,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul |
                             ))}
                         </dl>
                     </section>
+                    <UserReadingStats user={user} />
                     <section className="settings-panel" aria-labelledby="user-details-heading">
                         <div className="settings-section-header">
                             <div>

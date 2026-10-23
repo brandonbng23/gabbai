@@ -1,36 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { getJson } from '../api.js';
-import type { ShulUser, UserReading, UserViewProfile } from '../api.js';
+import type { UserViewProfile } from '../api.js';
+import { UserReadingStats } from '../Components/userReadingStats.tsx';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
-
-function UserReadingStats({ user }: { user: Pick<ShulUser, 'assignedReadings'> }): JSX.Element {
-    return (
-        <div className="user-reading-stats">
-            <div className="stat-group">
-                <div className="reading-stat lifetime-stat">
-                    <span>{user.assignedReadings.length}</span>
-                </div>
-                <span className="stat-label">Lifetime<br></br>Readings</span>
-            </div>
-
-            <div className="stat-group">
-                <div className="reading-stat completed-stat">
-                    <span>{user.assignedReadings.filter((r: UserReading) => new Date(r.dateString) < new Date()).length}</span>
-                </div>
-                <span className="stat-label">Completed<br></br>Readings</span>
-            </div>
-
-            <div className="stat-group">
-                <div className="reading-stat upcoming-stat">
-                    <span>{user.assignedReadings.filter((r: UserReading) => new Date(r.dateString) > new Date()).length}</span>
-                </div>
-                <span className="stat-label">Upcoming<br></br>Readings</span>
-            </div>
-        </div>
-    )
-}
 
 export function UserView({ userId }: { userId: string }): JSX.Element {
     const [profile, setProfile] = useState<UserViewProfile | null>(null);
@@ -88,9 +62,7 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
                             </dl>
                         </section>
 
-                        <section>
-                            <UserReadingStats user={profile} />
-                        </section>
+                        <UserReadingStats user={profile} />
                     </div>
                 </div>}
         </main>

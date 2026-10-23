@@ -348,7 +348,7 @@ export function createApp(database, {
         }
         const user = app.locals.database.getUser(req.currentUserId);
         if (!user) return res.status(404).json({ error: "Current user not found" });
-        return res.json(user);
+        return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
     });
 
     app.patch('/api/me', (req, res, next) => {
@@ -364,7 +364,8 @@ export function createApp(database, {
             }
             if ('title' in req.body && req.body.title !== '' && !userTitles.includes(req.body.title))
                 throw new TypeError('Choose a title from the list.');
-            return res.json(database.updateUser(req.currentUserId, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
+            const user = database.updateUser(req.currentUserId, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) });
+            return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             if (error.message?.includes('UNIQUE constraint failed: users.email'))
