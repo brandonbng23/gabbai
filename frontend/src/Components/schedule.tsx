@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { JSX } from 'react';
 import Filter from './filter.tsx';
 import Parsha from './parsha.tsx';
-import type { ParshaObj } from './parsha.tsx';
+import type { ParshaObj, ReadingActions } from './parsha.tsx';
 
 function formatDateString(date: Date, addYears: number): string {
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -15,10 +15,10 @@ function toDate(value: string): Date {
     return new Date(year, month - 1, day);
 }
 
-export default function Schedule({ parshiyot, shulId }: {
+export default function Schedule({ parshiyot, shulId, currentUserId, onReadingCancelled }: {
     parshiyot: ParshaObj[];
     shulId?: string;
-}): JSX.Element {
+} & ReadingActions): JSX.Element {
     const [nameFilter, setNameFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [bookFilter, setBookFilter] = useState<string[]>([]);
@@ -57,7 +57,8 @@ export default function Schedule({ parshiyot, shulId }: {
             />
             <div className="parshiyot">
                 {filteredReadings.length ? filteredReadings.map(reading => (
-                    <Parsha key={`${reading.dateString}-${reading.desc}`} {...reading} shulId={shulId} />
+                    <Parsha key={`${reading.dateString}-${reading.desc}`} {...reading} shulId={shulId}
+                        currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />
                 )) : (
                     <div className="no-results" role="status">
                         <h3>Oy Gevalt!</h3>

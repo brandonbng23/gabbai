@@ -720,6 +720,43 @@ test('profile registration reserves an available aliyah and rejects locked, hidd
     assert.equal(db.listReadingReaders(other.id).length, 0);
 });
 
+test('readers can cancel only their own assignments, including locked readings, and register again', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = readings.find(item => item.desc === 'Bereshit');
+    const selection = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
+    const path = `/api/shuls/${shul.id}/readings/register`;
+    const cancel = (body = selection, headers = {}) => request(path, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body),
+    });
+    assert.equal((await request(path, registrationRequest(selection))).status, 201);
+    assert.equal((await cancel(selection, { cookie: 'gabbai_session=invalid' })).status, 401);
+    assert.equal((await cancel({ ...selection, aliyah: 0 })).status, 400);
+    assert.equal((await cancel({ ...selection, readerId: user.id })).status, 400);
+    const otherShul = db.createShul({ name: 'Other Shul', settings: shul.settings });
+    assert.equal((await request(`/api/shuls/${otherShul.id}/readings/register`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection),
+    })).status, 403);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Another', lastName: 'Reader', email: 'another-reader@example.com' });
+    db.setReadingLocks(shul.id, [{ ...selection, readerId: other.id }]);
+    assert.equal((await cancel()).status, 409, 'A stale cancellation must not remove a replacement reader');
+    assert.equal(db.listReadingReaders(shul.id)[0].reader.id, other.id);
+    db.setReadingLocks(shul.id, [{ ...selection, readerId: user.id }, { ...selection, locked: true }]);
+    const response = await cancel();
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await response.json(), { cancelled: true });
+    assert.equal(db.listReadingReaders(shul.id).length, 0);
+    assert.equal(db.getUser(user.id).assignedReadings.length, 0);
+    const refreshed = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const updated = refreshed.find(item => item.dateString === selection.dateString && item.desc === selection.desc);
+    assert.equal(updated.readers[0], null);
+    assert.equal(updated.lockedArr[0], true, 'Cancellation preserves the shul’s locks');
+    assert.equal((await cancel()).status, 409);
+    db.setReadingLocks(shul.id, [{ ...selection, locked: false }]);
+    assert.equal((await request(path, registrationRequest(selection))).status, 201);
+});
+
 test('anonymous guest registration identifies guests by email and updates their submitted profile details', async t => {
     const { request, shul, user, db } = await setup(t, false);
     const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();

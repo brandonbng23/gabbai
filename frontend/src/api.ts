@@ -204,3 +204,15 @@ export async function registerForReading(shulId: string, reading: ParshaObj, ali
         throw new Error(failure?.error || 'Unable to register. Please try again.');
     }
 }
+
+export async function cancelReading(shulId: string, dateString: string, desc: string, aliyah: number): Promise<void> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/register`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateString, desc, aliyah }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to cancel your reading. Please try again.');
+    }
+}

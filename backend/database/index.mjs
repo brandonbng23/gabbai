@@ -524,6 +524,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 return getShul(id);
             });
         },
+        cancelReading(shulId, { dateString, desc, aliyah }, userId) {
+            // Match ownership in the DELETE itself so a reassigned slot cannot be removed.
+            return db.prepare(`DELETE FROM reading_readers
+                WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ? AND user_id = ?`)
+                .run(shulId, dateString, desc, aliyah, userId).changes > 0;
+        },
         registerReading(shulId, { dateString, desc, aliyah, readerId, guest }, validateReading) {
             return transaction(() => {
                 // Validate availability while holding the write lock, before creating a guest.

@@ -87,6 +87,20 @@ function App() {
         return () => controller.abort();
     }, [shulId, scheduleSettings]);
 
+    function handleReadingCancelled(dateString: string, desc: string, aliyah: number): void {
+        const keepReading = (reading: { dateString: string; desc: string; aliyah: number }) =>
+            reading.dateString !== dateString || reading.desc !== desc || reading.aliyah !== aliyah;
+        setSchedule(previous => previous.map(reading => ({
+            ...reading,
+            readers: reading.readers.map((reader, index) => {
+                if (reading.dateString === dateString && reading.desc === desc && index === aliyah - 1) return null;
+                return reader && reader.id === user?.id
+                    ? { ...reader, assignedReadings: reader.assignedReadings.filter(keepReading) } : reader;
+            }),
+        })));
+        setUser(previous => previous ? { ...previous, assignedReadings: previous.assignedReadings.filter(keepReading) } : previous);
+    }
+
     if (isAuthPage) return <AuthPage key={authPath} mode={authPath === '/signup' ? 'signup' : 'signin'} />;
     if (!loading && !error && !user && !isRegistrationPage
         && (!shul || isUserSettingsPage || isShulSettingsPage || isUserViewPage)) return <AuthPage mode="signin" />;
@@ -96,7 +110,7 @@ function App() {
             <div className="app-layout">
               <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isRegistrationPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isShulSettingsPage || isUserSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
@@ -120,7 +134,8 @@ function App() {
               {scheduleLoading ? <LoadingSkeleton variant="schedule" />
               : scheduleError ? <p className="shul-context" role="alert">{scheduleError}</p>
               : <Schedule
-                shulId={shulId} parshiyot = {schedule}>
+                shulId={shulId} parshiyot = {schedule}
+                currentUserId={user?.id} onReadingCancelled={handleReadingCancelled}>
               </Schedule>}
               </main>}
             </div>

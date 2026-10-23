@@ -125,6 +125,27 @@ export function createApp(database, {
         }
     });
 
+    app.delete('/api/shuls/:id/readings/register', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
+        if (!user) return res.status(401).json({ error: 'Sign in to cancel your reading.' });
+        if (user.shulId !== req.params.id)
+            return res.status(403).json({ error: 'You can only cancel your own readings in your shul.' });
+        try {
+            validateKeys(req.body, ['dateString', 'desc', 'aliyah'], 'cancellation');
+            const { dateString, desc, aliyah } = req.body;
+            if (typeof dateString !== 'string' || typeof desc !== 'string'
+                || !Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9)
+                return res.status(400).json({ error: 'Choose a reading and aliyah from 1 to 9.' });
+            if (!database.cancelReading(req.params.id, { dateString, desc, aliyah }, user.id))
+                return res.status(409).json({ error: 'This aliyah is no longer assigned to you. Refresh the schedule.' });
+            return res.json({ cancelled: true });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     app.get("/api/shuls/:id/users", (req, res) => {
         res.set("Cache-Control", "no-store");
         const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
