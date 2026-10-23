@@ -21,7 +21,7 @@ export function createApp(database, {
     app.locals.database = database;
 
     app.use(express.json({ limit: '2mb' }));
-    installAuthentication(app, database, { development, fallbackUserId });
+    installAuthentication(app, database, { development, preview, fallbackUserId });
 
     function savePicture(req, res, next, kind) {
         res.set('Cache-Control', 'no-store');
@@ -57,6 +57,17 @@ export function createApp(database, {
 
     app.get("/api/shuls", (_req, res) => {
         res.json(app.locals.database.listShuls().map(({ id, name }) => ({ id, name })));
+    });
+
+    app.get('/api/shuls/search', (req, res) => {
+        if (typeof req.query.q !== 'string' || req.query.q.trim().length < 2 || req.query.q.length > 100)
+            return res.status(400).json({ error: 'Search with 2–100 characters.' });
+        const terms = req.query.q.trim().toLocaleLowerCase().split(/\s+/);
+        const matches = database.listShuls().filter(shul => {
+            const description = `${shul.name} ${shul.address}`.toLocaleLowerCase();
+            return terms.every(term => description.includes(term));
+        });
+        return res.json(matches.slice(0, 20).map(({ id, name, address, code }) => ({ id, name, address, code })));
     });
 
     app.get('/api/shuls/by-code/:code', (req, res, next) => {

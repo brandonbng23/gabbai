@@ -4028,14 +4028,35 @@ body:has(.content-window-settings) .footer-text {
 .auth-password-options label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .auth-password-options input { accent-color: #8bc8ff; }
 .auth-hint { color: #bdbcc4; font-size: 12px; }
-.auth-code-field { padding: 16px; margin-bottom: 24px; border: 1px solid #8bc8ff40; border-radius: 12px; background: #8bc8ff08; gap: 10px; }
-.auth-code-field > label { color: #8bc8ff; }
-.auth-code-slots { display: flex; gap: 10px; }
-.auth-code-slots .auth-code-letter { width: 48px; height: 54px; padding: 0; text-align: center; font-size: 25px; font-weight: 650; text-transform: uppercase; caret-color: #8bc8ff; }
-.auth-code-slots .auth-code-letter-filled { border-color: #8bc8ff80; }
+.auth-code-field { align-items: center; text-align: center; padding: 24px 16px; margin-bottom: 24px; border: 1px solid #8bc8ff30; border-radius: 14px; background: radial-gradient(ellipse at top, #8bc8ff0c, transparent 70%), #15171c; box-shadow: inset 0 2px 12px #0005; gap: 14px; }
+.auth-code-field > label { color: #a6d5ff; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.auth-code-field .auth-hint { color: #a1a7b2; }
+.auth-code-slots { display: flex; justify-content: center; max-width: 100%; gap: 10px; }
+.auth-code-slots .auth-code-letter { width: 48px; height: 54px; padding: 0; border-color: #414953; background: #0c0e12; color: #d4eaff; box-shadow: inset 0 2px 4px #0006; text-align: center; font-size: 25px; font-weight: 650; text-transform: uppercase; caret-color: #8bc8ff; }
+.auth-code-slots .auth-code-letter-filled { border-color: #8bc8ff80; background: #18232f; }
+.auth-code-slots .auth-code-letter:focus-visible { border-color: #8bc8ff; box-shadow: 0 0 12px #8bc8ff20; }
+.auth-shul-search-toggle { padding: 0; border: 0; background: transparent; color: #8bc8ff; font: inherit; font-size: 12px; cursor: pointer; text-underline-offset: 3px; }
+.auth-shul-search-toggle:hover { color: #c1e3ff; text-decoration: underline; }
+.auth-shul-search-toggle:focus-visible, .auth-shul-results button:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
+.auth-shul-selected { color: #a6d5ff; font-size: 13px; overflow-wrap: anywhere; }
+.auth-shul-search { width: 100%; padding-top: 16px; border-top: 1px solid #8bc8ff25; text-align: left; }
+.auth-shul-search > label { display: block; margin-bottom: 8px; color: #bdbcc4; }
+.auth-shul-search > input { border-color: #414953; background: #0c0e12; }
+.auth-shul-search-feedback { margin-top: 8px; color: #a1a7b2; font-size: 12px; }
+.auth-shul-results { display: grid; gap: 6px; max-height: 230px; overflow-y: auto; list-style: none; padding: 4px; margin: 10px -4px 0; }
+.auth-shul-results button { display: flex; flex-direction: column; gap: 4px; width: 100%; border: 1px solid #414953; border-radius: 8px; padding: 10px 12px; background: #0c0e12; color: #d4eaff; font: inherit; font-size: 14px; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.auth-shul-results button:hover { border-color: #8bc8ff80; background: #18232f; }
+.auth-shul-results small { color: #a1a7b2; font-size: 12px; }
+.auth-shul-search-skeleton { display: grid; gap: 8px; padding: 10px 0; }
+.auth-shul-search-skeleton span { display: block; height: 14px; width: 75%; background: #414953; border-radius: 4px; }
+.auth-shul-search-skeleton span:last-child { width: 50%; }
 .auth-error { margin: 0 0 16px; padding: 10px 12px; border: 1px solid #f5b1b155; border-radius: 8px; background: #f5b1b110; color: #f5b1b1; font-size: 14px; }
 .auth-submit { width: 100%; min-height: 44px; border: 0; border-radius: 8px; background: #66B1F2; color: #1a2a3e; font: inherit; font-weight: 750; cursor: pointer; }
 .auth-submit:hover:enabled { background: #8bc8ff; }
+.auth-demo-signin { display: grid; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid #504f52; text-align: center; color: #bdbcc4; font-size: 12px; }
+.auth-demo-button { min-height: 44px; padding: 10px 16px; border: 1px solid #8bc8ff70; border-radius: 8px; background: #15171c; color: #a6d5ff; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.auth-demo-button:hover:enabled { border-color: #8bc8ff; background: #18232f; }
+.auth-demo-button:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
 .auth-card :disabled { opacity: .6; cursor: default; }
 .auth-card .auth-switch { margin: 22px 0 0; text-align: center; font-size: 14px; }
 .auth-switch a { color: #8bc8ff; margin-left: 4px; }

@@ -7,7 +7,7 @@ const cookieName = 'gabbai_session';
 const sessionAge = 7 * 24 * 60 * 60 * 1000;
 const digest = value => createHash('sha256').update(value).digest('hex');
 
-export function installAuthentication(app, database, { development, fallbackUserId }) {
+export function installAuthentication(app, database, { development, preview, fallbackUserId }) {
     if (process.env.GABBAI_TRUST_PROXY === 'true') app.set('trust proxy', 1);
     app.use('/api', (req, res, next) => {
         const token = (req.headers.cookie ?? '').split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
@@ -45,6 +45,33 @@ export function installAuthentication(app, database, { development, fallbackUser
             return res.status(409).json({ error: 'This email already has a profile. Sign in, or contact your shul administrator if you haven’t set up sign-in yet.' });
         return next(error);
     }
+
+    function demoUser() {
+        if ((!development && !preview) || !fallbackUserId) return null;
+        const user = database.getUser(fallbackUserId);
+        const shul = database.getShulByCode('DEMO');
+        return user && shul && user.shulId === shul.id ? user : null;
+    }
+
+    app.get('/api/auth/options', (_req, res) => {
+        res.set('Cache-Control', 'no-store');
+        return res.json({ demoAvailable: Boolean(demoUser()) });
+    });
+
+    app.post('/api/auth/demo', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        const user = demoUser();
+        if (!user) return res.status(404).json({ error: 'Demo sign-in is not available here.' });
+        if (limited(req, res, 'signin', 20)) return;
+        try {
+            validateKeys(req.body, [], 'demo sign-in');
+            const token = randomBytes(32).toString('hex');
+            database.createSession(user.id, digest(token), Date.now() + sessionAge);
+            revokePrevious(req);
+            setCookie(res, token);
+            return res.json(user);
+        } catch (error) { return failure(error, res, next); }
+    });
 
     app.post('/api/auth/register', async (req, res, next) => {
         res.set('Cache-Control', 'no-store');

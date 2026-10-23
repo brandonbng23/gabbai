@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { createApp } from '../backend/app.mjs';
 import { openDatabase } from '../backend/database/index.mjs';
+import { ensureDemoUser } from '../backend/database/demo.mjs';
 import { hashPassword, verifyPassword } from '../backend/passwords.mjs';
 
 const password = 'Correct horse 2026!';
@@ -17,8 +18,9 @@ async function setup(t, options = {}) {
     const db = openDatabase(':memory:');
     const shul = db.createShul({ name: 'Auth shul', settings: { hebYear: 5788 } });
     let actor;
-    if (options.fallback) actor = db.createUser({ shulId: shul.id, firstName: 'Existing', lastName: 'Admin', email: 'existing@example.com', role: 'admin' });
-    const app = createApp(db, { development: options.production ? false : true, preview: false, devUserId: actor?.id ?? '' });
+    if (options.demo) actor = ensureDemoUser(db);
+    else if (options.fallback) actor = db.createUser({ shulId: shul.id, firstName: 'Existing', lastName: 'Admin', email: 'existing@example.com', role: 'admin' });
+    const app = createApp(db, { development: options.production ? false : true, preview: options.preview ?? false, devUserId: actor?.id ?? '' });
     const server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     t.after(async () => { await new Promise(resolve => server.close(resolve)); db.close(); });
@@ -26,6 +28,45 @@ async function setup(t, options = {}) {
     return { db, shul, actor, base, request: (path, options) => fetch(base + path, options),
         details: { shulCode: shul.code.toLowerCase(), title: 'Mr.', firstName: 'New', lastName: 'Member', email: 'new@example.com', password } };
 }
+
+test('demo sign-in creates and rotates normal sessions after sign-out without replacing credentials', async t => {
+    const { request, db, actor, base } = await setup(t, { demo: true });
+    db.updateUser(actor.id, { email: 'edited-demo@example.com', firstName: 'Edited' });
+    const hash = await hashPassword(password);
+    db.setPasswordHash(actor.id, hash);
+    assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: true });
+    const out = await request('/api/auth/signout', json({}));
+    assert.equal((await request('/api/me', { headers: { Cookie: cookie(out) } })).status, 401);
+    assert.equal((await request('/api/auth/demo', json({ userId: actor.id }))).status, 400);
+    assert.equal((await request('/api/auth/demo', json({}, undefined, { Origin: 'https://foreign.example' }))).status, 403);
+    const signed = await request('/api/auth/demo', json({}, cookie(out), { Origin: base }));
+    assert.equal(signed.status, 200);
+    assert.equal((await signed.json()).id, actor.id);
+    assert.match(signed.headers.get('set-cookie'), /HttpOnly/);
+    const session = cookie(signed);
+    assert.equal((await (await request('/api/me', { headers: { Cookie: session } })).json()).id, actor.id);
+    assert.equal((await request(`/api/shuls/${actor.shulId}/users`, { headers: { Cookie: session } })).status, 200);
+    assert.equal(db.getCredentials('edited-demo@example.com').passwordHash, hash);
+    const second = await request('/api/auth/demo', json({}, session));
+    assert.notEqual(cookie(second), session);
+    assert.equal((await request('/api/me', { headers: { Cookie: session } })).status, 401);
+    const loggedOut = await request('/api/auth/signout', json({}, cookie(second)));
+    assert.equal((await request('/api/me', { headers: { Cookie: cookie(loggedOut) } })).status, 401);
+});
+
+test('demo sign-in is unavailable for ordinary deployments and unrelated development identities', async t => {
+    for (const options of [{ production: true, demo: true }, { fallback: true }, {}]) {
+        const { request } = await setup(t, options);
+        assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: false });
+        assert.equal((await request('/api/auth/demo', json({}))).status, 404);
+    }
+    const { request } = await setup(t, { production: true, preview: true });
+    assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: true });
+    const signed = await request('/api/auth/demo', json({}));
+    assert.equal(signed.status, 200);
+    assert.match(signed.headers.get('set-cookie'), /Secure/);
+    assert.equal((await signed.json()).email, 'demo@example.com');
+});
 
 test('registration uses shul codes, creates only members, and establishes a private session', async t => {
     const { db, shul, request, details } = await setup(t);

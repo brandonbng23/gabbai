@@ -46,6 +46,7 @@ export function ensureDemoUser(database) {
     // Profile emails are editable. Reuse the reserved shul before considering
     // creation, including when the original sample account has been renamed.
     const demoShul = database.getShulByCode('DEMO');
+    if (demoShul) database.removeUnusedDemoShuls();
     const emailMatch = database.getUserByEmail('demo@example.com');
     const existing = demoShul
         ? (emailMatch?.shulId === demoShul.id ? emailMatch : database.listShulUsers(demoShul.id)

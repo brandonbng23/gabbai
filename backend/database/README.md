@@ -76,8 +76,17 @@ users can open My Preferences → Sign-in & Security under their trusted develop
 identity and set a password for their own account. Public email verification,
 password-recovery email, and guest-to-member account claiming are not implemented.
 
+On `/signin`, **Sign in to demo** restores access to the existing sample account
+after signing out, including when its profile email has been edited. This creates
+a normal session without needing a shared password or replacing any saved password.
+It is available only during development with the `DEMO` shul's configured sample
+identity, or when preview mode is explicitly enabled. Ordinary production deployments
+do not offer demo sign-in.
+
 - `POST /api/auth/register`: create the member, password hash, and session atomically.
 - `POST /api/auth/signin`: verify email/password, rotate the current session.
+- `GET /api/auth/options`: report whether demo sign-in is available.
+- `POST /api/auth/demo`: sign in to the configured sample identity in development/preview.
 - `POST /api/auth/signout`: revoke the session and suppress demo fallback in this browser.
 - `GET /api/auth/password`: report whether the current account has a password.
 - `POST /api/auth/password`: set/change the current account's password; changing

@@ -400,6 +400,36 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             });
         },
         getShulByCode: code => decodeShul(db.prepare(`${shulQuery} WHERE c.code = ?`).get(normalizeShulCode(code))),
+        removeUnusedDemoShuls() {
+            return transaction(() => {
+                // Failed sample startup once left freshly created, empty shuls.
+                // Only remove unchanged creation snapshots with no user data.
+                if (!db.prepare("SELECT 1 FROM shul_codes WHERE code = 'DEMO'").get()) return 0;
+                return db.prepare(`DELETE FROM shuls WHERE id IN (
+                    SELECT s.id FROM shuls s
+                    JOIN shul_codes c ON c.shul_id = s.id
+                    JOIN shul_initial_versions i ON i.shul_id = s.id
+                    JOIN shul_settings settings ON settings.shul_id = s.id
+                    WHERE c.code <> 'DEMO' AND i.source = 'creation'
+                      AND json_extract(i.info_json, '$.name') = 'Demo Shul'
+                      AND json_extract(i.info_json, '$.websiteUrl') = 'https://demoshul.org'
+                      AND json_extract(i.info_json, '$.email') = 'shalom@demoshul.org'
+                      AND s.name = json_extract(i.info_json, '$.name')
+                      AND s.website_url = json_extract(i.info_json, '$.websiteUrl')
+                      AND s.donation_url = json_extract(i.info_json, '$.donationUrl')
+                      AND s.email = json_extract(i.info_json, '$.email')
+                      AND s.phone = json_extract(i.info_json, '$.phone')
+                      AND s.address = json_extract(i.info_json, '$.address')
+                      AND settings.settings_json = i.settings_json
+                      AND NOT EXISTS (SELECT 1 FROM users WHERE shul_id = s.id)
+                      AND NOT EXISTS (SELECT 1 FROM reading_readers WHERE shul_id = s.id)
+                      AND NOT EXISTS (SELECT 1 FROM reading_locks WHERE shul_id = s.id)
+                      AND NOT EXISTS (SELECT 1 FROM reading_occasions WHERE shul_id = s.id)
+                      AND NOT EXISTS (SELECT 1 FROM reading_aliyah_counts WHERE shul_id = s.id)
+                      AND NOT EXISTS (SELECT 1 FROM shul_pictures WHERE shul_id = s.id)
+                )`).run().changes;
+            });
+        },
         ensureDemoShulCode(shulId) {
             return transaction(() => {
                 requireRecord(getShul(shulId), 'Shul');

@@ -343,6 +343,31 @@ test('demo startup refreshes existing shul information while preserving settings
     assert.deepEqual(db.getShul(demo.shulId), refreshed);
 });
 
+test('demo startup removes only unused duplicates left by failed seeding', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    const canonical = db.getShul(demo.shulId);
+    const snapshot = db.getInitialShulVersion(demo.shulId);
+    const profile = { ...snapshot.info, settings: canonical.settings };
+    const empty = db.createShul(profile);
+    const secondEmpty = db.createShul(profile);
+    const populated = db.createShul(profile);
+    const member = db.createUser({ ...guest(populated.id) });
+    const customized = db.createShul(profile);
+    db.updateShulSettings(customized.id, { a: 4 });
+    const renamed = db.createShul(profile);
+    db.updateShul(renamed.id, { name: 'A real congregation' });
+    const withLocks = db.createShul(profile);
+    db.setReadingLocks(withLocks.id, [{ dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1, locked: true }]);
+    assert.equal(ensureDemoUser(db).id, demo.id);
+    assert.equal(db.getShul(empty.id), null);
+    assert.equal(db.getShul(secondEmpty.id), null);
+    assert.deepEqual(db.getShul(demo.shulId), canonical);
+    for (const shul of [unrelated, populated, customized, renamed, withLocks]) assert.ok(db.getShul(shul.id));
+    assert.equal(db.getUser(member.id).shulId, populated.id);
+    assert.equal(db.removeUnusedDemoShuls(), 0);
+});
+
 test('demo startup reuses its shul and edited account after an email change', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-demo-restart-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));

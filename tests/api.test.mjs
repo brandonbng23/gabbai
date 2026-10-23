@@ -452,6 +452,23 @@ test('invalid reading settings fail atomically', async t => {
     }
 });
 
+test('anonymous shul search matches names and locations and returns limited public registration details', async t => {
+    const { request, shul, db } = await setup(t, false);
+    db.updateShul(shul.id, { name: 'Beth Shalom', address: '12 Main Street, Baltimore', email: 'private@example.com' });
+    const other = db.createShul({ name: 'Beth Shalom', address: 'New York', settings: { hebYear: 5788 } });
+    const response = await request('/api/shuls/search?q=%20BETH%20baltimore%20');
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), [{ id: shul.id, name: 'Beth Shalom', address: '12 Main Street, Baltimore', code: shul.code }]);
+    const duplicates = await (await request('/api/shuls/search?q=beth')).json();
+    assert.equal(duplicates.length, 2);
+    assert.ok(duplicates.some(result => result.id === other.id && result.address === 'New York'));
+    assert.deepEqual(await (await request('/api/shuls/search?q=missing')).json(), []);
+    for (const query of ['', '?q=a', '?q=' + 'x'.repeat(101), '?q=a&q=b'])
+        assert.equal((await request('/api/shuls/search' + query)).status, 400);
+    for (let index = 0; index < 21; index++) db.createShul({ name: `Bounded ${index}`, settings: { hebYear: 5788 } });
+    assert.equal((await (await request('/api/shuls/search?q=bounded')).json()).length, 20);
+});
+
 test('frontend APIs return saved profiles and shul schedules', async t => {
     const { request, shul, user, db } = await setup(t, true);
     assert.deepEqual(await (await request('/api/shuls')).json(), [{ id: shul.id, name: shul.name }]);
