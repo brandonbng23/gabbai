@@ -79,7 +79,7 @@ test('optional membership migration preserves profiles and discarded accounts su
     try {
         legacy.exec('PRAGMA foreign_keys = OFF');
         legacy.exec(readFileSync(new URL('../backend/database/migrations/007_guest_role.sql', import.meta.url), 'utf8'));
-        legacy.exec('DELETE FROM schema_migrations WHERE version >= 13');
+        legacy.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 13');
     } finally { legacy.close(); }
     db = openDatabase(path);
     try {
@@ -147,7 +147,7 @@ test('code migration backfills existing shuls and preserves letter codes across 
     } finally { db.close(); }
     const legacy = new DatabaseSync(path);
     try {
-        legacy.exec('DROP TABLE shul_codes; DELETE FROM schema_migrations WHERE version >= 10;');
+        legacy.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 10;');
     } finally { legacy.close(); }
     db = openDatabase(path);
     try {
@@ -184,7 +184,7 @@ test('numeric shul codes migrate to letters while retaining DEMO and membership'
     } finally { db.close(); }
     const raw = new DatabaseSync(path);
     try {
-        raw.exec('DROP TABLE shul_codes; DELETE FROM schema_migrations WHERE version >= 11;');
+        raw.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 11;');
         raw.exec(readFileSync(new URL('../backend/database/migrations/010_shul_codes.sql', import.meta.url), 'utf8'));
         raw.prepare('INSERT INTO shul_codes (shul_id, code) VALUES (?, ?)').run(shul.id, '0123');
     } finally { raw.close(); }
@@ -216,7 +216,7 @@ test('demo code repair preserves edited user profiles and unrelated shul codes',
         const codes = new Set(raw.prepare('SELECT code FROM shul_codes').all().map(row => row.code));
         const wrong = ['WTUL', 'TEST', 'ABCD'].find(code => !codes.has(code));
         raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run(wrong, demo.shulId);
-        raw.exec('DELETE FROM schema_migrations WHERE version >= 12');
+        raw.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 12');
     } finally { raw.close(); }
     db = openDatabase(path);
     try {
@@ -341,6 +341,39 @@ test('demo startup refreshes existing shul information while preserving settings
     assert.equal(db.listShulUsers(demo.shulId).length, 1);
     ensureDemoUser(db);
     assert.deepEqual(db.getShul(demo.shulId), refreshed);
+});
+
+test('demo startup reuses its shul and edited account after an email change', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-demo-restart-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const filename = join(directory, 'demo.sqlite');
+    let db = openDatabase(filename);
+    let demo;
+    let edited;
+    let unrelated;
+    try {
+        demo = ensureDemoUser(db);
+        edited = db.updateUser(demo.id, { email: 'edited@example.com', firstName: 'Edited', title: 'Dr.' });
+        db.setUserSettings(demo.id, { language: 'he' });
+        const other = db.createShul({ name: 'Unrelated shul', settings: { hebYear: 5787 } });
+        unrelated = db.createUser({ shulId: other.id, firstName: 'Unrelated', lastName: 'User', email: 'demo@example.com' });
+    } finally { db.close(); }
+    db = openDatabase(filename);
+    try {
+        for (let restart = 0; restart < 2; restart++) {
+            const recovered = ensureDemoUser(db);
+            assert.equal(recovered.id, demo.id);
+            assert.equal(recovered.shulId, demo.shulId);
+            assert.equal(recovered.email, edited.email);
+            assert.equal(recovered.firstName, edited.firstName);
+            assert.equal(recovered.title, edited.title);
+            assert.deepEqual(recovered.settings, { language: 'he' });
+            assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+            assert.equal(db.listShuls().length, 2);
+            assert.equal(db.listShulUsers(demo.shulId).length, 1);
+            assert.deepEqual(db.getUser(unrelated.id), unrelated);
+        }
+    } finally { db.close(); }
 });
 
 test('profiles, membership, and independent preferences survive reopening and migration reruns', t => {

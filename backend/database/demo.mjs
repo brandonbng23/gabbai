@@ -43,7 +43,15 @@ export function ensureDemoUser(database) {
         phone: '(443) 613-1818',
         address: '36 Khavish Road 21201 Baltimore, Maryland',
     };
-    const existing = database.getUserByEmail('demo@example.com');
+    // Profile emails are editable. Reuse the reserved shul before considering
+    // creation, including when the original sample account has been renamed.
+    const demoShul = database.getShulByCode('DEMO');
+    const emailMatch = database.getUserByEmail('demo@example.com');
+    const existing = demoShul
+        ? (emailMatch?.shulId === demoShul.id ? emailMatch : database.listShulUsers(demoShul.id)
+            .filter(user => user.role !== 'guest')
+            .sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))[0])
+        : emailMatch;
     if (existing) {
         if (!existing.shulId) return populateDemoProfiles(database, existing);
         database.ensureDemoShulCode(existing.shulId);
@@ -55,13 +63,14 @@ export function ensureDemoUser(database) {
         const demo = existing.role === 'admin' ? existing : database.updateUser(existing.id, { role: 'admin' });
         return populateDemoProfiles(database, demo);
     }
-    const shul = database.createShul({ ...profile, settings: { hebYear: 5787 } });
+    const shul = demoShul ?? database.createShul({ ...profile, settings: { hebYear: 5787 } });
     database.ensureDemoShulCode(shul.id);
     const demo = database.createUser({
         shulId: shul.id,
         firstName: 'Demo',
         lastName: 'User',
-        email: 'demo@example.com',
+        // An unrelated account may now own the original sample email.
+        email: emailMatch ? `demo-${shul.id}@example.com` : 'demo@example.com',
         role: 'admin',
         ...demoDetails,
     });

@@ -1,4 +1,5 @@
 import express from "express";
+import { installAuthentication } from './authentication.mjs';
 import { fileURLToPath } from "node:url";
 import { getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
@@ -15,15 +16,16 @@ export function createApp(database, {
     database ??= openDatabase(process.env.GABBAI_DATABASE_PATH || (preview
         ? fileURLToPath(new URL('../data/gabbai.preview.sqlite', import.meta.url))
         : undefined));
-    const currentUserId = preview ? ensureDemoUser(database).id : development ? devUserId : undefined;
+    const fallbackUserId = preview ? ensureDemoUser(database).id : development ? devUserId : undefined;
     const app = express();
     app.locals.database = database;
 
     app.use(express.json({ limit: '2mb' }));
+    installAuthentication(app, database, { development, fallbackUserId });
 
     function savePicture(req, res, next, kind) {
         res.set('Cache-Control', 'no-store');
-        const user = currentUserId ? database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: 'Sign in to change a picture.' });
         const id = kind === 'users' ? user.id : req.params.id;
         if (kind === 'shuls' && (user.role !== 'admin' || user.shulId !== id))
@@ -90,7 +92,7 @@ export function createApp(database, {
                         throw new TypeError(`${key} must be a string of at most 254 characters`);
                 }
             }
-            const user = currentUserId ? database.getUser(currentUserId) : null;
+            const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
             if (!('guest' in req.body) && !user)
                 return res.status(401).json({ error: 'Sign in or register as a guest.' });
             database.registerReading(req.params.id, { dateString, desc, aliyah, guest, readerId: user?.id }, () => {
@@ -114,7 +116,7 @@ export function createApp(database, {
 
     app.get("/api/shuls/:id/users", (req, res) => {
         res.set("Cache-Control", "no-store");
-        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to view shul users" });
         if (user.role !== 'admin' || user.shulId !== req.params.id) {
             return res.status(403).json({ error: "Only this shul's administrators can view its users" });
@@ -127,7 +129,7 @@ export function createApp(database, {
 
     app.get('/api/shuls/:id/users/:userId/profile', (req, res) => {
         res.set('Cache-Control', 'no-store');
-        const actor = currentUserId ? database.getUser(currentUserId) : null;
+        const actor = req.currentUserId ? database.getUser(req.currentUserId) : null;
         if (!actor) return res.status(401).json({ error: 'Sign in to edit shul users.' });
         if (actor.role !== 'admin' || actor.shulId !== req.params.id)
             return res.status(403).json({ error: 'Only this shul’s administrators can edit its users.' });
@@ -140,7 +142,7 @@ export function createApp(database, {
 
     app.patch('/api/shuls/:id/users', (req, res, next) => {
         res.set('Cache-Control', 'no-store');
-        const actor = currentUserId ? database.getUser(currentUserId) : null;
+        const actor = req.currentUserId ? database.getUser(req.currentUserId) : null;
         if (!actor) return res.status(401).json({ error: 'Sign in to change shul users.' });
         try {
             validateKeys(req.body, ['changes'], 'user changes');
@@ -164,7 +166,7 @@ export function createApp(database, {
 
     app.get("/api/shuls/:id/initial-version", (req, res) => {
         res.set("Cache-Control", "no-store");
-        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to restore your shul" });
         if (user.role !== 'admin' || user.shulId !== req.params.id) {
             return res.status(403).json({ error: "Only this shul's administrators can restore its saved version" });
@@ -176,7 +178,7 @@ export function createApp(database, {
 
     app.patch("/api/shuls/:id", (req, res, next) => {
         res.set("Cache-Control", "no-store");
-        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to update your shul" });
         if (user.role !== 'admin' || user.shulId !== req.params.id) {
             return res.status(403).json({ error: "Only this shul's administrators can update its information" });
@@ -195,7 +197,7 @@ export function createApp(database, {
 
     app.patch("/api/shuls/:id/settings", (req, res, next) => {
         res.set("Cache-Control", "no-store");
-        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to update your shul" });
         if (user.role !== 'admin' || user.shulId !== req.params.id) {
             return res.status(403).json({ error: "Only this shul's administrators can update its reading settings" });
@@ -213,7 +215,7 @@ export function createApp(database, {
 
     function publishReadingLocks(req, res, next, batch) {
         res.set("Cache-Control", "no-store");
-        const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
+        const user = req.currentUserId ? app.locals.database.getUser(req.currentUserId) : null;
         if (!user) return res.status(401).json({ error: "Sign in to update reading locks" });
         if (user.role !== 'admin' || user.shulId !== req.params.id) {
             return res.status(403).json({ error: "Only this shul's administrators can update reading locks" });
@@ -290,7 +292,7 @@ export function createApp(database, {
 
     app.get('/api/users/:id', (req, res) => {
         res.set('Cache-Control', 'no-store');
-        const viewer = currentUserId ? database.getUser(currentUserId) : null;
+        const viewer = req.currentUserId ? database.getUser(req.currentUserId) : null;
         if (!viewer) return res.status(401).json({ error: 'Sign in to view user profiles.' });
         if (!['member', 'admin'].includes(viewer.role))
             return res.status(403).json({ error: 'Only members and administrators can view user profiles.' });
@@ -305,21 +307,21 @@ export function createApp(database, {
             assignedReadingCount: target.assignedReadings.length });
     });
 
-    // Previews share a sample identity; regular deployments will use an authenticated session.
-    app.get("/api/me", (_req, res) => {
+    // Sessions identify individual users; opt-in previews can supply a sample identity.
+    app.get("/api/me", (req, res) => {
         res.set("Cache-Control", "no-store");
-        if (!currentUserId) {
+        if (!req.currentUserId) {
             return res.status(401).json({ error: "Sign in to view your profile" });
         }
-        const user = app.locals.database.getUser(currentUserId);
+        const user = app.locals.database.getUser(req.currentUserId);
         if (!user) return res.status(404).json({ error: "Current user not found" });
         return res.json(user);
     });
 
     app.patch('/api/me', (req, res, next) => {
         res.set('Cache-Control', 'no-store');
-        if (!currentUserId) return res.status(401).json({ error: 'Sign in to edit your profile.' });
-        if (!database.getUser(currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to edit your profile.' });
+        if (!database.getUser(req.currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
         try {
             validateKeys(req.body, ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'picture'], 'profile');
             for (const [field, value] of Object.entries(req.body)) {
@@ -329,7 +331,7 @@ export function createApp(database, {
             }
             if ('title' in req.body && req.body.title !== '' && !userTitles.includes(req.body.title))
                 throw new TypeError('Choose a title from the list.');
-            return res.json(database.updateUser(currentUserId, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
+            return res.json(database.updateUser(req.currentUserId, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             if (error.message?.includes('UNIQUE constraint failed: users.email'))
@@ -359,10 +361,12 @@ export function createApp(database, {
         return res.json(getSchedule(year));
     });
 
+    app.get(['/login', '/login.html'], (_req, res) => res.redirect('/signin'));
+    app.get('/registration.html', (_req, res) => res.redirect('/signup'));
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/"], (req, res) => {
+    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
     });
 

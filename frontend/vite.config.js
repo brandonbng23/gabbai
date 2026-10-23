@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': process.env.GABBAI_API_TARGET || 'http://127.0.0.1:3000',
+      '/api': {
+        target: process.env.GABBAI_API_TARGET || 'http://127.0.0.1:3000',
+        changeOrigin: false,
+      },
     },
   },
 })

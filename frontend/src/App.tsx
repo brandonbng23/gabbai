@@ -1,3 +1,4 @@
+import { AuthPage } from "./Pages/auth.tsx"
 import Navbar from "./Components/navbar.tsx"
 import Aside from "./Components/aside.tsx"
 import Footer from "./Components/footer.tsx"
@@ -27,6 +28,8 @@ function App() {
     const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
     const isUserSettingsPage = window.location.pathname.replace(/\/$/, "") === "/userSettings";
     const isUserViewPage = window.location.pathname.replace(/\/$/, "") === "/userView";
+    const authPath = window.location.pathname.replace(/\/$/, '');
+    const isAuthPage = authPath === '/signin' || authPath === '/signup';
     const viewedUserId = new URLSearchParams(window.location.search).get('user') || '';
 
     useEffect(() => {
@@ -35,8 +38,13 @@ function App() {
             try {
                 const currentUser = await getCurrentUser(controller.signal);
                 if (controller.signal.aborted) return;
+                setUser(currentUser);
+                if (isAuthPage) return;
                 const selected = currentUser?.shulId || new URLSearchParams(window.location.search).get('shul');
-                if (!selected) throw new Error('Open a shul registration link or sign in to view your shul.');
+                if (!selected) {
+                    if (isRegistrationPage) throw new Error('Open a reading registration link to choose a shul and aliyah.');
+                    return;
+                }
                 const profile = await getJson<Shul>(`/api/shuls/${encodeURIComponent(selected)}`, controller.signal);
                 if (controller.signal.aborted) return;
                 setUser(currentUser);
@@ -49,7 +57,7 @@ function App() {
         }
         void load();
         return () => controller.abort();
-    }, []);
+    }, [isAuthPage, isRegistrationPage]);
 
     const shulId = shul?.id;
     const scheduleSettings = shul?.settings;
@@ -78,10 +86,14 @@ function App() {
         return () => controller.abort();
     }, [shulId, scheduleSettings]);
 
+    if (isAuthPage) return <AuthPage key={authPath} mode={authPath === '/signup' ? 'signup' : 'signin'} />;
+    if (!loading && !error && !user && !isRegistrationPage
+        && (!shul || isUserSettingsPage || isShulSettingsPage || isUserViewPage)) return <AuthPage mode="signin" />;
+
     return (
         <div>
             <div className="app-layout">
-              <Navbar></Navbar>
+              <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage ? ' content-window-settings' : ''}`}>
               {isRegistrationPage ? (
@@ -92,15 +104,16 @@ function App() {
                     ? <UserView key={viewedUserId} userId={viewedUserId} />
                     : <p className="shul-context" role="alert">Only signed-in members and administrators can view user profiles.</p>
               )
+              : isUserSettingsPage ? (
+                user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
+              )
               : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
-              : !shul ? <p className="shul-context">Your shul is not available yet.</p>
+              : !shul ? <p className="shul-context">Your account is not associated with a shul. Contact your shul administrator.</p>
               : isShulSettingsPage ? (
                 user?.role === 'admin' ? <ShulSettings shul={shul} currentUserId={user.id} schedule={schedule} scheduleLoading={scheduleLoading} scheduleError={scheduleError} onSaved={setShul}
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
-              ) : isUserSettingsPage ? (
-                user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : <>
               <WelcomeBar fName={user?.firstName}></WelcomeBar>
               {scheduleLoading ? <LoadingSkeleton variant="schedule" />

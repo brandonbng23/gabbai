@@ -7,6 +7,7 @@ there is no separate database server or additional package to install.
 npm run db:init
 npm run test:db
 npm run test:api
+npm run test:auth
 npm run test:dev
 ```
 
@@ -42,8 +43,9 @@ GABBAI_DATABASE_PATH=./data/gabbai.sqlite npm run dev
 
 An explicit database path is never seeded. Optionally set `GABBAI_DEV_USER_ID`
 to an existing user UUID to load that profile during local development. This is
-a local development identity, not login. `/api/me` is disabled outside development unless preview mode is explicitly enabled,
-and user IDs cannot be selected through query parameters. Development binds the
+an optional local development identity. Real sessions take precedence, and
+explicit sign-out suppresses this fallback. User IDs cannot be selected through
+query parameters. Development binds the
 backend to loopback; browser API requests use the same-origin Vite proxy.
 
 The frontend loads the current user from `/api/me`, reads their assigned shul
@@ -58,9 +60,49 @@ My Preferences supports editing the current user's title, first and last name,
 Hebrew name, email, and phone through `PATCH /api/me`. The endpoint uses the
 current identity, validates a partial profile update, and rejects changes to
 IDs, role, membership, or stored preferences. Duplicate emails return a conflict
-without saving any fields. The form includes previews, resets, a change log,
-and save feedback. Real login still requires authenticated session support.
+without saving any fields. The form includes field/section resets and save
+feedback. Sign-in & Security lets the authenticated user set or change a password.
 Online registration supports both the current profile and guest details.
+
+## Sign-in and account registration
+
+`/signin` and `/signup` provide email/password access. The navbar links to sign-in,
+preferences, and sign-out; protected pages without a user show the sign-in form.
+Registration requires a predefined title, first/last name, email, a 12–128 character
+password, and a four-letter shul code. Hebrew name and phone are optional. New
+accounts always become members of the code's shul, including `DEMO` when seeded.
+Existing profiles cannot be claimed just by supplying their email. Existing seeded
+users can open My Preferences → Sign-in & Security under their trusted development
+identity and set a password for their own account. Public email verification,
+password-recovery email, and guest-to-member account claiming are not implemented.
+
+- `POST /api/auth/register`: create the member, password hash, and session atomically.
+- `POST /api/auth/signin`: verify email/password, rotate the current session.
+- `POST /api/auth/signout`: revoke the session and suppress demo fallback in this browser.
+- `GET /api/auth/password`: report whether the current account has a password.
+- `POST /api/auth/password`: set/change the current account's password; changing
+  an existing password requires the current password and revokes other sessions.
+
+Version 14 adds `user_credentials`, `user_sessions`, and `auth_attempts`. Passwords
+use salted scrypt (`N=32768, r=8, p=3`); raw passwords are never stored or returned.
+Sessions use random 256-bit tokens, stored as SHA-256 hashes in SQLite, and expire
+after seven days. Cookies are HttpOnly and SameSite=Lax, with Secure enabled
+outside development. Deploy production behind HTTPS. With one trusted reverse
+proxy terminating TLS, set `GABBAI_TRUST_PROXY=true` so origin checks use HTTPS.
+Mutating requests reject cross-site browser origins. Registration and sign-in
+attempts are rate-limited with persistent 15-minute buckets; application permissions
+always use the current database role and membership for the session user.
+
+The normal development Vite proxy preserves same-origin auth requests and cookies.
+`npm run dev` keeps its opt-in seed identity for requests without a session cookie;
+real sessions override it, including for newly registered members. Production has
+no demo fallback unless `GABBAI_PREVIEW_MODE=true` is explicitly configured.
+Credentials and sessions persist with the database across restarts. A trusted
+operator can provision an existing profile using `hashPassword()` and
+`database.setPasswordHash(userId, hash)`; this is never a public user-ID endpoint.
+
+Implementation references: [Node crypto](https://nodejs.org/docs/latest-v24.x/api/crypto.html),
+[OWASP session management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
 
 ## Render preview
 
@@ -80,7 +122,7 @@ to use it. For an existing Render web service, set these values manually:
 | `GABBAI_DATABASE_PATH` | `./data/gabbai.preview.sqlite` |
 
 Preview mode supplies a shared Demo User and Demo Shul so the frontend works
-before login is built. Records are created at server startup if missing; existing
+without requiring a sign-in. Records are created at server startup if missing; existing
 demo settings are preserved on subsequent starts when the database survives.
 Demo contact information is synchronized from `backend/database/demo.mjs` on
 startup, including for existing demo records. This synchronization is limited to
@@ -241,8 +283,8 @@ information and administration pages display the code.
 `GET /api/shuls/by-code/:code` resolves a code to `{ id, name }`. User creation
 can pass `shulCode` instead of `shulId`; the database resolves membership and
 rejects unknown codes before creating the user. Codes accept surrounding spaces
-and are case-insensitive. This supports the future account signup flow;
-authentication and account signup are not implemented yet. Guest reading
+and are case-insensitive. Account registration uses this lookup to assign new
+members to their shul. Guest reading
 registration continues to use the shul from the reading link.
 
 `schema_migrations` tracks applied numbered SQL migrations. Version 1 initializes

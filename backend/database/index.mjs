@@ -108,7 +108,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 13) throw new Error('Database schema is newer than this application');
+            if (version > 14) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -166,6 +166,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (db.prepare('PRAGMA foreign_key_check').all().length)
                     throw new Error('Membership migration would violate foreign keys');
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(13);
+            }
+            if (version < 14) {
+                db.exec(readFileSync(new URL('./migrations/014_authentication.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(14);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -332,6 +336,69 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 source: row.source, capturedAt: row.captured_at } : null;
         },
         getUser,
+        getCredentials(value) {
+            const row = db.prepare(`SELECT u.id, c.password_hash FROM users u
+                LEFT JOIN user_credentials c ON c.user_id = u.id WHERE u.email = ?`).get(email(value));
+            return row ? { userId: row.id, passwordHash: row.password_hash ?? null } : null;
+        },
+        createAccount(input, passwordHash, tokenHash, expiresAt) {
+            validateKeys(input, ['shulCode', 'title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone'], 'registration');
+            return transaction(() => {
+                const shul = db.prepare('SELECT shul_id FROM shul_codes WHERE code = ?').get(normalizeShulCode(input.shulCode));
+                if (!shul) throw new TypeError('No shul matches that code. Check with your shul administrator.');
+                const values = userValues({ ...input, shulId: shul.shul_id, role: 'member' });
+                const id = randomUUID();
+                db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare("INSERT INTO user_settings (user_id, settings_json) VALUES (?, '{}')").run(id);
+                db.prepare('INSERT INTO user_credentials (user_id, password_hash) VALUES (?, ?)').run(id, passwordHash);
+                db.prepare('INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(tokenHash, id, expiresAt);
+                return getUser(id);
+            });
+        },
+        setPasswordHash(userId, passwordHash, session) {
+            return transaction(() => {
+                requireRecord(getUser(userId), 'User');
+                if (session) {
+                    const current = db.prepare('SELECT password_hash FROM user_credentials WHERE user_id = ?').get(userId)?.password_hash ?? null;
+                    if (current !== session.expectedHash) {
+                        const error = new Error('Your password changed. Sign in again before updating it.');
+                        error.status = 409;
+                        throw error;
+                    }
+                }
+                db.prepare(`INSERT INTO user_credentials (user_id, password_hash) VALUES (?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET password_hash = excluded.password_hash`).run(userId, passwordHash);
+                db.prepare('DELETE FROM user_sessions WHERE user_id = ?').run(userId);
+                if (session) db.prepare('INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
+                    .run(session.tokenHash, userId, session.expiresAt);
+            });
+        },
+        createSession(userId, tokenHash, expiresAt, expectedPasswordHash) {
+            transaction(() => {
+                if (expectedPasswordHash !== undefined
+                    && db.prepare('SELECT password_hash FROM user_credentials WHERE user_id = ?').get(userId)?.password_hash !== expectedPasswordHash) {
+                    const error = new Error('Email or password is incorrect.');
+                    error.status = 401;
+                    throw error;
+                }
+                db.prepare('DELETE FROM user_sessions WHERE expires_at <= ?').run(Date.now());
+                db.prepare('INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(tokenHash, userId, expiresAt);
+            });
+        },
+        getSessionUserId(tokenHash) {
+            return db.prepare('SELECT user_id FROM user_sessions WHERE token_hash = ? AND expires_at > ?').get(tokenHash, Date.now())?.user_id ?? null;
+        },
+        deleteSession(tokenHash) { db.prepare('DELETE FROM user_sessions WHERE token_hash = ?').run(tokenHash); },
+        recordAuthAttempt(bucket, limit, windowMs = 15 * 60 * 1000) {
+            return transaction(() => {
+                const now = Date.now();
+                db.prepare('DELETE FROM auth_attempts WHERE started_at < ?').run(now - windowMs);
+                db.prepare(`INSERT INTO auth_attempts (bucket, started_at, attempts) VALUES (?, ?, 1)
+                    ON CONFLICT(bucket) DO UPDATE SET attempts = attempts + 1`).run(bucket, now);
+                return db.prepare('SELECT attempts FROM auth_attempts WHERE bucket = ?').get(bucket).attempts <= limit;
+            });
+        },
         getShulByCode: code => decodeShul(db.prepare(`${shulQuery} WHERE c.code = ?`).get(normalizeShulCode(code))),
         ensureDemoShulCode(shulId) {
             return transaction(() => {

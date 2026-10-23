@@ -1,3 +1,4 @@
+import { AccountSecurity } from '../Components/accountSecurity.tsx';
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { useEffect, useState } from 'react';
 import type { JSX, SubmitEvent } from 'react';
@@ -21,7 +22,7 @@ function profileValues(user: User): UserProfile {
         hebrewName: user.hebrewName, email: user.email, phone: user.phone };
 }
 
-export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; onSaved: (user: User) => void }): JSX.Element {
+export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul | null; onSaved: (user: User) => void }): JSX.Element {
     const [draft, setDraft] = useState<UserProfile>(() => profileValues(user));
     const [saving, setSaving] = useState(false);
     const [pictureBusy, setPictureBusy] = useState(false);
@@ -70,7 +71,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
         { label: 'Hebrew Name', value: user.hebrewName },
         { label: 'Email', value: user.email },
         { label: 'Phone', value: user.phone },
-        { label: 'Shul', value: shul.name },
+        { label: 'Shul', value: shul?.name ?? '-' },
         ...(user.role === 'admin' ? [{ label: 'Role', value: 'Admin' }] : []),
     ];
     return (
@@ -174,6 +175,7 @@ export function UserSettings({ user, shul, onSaved }: { user: User; shul: Shul; 
                             </fieldset>
                         </form>
                     </section>
+                    <AccountSecurity />
                 </div>
             </div>
         </main>
