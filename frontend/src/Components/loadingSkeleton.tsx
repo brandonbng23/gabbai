@@ -22,6 +22,22 @@ function Profile() {
     </div>;
 }
 
+function ReadingCardPlaceholder({ showTags = true }: { showTags?: boolean }) {
+    return <div className="reading-card">
+        <div className="reading-card-header">
+            <div className="reading-card-title"><Block width="150px" className="skeleton-title" /></div>
+            <div className="schedule-assigned-reader"><Block width="32px" className="skeleton-avatar-small" /></div>
+        </div>
+        <div className="reading-card-body">
+            <Block width="140px" /><Block width="190px" />
+        </div>
+        {showTags && <div className="reading-card-footer">
+            <div className="reading-card-tags"><Block width="85px" className="skeleton-reading-tag" /></div>
+            <div className="reading-card-actions" />
+        </div>}
+    </div>;
+}
+
 function ReadingStats() {
     return <div className="shul-card user-stats">
         <div className="settings-summary-heading">
@@ -32,7 +48,7 @@ function ReadingStats() {
         </div>
         <div className="user-reading-stats">
             {Array.from({ length: 4 }, (_, index) => <div className="stat-group" key={index}>
-                <Block width="110px" className="skeleton-stat-number" />
+                <Block className="skeleton-stat-number" />
                 <div className="skeleton-stat-label">
                     <Block width="75px" /><Block width="60px" />
                 </div>
@@ -41,9 +57,7 @@ function ReadingStats() {
         <div className="activity-readings">
             <h3><Block width="140px" /></h3>
             <div className="reading-list">
-                {Array.from({ length: 3 }, (_, index) => <div className="reading-card" key={index}>
-                    <Block width="70%" className="skeleton-title" />
-                </div>)}
+                {Array.from({ length: 3 }, (_, index) => <ReadingCardPlaceholder key={index} showTags={false} />)}
             </div>
         </div>
     </div>;
@@ -67,9 +81,7 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
                         <Block width="220px" className="skeleton-input" />
                     </div>
                     <div className="user-readings-list">
-                        {Array.from({ length: 4 }, (_, index) => <div className="reading-card" key={index}>
-                            <Block width="45%" className="skeleton-title" /><Block width="75%" />
-                        </div>)}
+                        {Array.from({ length: 4 }, (_, index) => <ReadingCardPlaceholder key={index} />)}
                     </div>
                 </div>
             </div> : variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="shul-settings">

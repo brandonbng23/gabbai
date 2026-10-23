@@ -86,14 +86,16 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                     {props.reader ? (
                         <div className="schedule-reader-assignment">
                             <AssignedReader reader={props.reader} />
-                            {props.reader.id === props.currentUserId && props.shulId && props.onReadingCancelled && (
-                                <button type="button" className="reader-remove-btn" disabled={cancelling}
-                                    aria-label={`Cancel your ${aliyahLabels[props.a - 1]} reading for ${props.desc}, ${props.dateString}`}
-                                    title={cancelling ? 'Cancelling…' : 'Cancel your reading'}
-                                    aria-busy={cancelling} onClick={() => void cancel()}>
-                                    <TrashIcon />
-                                </button>
-                            )}
+                            <div className="schedule-reader-actions">
+                                {props.reader.id === props.currentUserId && props.shulId && props.onReadingCancelled && (
+                                    <button type="button" className="reader-remove-btn" disabled={cancelling}
+                                        aria-label={`Cancel your ${aliyahLabels[props.a - 1]} reading for ${props.desc}, ${props.dateString}`}
+                                        title={cancelling ? 'Cancelling…' : 'Cancel your reading'}
+                                        aria-busy={cancelling} onClick={() => void cancel()}>
+                                        <TrashIcon />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ) : !props.locked && props.available ? (
                         <button type="button" onClick={register}

@@ -56,7 +56,7 @@ export function UserReadingStats({ user, onCancelReading, cancellationDisabled =
                         {upcomingReadings.map(reading => (
                             <ReadingCard key={`${reading.dateString}-${reading.desc}-${reading.aliyah}`}
                                 user={user} reading={reading} onCancelReading={onCancelReading}
-                                cancellationDisabled={cancellationDisabled} />
+                                cancellationDisabled={cancellationDisabled} showTags={false} />
                         ))}
                     </div>
                 ) : <p className="activity-readings-empty">No upcoming readings.</p>}

@@ -75,6 +75,7 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
                     <div className="user-readings-toolbar">
                         <div className="user-readings-filters" role="group" aria-label="Filter readings">
                             {options.map(option => <button key={option.value} type="button"
+                                data-filter={option.value}
                                 aria-pressed={view === option.value} onClick={() => setView(option.value)}>
                                 {option.label} <span>{option.count}</span>
                             </button>)}

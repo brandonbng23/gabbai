@@ -1876,10 +1876,15 @@ body:has(.content-window-settings) {
 
 .settings-page-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
     padding-bottom: 28px;
+}
+
+.settings-page-header > div {
+    min-width: 0;
 }
 
 .settings-eyebrow {
@@ -1892,6 +1897,7 @@ body:has(.content-window-settings) {
 }
 
 .settings-page-header h1 {
+    overflow-wrap: anywhere;
     font-size: clamp(26px, 3vw, 36px);
     font-weight: 700;
     letter-spacing: -.035em;
@@ -3482,7 +3488,7 @@ input[type="number"] {
 
 .user-reading-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 12px;
 }
 
@@ -3506,28 +3512,39 @@ input[type="number"] {
     min-width: 0;
 }
 
+.user-stats .settings-summary-heading {
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+}
+
 .reading-stat {
-    padding: 20px 35px 20px 35px;
+    display: grid;
+    place-items: center;
+    min-height: 88px;
+    padding: 16px 10px;
 
     border-radius: 15px;
     border: 3px solid white;
 
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 800;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-group {
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 12px;
 
     align-items: center;
 }
 
 .stat-label {
-    font-size: 20px;
+    font-size: 18px;
     line-height: 1.25;
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .lifetime-stat {
@@ -3557,37 +3574,138 @@ input[type="number"] {
 .reading-card {
     display: flex;
     flex-direction: column;
-    flex: 0 0 240px;
-    gap: 15px;
+    flex: 0 0 min(520px, 100%);
+    gap: 10px;
     max-width: 100%;
-    min-width: 500px;
-    padding: 18px;
+    min-width: 0;
+    padding: 16px;
     border: 1px solid var(--settings-border);
     border-radius: 12px;
-    background: #3a393d;
+    background: #363538;
     overflow-wrap: anywhere;
 }
 
 .reading-card-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 10px 24px;
+}
+
+.reading-card-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    min-width: 0;
+    flex: 1 1 170px;
+    gap: 4px 10px;
+}
+
+.reading-card-aliyah {
+    color: var(--settings-muted, #bdbcc4);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.reading-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+}
+
+.reading-card-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.reading-card-tag-upcoming,
+.user-readings-filters button[data-filter="upcoming"] {
+    --reading-filter-color: #e9c07b;
+}
+
+.reading-card-tag-completed,
+.user-readings-filters button[data-filter="completed"] {
+    --reading-filter-color: #a3cea8;
+}
+
+.reading-card-tag-guest,
+.user-readings-filters button[data-filter="guest"] {
+    --reading-filter-color: #e5e2dc;
+}
+
+.reading-card-tag {
+    color: var(--reading-filter-color);
+}
+
+.reading-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #ffffff0a;
+}
+
+.reading-card-actions,
+.schedule-reader-actions {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    min-height: 32px;
+    flex: 0 0 32px;
+}
+
+.reading-card-actions {
+    margin-left: auto;
+}
+
+.reading-card-actions .reader-remove-btn,
+.schedule-reader-actions .reader-remove-btn {
+    width: 32px;
+    height: 32px;
+    padding: 8px;
+    border-radius: 7px;
+}
+
+.reading-card-actions .reader-remove-btn:hover:not(:disabled),
+.reading-card-actions .reader-remove-btn:focus-visible:not(:disabled) {
+    background: #f5b1b118;
+    color: #ffc2c2;
 }
 
 .reading-card-body {
     display: flex;
-    flex-direction: row;
-    gap: 3.75%;
+    flex-direction: column;
+    align-items: start;
+    gap: 4px 18px;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
-.reading-card-header > h3 {
+.reading-card-dates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
     min-width: 0;
 }
 
+.reading-card-dates > span,
+.reading-card-verses {
+    color: var(--settings-muted, #bdbcc4);
+}
+
 .reading-card-header > .schedule-assigned-reader {
+    min-width: 0;
     margin-left: auto;
-    margin-right: 20px;
+    max-width: 100%;
+    font-size: 13px;
 }
 
 .reading-card .assigned-reader-trigger:focus-visible,
@@ -3659,10 +3777,9 @@ input[type="number"] {
 }
 
 .user-readings-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 16px;
     padding-bottom: 20px;
     margin-bottom: 20px;
@@ -3673,12 +3790,18 @@ input[type="number"] {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    grid-column: 1 / -1;
+}
+
+.user-readings-toolbar > a {
+    justify-self: end;
+    padding-block: 10px;
 }
 
 .user-readings-search {
     display: grid;
-    flex: 1 1 220px;
-    max-width: 360px;
+    width: 100%;
+    max-width: 420px;
     min-width: 0;
     gap: 6px;
 }
@@ -3734,12 +3857,12 @@ input[type="number"] {
 }
 
 .user-readings-filters button[aria-pressed="true"] {
-    border-color: #8bc8ff;
-    background: #8bc8ff18;
-    color: #a6d5ff;
+    border-color: var(--reading-filter-color, #8bc8ff);
+    background: color-mix(in srgb, var(--reading-filter-color, #8bc8ff) 10%, transparent);
+    color: var(--reading-filter-color, #a6d5ff);
 }
 
-.user-readings-filters button:hover {
+.user-readings-filters button:hover:not([aria-pressed="true"]) {
     background: #8bc8ff25;
 }
 
@@ -3771,16 +3894,7 @@ input[type="number"] {
     width: 100%;
     min-width: 0;
     max-width: none;
-    gap: 14px;
-}
-
-.user-readings-page :is(.reading-card-header, .reading-card-body) {
-    flex-wrap: wrap;
     gap: 10px;
-}
-
-.user-readings-page .reading-card-header > .schedule-assigned-reader {
-    margin-right: 0;
 }
 
 .user-readings-page .user-readings-notice {
@@ -3813,6 +3927,31 @@ input[type="number"] {
     outline: 2px solid #8bc8ff;
     outline-offset: 3px;
     border-radius: 4px;
+}
+
+@media (max-width: 620px) {
+    .reading-card-header > .schedule-assigned-reader {
+        margin-left: 0;
+    }
+    .user-readings-toolbar {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .user-readings-search {
+        max-width: none;
+    }
+    .user-readings-toolbar > a {
+        justify-self: start;
+    }
+    .stat-group {
+        grid-template-columns: 80px minmax(0, 1fr);
+    }
+    .reading-stat {
+        min-height: 76px;
+        font-size: 24px;
+    }
+    .stat-label {
+        font-size: 16px;
+    }
 }
 
 .reading-removal-dialog {
@@ -4386,14 +4525,18 @@ body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-
 }
 
 .skeleton-title { height: 28px; }
+.skeleton-reading-tag { height: 14px; border-radius: 4px; }
 .skeleton-label { height: 11px; }
 .skeleton-input { height: 40px; }
 .skeleton-avatar { height: 80px; border-radius: 50%; }
 .skeleton-avatar-small { height: 32px; }
 .skeleton-profile-name { flex: 1; display: grid; gap: 12px; }
 .skeleton-stats-heading { display: grid; gap: 8px; min-width: 0; }
-.skeleton-stat-number { height: 91px; border-radius: 15px; }
+.skeleton-stat-number { height: 88px; border-radius: 15px; }
 .skeleton-stat-label { display: grid; gap: 8px; min-width: 0; }
+@media (max-width: 620px) {
+    .skeleton-stat-number { height: 76px; }
+}
 .skeleton-page-heading { margin-bottom: 28px; }
 .skeleton-state-schedule > div > .skeleton-page-heading { margin: 24px var(--parsha-left-gap); }
 .skeleton-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 28px; }
@@ -4751,12 +4894,17 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     flex: 0 1 auto;
 }
 .schedule-page .schedule-reader-assignment {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px;
     align-items: center;
     flex: 1;
     min-width: 0;
     margin-left: 20px;
-    gap: 14px;
+    gap: 8px;
+}
+
+.schedule-page :is(.pandora-box, .pandora-box-hover) .locked {
+    margin-left: 20px;
 }
 .schedule-page .reader-remove-btn svg {
     filter: none;
@@ -4899,6 +5047,9 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
         flex-wrap: wrap;
         row-gap: 6px;
     }
+    .schedule-page .schedule-reader-assignment {
+        margin-left: 0;
+    }
     .schedule-page :is(.pandora-box, .pandora-box-hover) > button,
     .schedule-page :is(.pandora-box, .pandora-box-hover) .locked {
         margin-left: 0;
@@ -4927,6 +5078,13 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     justify-content: space-between;
     gap: 24px;
     margin-bottom: 28px;
+}
+
+.my-shul-header,
+.my-shul-sections {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
 }
 .my-shul-identity {
     display: flex;
@@ -4991,7 +5149,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
-    align-items: start;
+    align-items: stretch;
 }
 .my-shul-card,
 .my-shul-page .registration-details {
