@@ -28,7 +28,6 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
         { label: 'Full Name', value: fullName },
         { label: 'Hebrew Name', value: profile.hebrewName },
         { label: 'Shul', value: profile.shulName },
-        { label: 'Assigned Readings', value: String(profile.assignedReadingCount) },
         ...(profile.role === 'admin' ? [{ label: 'Role', value: 'Admin' }] : []),
     ] : [];
 
@@ -48,7 +47,7 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
                             <div className="settings-summary-heading user-profile-heading">
                                 <ProfilePicture src={profile.pictureUrl} name={fullName} />
                                 <div>
-                                    <span className="settings-eyebrow">PROFILE</span>
+                                    <span className="settings-eyebrow">SUMMARY</span>
                                     <h2 id="user-profile-heading">{fullName}</h2>
                                 </div>
                             </div>
