@@ -110,7 +110,7 @@ function App() {
             <div className="app-layout">
               <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isRegistrationPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isShulSettingsPage || isUserSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />

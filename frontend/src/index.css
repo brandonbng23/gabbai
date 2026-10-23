@@ -4475,6 +4475,155 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     }
 }
 
+.my-shul-page {
+    width: 100%;
+    min-width: 0;
+    padding: clamp(16px, 3vw, 44px);
+    color: #f6f5f7;
+    font-family: Fustat, sans-serif;
+    --skeleton-base: #45464a;
+    --skeleton-shine: #56585d;
+}
+.my-shul-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+.my-shul-identity {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+    flex: 1 1 300px;
+}
+.my-shul-identity > div {
+    min-width: 0;
+}
+.my-shul-eyebrow {
+    color: #bdbcc4;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.my-shul-page h1 {
+    margin: 5px 0 10px;
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.my-shul-code {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: #bdbcc4;
+}
+.my-shul-code strong {
+    padding: 3px 9px;
+    border: 1px solid #8bc8ff40;
+    border-radius: 6px;
+    background: #8bc8ff10;
+    color: #a6d5ff;
+    letter-spacing: .05em;
+    user-select: all;
+}
+.my-shul-page .my-shul-schedule-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid #8bc8ff70;
+    border-radius: 10px;
+    background: #8bc8ff10;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.my-shul-page .my-shul-schedule-link:hover {
+    background: #8bc8ff20;
+}
+.my-shul-sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+.my-shul-card,
+.my-shul-page .registration-details {
+    min-width: 0;
+    padding: clamp(16px, 2vw, 24px);
+    border: 1px solid #504f52;
+    border-radius: 15px;
+    background: #302f30;
+}
+.my-shul-card h2 {
+    display: block;
+    height: auto;
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font-size: 19px;
+    font-weight: 650;
+}
+.my-shul-card dl {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+}
+.my-shul-card dl > div + div {
+    padding-top: 16px;
+    border-top: 1px solid #504f52;
+}
+.my-shul-card dt {
+    font-size: 12px;
+    font-weight: 500;
+    color: #bdbcc4;
+}
+.my-shul-card dd {
+    margin: 5px 0 0;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.my-shul-page a {
+    color: #a6d5ff;
+    text-underline-offset: 3px;
+}
+.my-shul-page a:hover {
+    color: #c6e5ff;
+}
+.my-shul-page a:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+.my-shul-card .my-shul-empty {
+    color: #bdbcc4;
+    font-size: 14px;
+}
+@media (max-width: 900px) {
+    .my-shul-sections {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+@media (max-width: 620px) {
+    .my-shul-identity {
+        gap: 12px;
+    }
+    .my-shul-identity .profile-picture {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+    }
+}
+
 /* Reading registration uses the same surfaces and controls as the schedule. */
 .registration-page {
     --registration-text: #f6f5f7;
