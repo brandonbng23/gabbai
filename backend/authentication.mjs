@@ -12,8 +12,9 @@ export function installAuthentication(app, database, { development, preview, fal
     app.use('/api', (req, res, next) => {
         const token = (req.headers.cookie ?? '').split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
         req.sessionToken = token;
-        req.currentUserId = token === undefined ? fallbackUserId
-            : /^[a-f0-9]{64}$/.test(token) ? database.getSessionUserId(digest(token)) : null;
+        req.sessionUserId = typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
+            ? database.getSessionUserId(digest(token)) : null;
+        req.currentUserId = token === undefined ? fallbackUserId : req.sessionUserId;
         if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
             const origin = req.get('origin');
             if ((origin && origin !== `${req.protocol}://${req.host}`) || req.get('sec-fetch-site') === 'cross-site')

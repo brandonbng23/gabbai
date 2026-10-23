@@ -14,8 +14,10 @@ import { UserView } from "./Pages/userView.tsx"
 import { LoadingSkeleton } from "./Components/loadingSkeleton.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
+import { installSessionHistoryGuard } from './sessionHistory.ts';
 
 function App() {
+    useEffect(() => installSessionHistoryGuard(window, document.body), []);
     const [schedule, setSchedule] = useState<ParshaObj[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

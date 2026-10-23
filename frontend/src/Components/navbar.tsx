@@ -35,7 +35,7 @@ function Navbar({ user }: { user: User | null }): React.JSX.Element {
         try {
             const response = await fetch('/api/auth/signout', { method: 'POST' });
             if (!response.ok) throw new Error('Unable to sign out. Try again.');
-            window.location.assign('/signin');
+            window.location.replace('/signin');
         } catch (failure) {
             setError(failure instanceof Error ? failure.message : 'Unable to sign out.');
             setSigningOut(false);

@@ -141,7 +141,7 @@ export async function getJson<T>(path: string, signal: AbortSignal): Promise<T> 
 }
 
 export async function getCurrentUser(signal: AbortSignal): Promise<User | null> {
-    const response = await fetch('/api/me', { signal });
+    const response = await fetch('/api/me?session=required', { signal, cache: 'no-store' });
     if (response.status === 401) return null;
     if (!response.ok) throw new Error('Unable to load your profile. Please try again.');
     return response.json();

@@ -29,12 +29,23 @@ async function setup(t, options = {}) {
         details: { shulCode: shul.code.toLowerCase(), title: 'Mr.', firstName: 'New', lastName: 'Member', email: 'new@example.com', password } };
 }
 
+test('app documents disable HTTP caching so history navigation revalidates sessions', async t => {
+    const { request } = await setup(t);
+    for (const path of ['/', '/index.html', '/signin', '/userSettings', '/userView?user=example']) {
+        const response = await request(path);
+        assert.equal(response.status, 200, path);
+        assert.equal(response.headers.get('cache-control'), 'no-store', path);
+        assert.match(response.headers.get('content-type'), /text\/html/);
+    }
+});
+
 test('demo sign-in creates and rotates normal sessions after sign-out without replacing credentials', async t => {
     const { request, db, actor, base } = await setup(t, { demo: true });
     db.updateUser(actor.id, { email: 'edited-demo@example.com', firstName: 'Edited' });
     const hash = await hashPassword(password);
     db.setPasswordHash(actor.id, hash);
     assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: true });
+    assert.equal((await request('/api/me?session=required')).status, 401, 'No cookie must not silently sign the browser into the demo');
     const out = await request('/api/auth/signout', json({}));
     assert.equal((await request('/api/me', { headers: { Cookie: cookie(out) } })).status, 401);
     assert.equal((await request('/api/auth/demo', json({ userId: actor.id }))).status, 400);
@@ -44,6 +55,7 @@ test('demo sign-in creates and rotates normal sessions after sign-out without re
     assert.equal((await signed.json()).id, actor.id);
     assert.match(signed.headers.get('set-cookie'), /HttpOnly/);
     const session = cookie(signed);
+    assert.equal((await (await request('/api/me?session=required', { headers: { Cookie: session } })).json()).id, actor.id);
     assert.equal((await (await request('/api/me', { headers: { Cookie: session } })).json()).id, actor.id);
     assert.equal((await request(`/api/shuls/${actor.shulId}/users`, { headers: { Cookie: session } })).status, 200);
     assert.equal(db.getCredentials('edited-demo@example.com').passwordHash, hash);
@@ -51,6 +63,8 @@ test('demo sign-in creates and rotates normal sessions after sign-out without re
     assert.notEqual(cookie(second), session);
     assert.equal((await request('/api/me', { headers: { Cookie: session } })).status, 401);
     const loggedOut = await request('/api/auth/signout', json({}, cookie(second)));
+    assert.equal((await request('/api/me?session=required', { headers: { Cookie: cookie(loggedOut) } })).status, 401);
+    assert.equal((await request('/api/me?session=required', { headers: { Cookie: session } })).status, 401);
     assert.equal((await request('/api/me', { headers: { Cookie: cookie(loggedOut) } })).status, 401);
 });
 

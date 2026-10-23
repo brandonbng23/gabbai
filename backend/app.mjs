@@ -343,10 +343,12 @@ export function createApp(database, {
     // Sessions identify individual users; opt-in previews can supply a sample identity.
     app.get("/api/me", (req, res) => {
         res.set("Cache-Control", "no-store");
-        if (!req.currentUserId) {
+        // Browser session checks must never resurrect the optional demo fallback.
+        const userId = req.query.session === 'required' ? req.sessionUserId : req.currentUserId;
+        if (!userId) {
             return res.status(401).json({ error: "Sign in to view your profile" });
         }
-        const user = app.locals.database.getUser(req.currentUserId);
+        const user = app.locals.database.getUser(userId);
         if (!user) return res.status(404).json({ error: "Current user not found" });
         return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
     });
@@ -397,11 +399,17 @@ export function createApp(database, {
 
     app.get(['/login', '/login.html'], (_req, res) => res.redirect('/signin'));
     app.get('/registration.html', (_req, res) => res.redirect('/signup'));
-    app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url))));
+    app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url)), {
+        setHeaders(res, path) {
+            if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
+        },
+    }));
 
     // The registration URL renders a page in the React app, including on refresh.
     app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
-        res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)));
+        res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)), {
+            headers: { 'Cache-Control': 'no-store' },
+        });
     });
 
     app.use((error, _req, res, next) => {
