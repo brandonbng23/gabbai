@@ -3287,6 +3287,20 @@ input[type="number"] {
     color: #bdbcc3;
 }
 
+.action-icon-info {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.action-icon-info svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+    padding: 2px;
+}
+
 .field-btn {
     padding: 0;
     color: white;
@@ -3311,6 +3325,10 @@ input[type="number"] {
 
 .user-name-heading .field-btn {
     width: auto;
+}
+
+.user-name-heading > .info-tip {
+    transform: translateY(-1px);
 }
 
 .field-btn svg {
