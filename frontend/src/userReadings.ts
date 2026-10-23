@@ -1,10 +1,16 @@
-import type { UserReading } from './api.ts';
+import type { GuestReading, UserReading } from './api.ts';
 
-export type ReadingsView = 'upcoming' | 'completed' | 'all';
+export type ReadingsView = 'all' | 'upcoming' | 'completed' | 'guest';
 
-export function selectUserReadings(readings: UserReading[], view: ReadingsView, today: string): UserReading[] {
-    return readings.filter(reading => view === 'all'
-        || (view === 'upcoming' ? reading.dateString >= today : reading.dateString < today))
+export function isGuestReading(reading: UserReading): reading is GuestReading {
+    return 'registrationType' in reading && reading.registrationType === 'guest';
+}
+
+export function selectUserReadings<T extends UserReading>(readings: T[], view: ReadingsView, today: string, query = ''): T[] {
+    const search = query.trim().toLocaleLowerCase();
+    return readings.filter(reading => reading.desc.toLocaleLowerCase().includes(search)
+        && (view === 'all' || (view === 'guest' ? isGuestReading(reading)
+            : view === 'upcoming' ? reading.dateString >= today : reading.dateString < today)))
         .sort((a, b) => {
             const byDate = a.dateString.localeCompare(b.dateString);
             return (view === 'completed' ? -byDate : byDate)

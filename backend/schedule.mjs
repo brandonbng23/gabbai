@@ -87,3 +87,22 @@ export function getAssignedReadingDetails(database, user) {
         };
     });
 }
+
+export function getGuestReadingDetails(database, userId) {
+    const registrations = database.listGuestRegistrations(userId);
+    const byShul = new Map();
+    for (const registration of registrations) {
+        if (!byShul.has(registration.shulId)) byShul.set(registration.shulId, []);
+        byShul.get(registration.shulId).push(registration);
+    }
+    return [...byShul].flatMap(([shulId, entries]) => {
+        const assignments = entries.map(({ dateString, desc, aliyah }) => ({ dateString, desc, aliyah }));
+        const details = getAssignedReadingDetails(database, { shulId, assignedReadings: assignments });
+        return details.map((reading, index) => {
+            const { reader, shulName } = entries[index];
+            const { id, firstName, lastName, title, pictureUrl, role, assignedReadings } = reader;
+            return { ...reading, registrationType: 'guest', shulId, shulName,
+                reader: { id, firstName, lastName, title, role, assignedReadings, ...(pictureUrl ? { pictureUrl } : {}) } };
+        });
+    });
+}

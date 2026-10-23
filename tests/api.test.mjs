@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { test } from 'node:test';
 import { createApp } from '../backend/app.mjs';
@@ -763,6 +764,55 @@ test('readers can cancel only their own assignments, including locked readings, 
     assert.equal((await cancel()).status, 409);
     db.setReadingLocks(shul.id, [{ ...selection, locked: false }]);
     assert.equal((await request(path, registrationRequest(selection))).status, 201);
+});
+
+test('guest registration history is private to the signed-in booker and excluded from their profile stats', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const token = 'a'.repeat(64);
+    const session = `gabbai_session=${token}`;
+    db.createSession(user.id, createHash('sha256').update(token).digest('hex'), Date.now() + 60_000);
+    const own = (path, options = {}) => request(path, { ...options, headers: { ...options.headers, Cookie: session } });
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const key = { dateString: reading.dateString, desc: reading.desc };
+    const path = `/api/shuls/${shul.id}/readings/register`;
+    const guest = { title: 'Mr.', firstName: 'Guest', lastName: 'Reader', hebrewName: '', email: 'booked-guest@example.com' };
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 1 }))).status, 201);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 2, guest }))).status, 201);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 2, guest }))).status, 409);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 3, guest, registeredBy: user.id }))).status, 400);
+    const anonymousOptions = registrationRequest({ ...key, aliyah: 3, guest });
+    anonymousOptions.headers.Cookie = 'gabbai_session=signed-out';
+    assert.equal((await request(path, anonymousOptions)).status, 201);
+    const otherShul = db.createShul({ name: 'Visiting Shul', settings: shul.settings });
+    const otherGuest = { ...guest, email: 'visiting-guest@example.com' };
+    assert.equal((await own(`/api/shuls/${otherShul.id}/readings/register`, registrationRequest({ ...key, aliyah: 1, guest: otherGuest }))).status, 201);
+    assert.equal((await request('/api/me/guest-readings')).status, 401, 'A development fallback is not an authenticated booking owner');
+    const response = await own('/api/me/guest-readings');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const bookings = await response.json();
+    assert.equal(bookings.length, 2);
+    const booking = bookings.find(item => item.shulId === shul.id);
+    assert.equal(booking.registrationType, 'guest');
+    assert.equal(booking.aliyah, 2);
+    assert.equal(booking.reader.firstName, 'Guest');
+    assert.equal(booking.psukim, reading.psukim[1]);
+    assert.ok(booking.verseCount > 0);
+    assert.ok(!('email' in booking.reader) && !('settings' in booking.reader));
+    assert.equal(bookings.find(item => item.shulId === otherShul.id).shulName, 'Visiting Shul');
+    const me = await (await own('/api/me?session=required')).json();
+    assert.equal(me.assignedReadings.length, 1);
+    assert.equal(me.assignedReadings[0].aliyah, 1);
+    const profile = await (await own(`/api/users/${user.id}`)).json();
+    assert.equal(profile.assignedReadingCount, 1);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Owner', email: 'other-owner@example.com' });
+    const otherToken = 'b'.repeat(64);
+    db.createSession(other.id, createHash('sha256').update(otherToken).digest('hex'), Date.now() + 60_000);
+    assert.deepEqual(await (await request(`/api/me/guest-readings?user=${user.id}`, { headers: { Cookie: `gabbai_session=${otherToken}` } })).json(), []);
+    db.setReadingLocks(shul.id, [{ ...key, aliyah: 2, readerId: other.id }]);
+    const afterReassignment = await (await own('/api/me/guest-readings')).json();
+    assert.equal(afterReassignment.length, 1, 'Admin reassignment clears the original guest booking attribution');
+    assert.equal(afterReassignment[0].shulId, otherShul.id);
 });
 
 test('anonymous guest registration identifies guests by email and updates their submitted profile details', async t => {

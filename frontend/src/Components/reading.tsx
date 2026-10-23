@@ -5,6 +5,7 @@ import type { ReaderCardUser } from './userCard.tsx';
 import AssignedReader from './assignedReader.tsx';
 import { TrashIcon } from './trashIcon.tsx';
 import { useReadingRemovalConfirmation } from './useReadingRemovalConfirmation.tsx';
+import { isGuestReading } from '../userReadings.ts';
 
 const aliyahLabels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
 
@@ -34,6 +35,7 @@ export function ReadingCard({ user, reading, onCancelReading, cancellationDisabl
 
     return (
         <div className="reading-card">
+            {isGuestReading(reading) && <span className="reading-card-guest-label">Guest registration · {reading.shulName}</span>}
             <div className="reading-card-header">
                 <h3>{reading.desc}</h3>
                 <span>·</span>

@@ -108,7 +108,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 14) throw new Error('Database schema is newer than this application');
+            if (version > 15) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -170,6 +170,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 14) {
                 db.exec(readFileSync(new URL('./migrations/014_authentication.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(14);
+            }
+            if (version < 15) {
+                if (!db.prepare('PRAGMA table_info(reading_readers)').all().some(column => column.name === 'registered_by_user_id'))
+                    db.exec(readFileSync(new URL('./migrations/015_guest_registration_owners.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(15);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -254,7 +259,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 DO UPDATE SET occasions_json = excluded.occasions_json`);
             const readerStatement = db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
                 VALUES (?, ?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
-                DO UPDATE SET user_id = excluded.user_id`);
+                DO UPDATE SET user_id = excluded.user_id, registered_by_user_id = NULL`);
             const removeReader = db.prepare(`DELETE FROM reading_readers
                 WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
             const countStatement = db.prepare(`INSERT INTO reading_aliyah_counts (shul_id, reading_date, reading_name, aliyah_count)
@@ -299,6 +304,15 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         listReadingAliyahCounts(shulId) {
             return db.prepare('SELECT reading_date, reading_name, aliyah_count FROM reading_aliyah_counts WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name, aliyahCount: row.aliyah_count }));
+        },
+        listGuestRegistrations(userId) {
+            return db.prepare(`SELECT r.shul_id, s.name AS shul_name, r.reading_date, r.reading_name, r.aliyah, r.user_id
+                FROM reading_readers r JOIN shuls s ON s.id = r.shul_id
+                JOIN users u ON u.id = r.user_id AND u.shul_id = r.shul_id
+                WHERE r.registered_by_user_id = ?
+                ORDER BY r.reading_date, r.reading_name, r.aliyah`).all(userId)
+                .map(row => ({ shulId: row.shul_id, shulName: row.shul_name, dateString: row.reading_date,
+                    desc: row.reading_name, aliyah: row.aliyah, reader: getUser(row.user_id) }));
         },
         listReadingReaders(shulId) {
             const rows = db.prepare(`SELECT r.reading_date, r.reading_name, r.aliyah, u.id, u.first_name, u.last_name, u.email, u.role, u.title, pic.version AS picture_version
@@ -566,8 +580,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                     error.status = 403;
                     throw error;
                 }
-                db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id)
-                    VALUES (?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id);
+                db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
+                    VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
             });
         },
         createUser(input) {

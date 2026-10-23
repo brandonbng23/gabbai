@@ -1,7 +1,7 @@
 import express from "express";
 import { installAuthentication } from './authentication.mjs';
 import { fileURLToPath } from "node:url";
-import { getAssignedReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
+import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
@@ -106,7 +106,8 @@ export function createApp(database, {
             const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
             if (!('guest' in req.body) && !user)
                 return res.status(401).json({ error: 'Sign in or register as a guest.' });
-            database.registerReading(req.params.id, { dateString, desc, aliyah, guest, readerId: user?.id }, () => {
+            database.registerReading(req.params.id, { dateString, desc, aliyah, guest,
+                readerId: guest ? req.sessionUserId ?? undefined : user?.id }, () => {
                 const reading = getShulSchedule(database, req.params.id)
                     .find(item => item.dateString === dateString && item.desc === desc);
                 const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
@@ -338,6 +339,12 @@ export function createApp(database, {
             shulName: database.getShul(target.shulId).name,
             assignedReadings: getAssignedReadingDetails(database, target),
             assignedReadingCount: target.assignedReadings.length });
+    });
+
+    app.get('/api/me/guest-readings', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.sessionUserId) return res.status(401).json({ error: 'Sign in to view your guest registrations.' });
+        return res.json(getGuestReadingDetails(database, req.sessionUserId));
     });
 
     // Sessions identify individual users; opt-in previews can supply a sample identity.

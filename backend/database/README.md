@@ -277,9 +277,16 @@ picture, and preferences. Creating a user still requires a valid shul ID or code
 `GET /api/users/:id` supplies the read-only user view at `/userView?user=<id>`.
 Only signed-in members and admins from the same shul may access it, including
 when the viewed user is a guest. The response contains name, Hebrew name, title,
-role, optional picture URL, shul name, and assigned-reading count. Email, phone,
-settings, and individual reading assignments are excluded. The view has no edit
+role, optional picture URL, shul name, and assigned readings with resolved dates
+and verse counts. Email, phone, and settings are excluded. The view has no edit
 controls or save actions; the eye button in Users & Permissions opens it.
+
+Version 15 records the signed-in booker on guest registrations separately from
+the assigned guest reader. `GET /api/me/guest-readings` requires an active session
+and returns only that account's guest bookings, including bookings at other shuls.
+They appear in My Readings but are never added to the booker's `assignedReadings`
+or activity statistics. Admin reassignment clears this attribution. Existing
+anonymous bookings remain unlinked; ownership is not inferred from email or name.
 
 Version 10 introduces persistent, unique shul join codes. Version 11 replaces
 numeric codes with four uppercase letters; the demo shul keeps `DEMO`, which is

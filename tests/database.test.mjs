@@ -58,6 +58,39 @@ test('guest email unifies reading registrations across dates and survives reopen
     } finally { db.close(); }
 });
 
+test('guest booking attribution migrates and survives reopening without altering profile assignments', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-owners-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'guests.sqlite');
+    let db = openDatabase(path);
+    const shul = db.createShul({ name: 'Guest owners', settings: { hebYear: 5787 } });
+    const actor = db.createUser({ shulId: shul.id, firstName: 'Booking', lastName: 'Owner', email: 'owner@example.com' });
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const details = { title: 'Mr.', firstName: 'Guest', lastName: 'Reader', email: 'guest-owner-test@example.com' };
+    db.registerReading(shul.id, { ...first, guest: details }, () => {});
+    db.close();
+    const old = new DatabaseSync(path);
+    old.exec('DROP INDEX reading_readers_registered_by; ALTER TABLE reading_readers DROP COLUMN registered_by_user_id; DELETE FROM schema_migrations WHERE version = 15');
+    old.close();
+    db = openDatabase(path);
+    try {
+        assert.equal(db.listReadingReaders(shul.id).length, 1);
+        assert.deepEqual(db.listGuestRegistrations(actor.id), [], 'Legacy anonymous registrations cannot be attributed by email');
+        db.registerReading(shul.id, { ...first, aliyah: 2, guest: details, readerId: actor.id }, () => {});
+        assert.deepEqual(db.getUser(actor.id).assignedReadings, []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.listGuestRegistrations(actor.id);
+        assert.equal(saved.length, 1);
+        assert.equal(saved[0].aliyah, 2);
+        assert.equal(saved[0].reader.email, details.email);
+        assert.deepEqual(db.getUser(actor.id).assignedReadings, []);
+        db.setReadingLocks(shul.id, [{ ...first, aliyah: 2, readerId: actor.id }]);
+        assert.deepEqual(db.listGuestRegistrations(actor.id), []);
+    } finally { db.close(); }
+});
+
 test('optional membership migration preserves profiles and discarded accounts survive reopening', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-membership-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));

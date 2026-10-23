@@ -24,3 +24,18 @@ test('all readings retain their data and filtering does not reorder the original
     assert.deepEqual(readings, snapshot);
     assert.deepEqual(selectUserReadings([], 'upcoming', '2026-10-23'), []);
 });
+
+test('reading-name search is case insensitive, trims whitespace, and combines with date filters', () => {
+    assert.deepEqual(selectUserReadings(readings, 'all', '2026-10-23', ' TOMORROW '), [readings[4], readings[0]]);
+    assert.deepEqual(selectUserReadings(readings, 'completed', '2026-10-23', 'tomorrow'), []);
+    assert.deepEqual(selectUserReadings(readings, 'all', '2026-10-23', 'missing'), []);
+});
+
+test('guest filter selects only guest bookings while All includes profile and guest readings', () => {
+    const guest = { ...readings[0], registrationType: 'guest', shulId: 'guest-shul' };
+    const combined = [...readings, guest];
+    assert.deepEqual(selectUserReadings(combined, 'guest', '2026-10-23'), [guest]);
+    assert.equal(selectUserReadings(combined, 'all', '2026-10-23').length, 6);
+    assert.deepEqual(selectUserReadings(combined, 'guest', '2026-10-23', 'yesterday'), []);
+    assert.equal(readings.length, 5, 'Guest bookings are never added to profile assignments');
+});

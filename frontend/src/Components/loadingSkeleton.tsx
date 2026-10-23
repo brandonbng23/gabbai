@@ -62,7 +62,10 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
             </div>}
             {variant === 'user-readings' ? <div className="shul-settings user-readings-page">
                 <div className="settings-panel user-readings-panel">
-                    <div className="user-readings-toolbar"><Block width="280px" className="skeleton-input" /></div>
+                    <div className="user-readings-toolbar">
+                        <Block width="280px" className="skeleton-input" />
+                        <Block width="220px" className="skeleton-input" />
+                    </div>
                     <div className="user-readings-list">
                         {Array.from({ length: 4 }, (_, index) => <div className="reading-card" key={index}>
                             <Block width="45%" className="skeleton-title" /><Block width="75%" />

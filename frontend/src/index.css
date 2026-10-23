@@ -3637,6 +3637,7 @@ input[type="number"] {
 .reading-card h3 {
     margin: 0;
     font-size: 18px;
+    color: #f6f5f7;
 }
 
 .activity-readings-empty {
@@ -3672,6 +3673,49 @@ input[type="number"] {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.user-readings-search {
+    display: grid;
+    flex: 1 1 220px;
+    max-width: 360px;
+    min-width: 0;
+    gap: 6px;
+}
+
+.user-readings-search label {
+    color: var(--settings-muted);
+    font-size: 12px;
+}
+
+.user-readings-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: #3d3b3f;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 14px;
+    color-scheme: dark;
+}
+
+.user-readings-search input::placeholder {
+    color: #bdbcc4;
+}
+
+.user-readings-page .user-readings-guest-note {
+    margin: 0 0 18px;
+    color: var(--settings-muted);
+    font-size: 14px;
+}
+
+.reading-card-guest-label {
+    color: #cdb5f0;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .user-readings-filters button {
@@ -3764,7 +3808,7 @@ input[type="number"] {
     font-size: 15px;
 }
 
-.user-readings-page :is(button, a):focus-visible,
+.user-readings-page :is(button, a, input):focus-visible,
 .user-readings-link:focus-visible {
     outline: 2px solid #8bc8ff;
     outline-offset: 3px;

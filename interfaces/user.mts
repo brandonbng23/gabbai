@@ -27,6 +27,13 @@ export interface User {
 
 export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl' | 'assignedReadings'>;
 
+export interface GuestReading extends UserReading {
+    registrationType: 'guest';
+    shulId: string;
+    shulName: string;
+    reader: Omit<ShulUser, 'email'>;
+}
+
 export type UserViewProfile = Pick<User, 'id' | 'firstName' | 'lastName' | 'hebrewName' | 'title' | 'pictureUrl' | 'role' | 'assignedReadings'> & {
     shulName: string;
     assignedReadingCount: number;
