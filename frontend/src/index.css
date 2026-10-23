@@ -3645,6 +3645,132 @@ input[type="number"] {
     font-size: 14px;
 }
 
+.user-readings-link,
+.user-readings-toolbar > a,
+.user-readings-empty a {
+    color: var(--settings-accent);
+    font-size: 14px;
+    text-underline-offset: 3px;
+}
+
+.user-readings-panel {
+    padding: clamp(16px, 3vw, 28px);
+}
+
+.user-readings-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--settings-border);
+}
+
+.user-readings-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.user-readings-filters button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: transparent;
+    color: #dddce3;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.user-readings-filters button[aria-pressed="true"] {
+    border-color: #8bc8ff;
+    background: #8bc8ff18;
+    color: #a6d5ff;
+}
+
+.user-readings-filters button:hover {
+    background: #8bc8ff25;
+}
+
+.user-readings-filters button span {
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: #ffffff0d;
+    font-size: 12px;
+}
+
+.user-readings-page #readings-list-heading {
+    display: block;
+    height: auto;
+    margin: 0 0 18px;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font-size: 22px;
+    font-weight: 650;
+}
+
+.user-readings-list {
+    display: grid;
+    gap: 14px;
+}
+
+.user-readings-page .reading-card {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    gap: 14px;
+}
+
+.user-readings-page :is(.reading-card-header, .reading-card-body) {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.user-readings-page .reading-card-header > .schedule-assigned-reader {
+    margin-right: 0;
+}
+
+.user-readings-page .user-readings-notice {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: #b6e3c9;
+}
+
+.user-readings-notice:empty {
+    display: none;
+}
+
+.user-readings-empty {
+    padding: 32px 12px;
+    text-align: center;
+}
+
+.user-readings-empty p {
+    color: var(--settings-muted);
+    font-size: 16px;
+}
+
+.user-readings-page .user-readings-error {
+    color: #f5b1b1;
+    font-size: 15px;
+}
+
+.user-readings-page :is(button, a):focus-visible,
+.user-readings-link:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
 .reading-removal-dialog {
     width: min(440px, calc(100% - 32px));
     max-height: calc(100dvh - 32px);

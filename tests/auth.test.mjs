@@ -31,7 +31,7 @@ async function setup(t, options = {}) {
 
 test('app documents disable HTTP caching so history navigation revalidates sessions', async t => {
     const { request } = await setup(t);
-    for (const path of ['/', '/index.html', '/signin', '/userSettings', '/userView?user=example']) {
+    for (const path of ['/', '/index.html', '/signin', '/userSettings', '/userView?user=example', '/userReadings', '/userReadings/']) {
         const response = await request(path);
         assert.equal(response.status, 200, path);
         assert.equal(response.headers.get('cache-control'), 'no-store', path);

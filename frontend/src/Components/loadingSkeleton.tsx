@@ -1,4 +1,4 @@
-type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'user-settings' | 'shul' | 'registration' | 'users' | 'readings';
+type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'user-settings' | 'user-readings' | 'shul' | 'registration' | 'users' | 'readings';
 
 function Block({ width = '100%', className = '' }: { width?: string; className?: string }) {
     return <span className={`skeleton-block ${className}`} style={{ width }} />;
@@ -50,9 +50,9 @@ function ReadingStats() {
 }
 
 export function LoadingSkeleton({ variant = 'schedule', page = false }: { variant?: SkeletonVariant; page?: boolean }) {
-    const label = ({ schedule: 'schedule', profile: 'user profile', settings: 'settings', 'user-settings': 'user settings', shul: 'shul information',
+    const label = ({ schedule: 'schedule', profile: 'user profile', settings: 'settings', 'user-settings': 'user settings', 'user-readings': 'user readings', shul: 'shul information',
         registration: 'registration details', users: 'shul users', readings: 'readings' })[variant];
-    const settingsPage = page && ['profile', 'settings', 'user-settings'].includes(variant);
+    const settingsPage = page && ['profile', 'settings', 'user-settings', 'user-readings'].includes(variant);
     return <div className={`skeleton-state skeleton-state-${variant}${settingsPage ? ' shul-admin-page' : ''}${variant === 'shul' ? ' my-shul-page' : ''}`}
         role="status" aria-label={`Loading ${label}`} aria-busy="true">
         <span className="visually-hidden">Loading {label}…</span>
@@ -60,7 +60,16 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
             {page && variant !== 'shul' && <div className={`skeleton-page-heading${settingsPage ? ' settings-page-header' : ''}`}>
                 <Block width="180px" className="skeleton-title" />
             </div>}
-            {variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="shul-settings">
+            {variant === 'user-readings' ? <div className="shul-settings user-readings-page">
+                <div className="settings-panel user-readings-panel">
+                    <div className="user-readings-toolbar"><Block width="280px" className="skeleton-input" /></div>
+                    <div className="user-readings-list">
+                        {Array.from({ length: 4 }, (_, index) => <div className="reading-card" key={index}>
+                            <Block width="45%" className="skeleton-title" /><Block width="75%" />
+                        </div>)}
+                    </div>
+                </div>
+            </div> : variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="shul-settings">
                 <div className="settings-view">
                     <Profile />
                     {variant !== 'settings' && <ReadingStats />}

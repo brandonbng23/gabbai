@@ -406,7 +406,7 @@ export function createApp(database, {
     }));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
+    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/userReadings", "/userReadings/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)), {
             headers: { 'Cache-Control': 'no-store' },
         });

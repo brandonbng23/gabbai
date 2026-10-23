@@ -70,6 +70,7 @@ function Navbar({ user }: { user: User | null }): React.JSX.Element {
                         </button>
                         {accountOpen && <div id={accountMenuId} className="navbar-account-dropdown" aria-label="My account">
                             <a href={`/userView?${new URLSearchParams({ user: user.id })}`}>View profile</a>
+                            <a href="/userReadings">My readings</a>
                             <a href="/userSettings">Edit profile</a>
                             <button type="button" disabled={signingOut} onClick={() => { void signout(); }}>
                                 {signingOut ? 'Signing out…' : 'Sign out'}

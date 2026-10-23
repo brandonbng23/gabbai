@@ -11,6 +11,7 @@ import MyShul from "./Pages/myShul.js"
 import ShulSettings from "./Pages/shulSettings.js"
 import { UserSettings } from "./Pages/userSettings.tsx"
 import { UserView } from "./Pages/userView.tsx"
+import { UserReadings } from './Pages/userReadings.tsx';
 import { LoadingSkeleton } from "./Components/loadingSkeleton.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
@@ -30,9 +31,10 @@ function App() {
     const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
     const isUserSettingsPage = window.location.pathname.replace(/\/$/, "") === "/userSettings";
     const isUserViewPage = window.location.pathname.replace(/\/$/, "") === "/userView";
+    const isUserReadingsPage = window.location.pathname.replace(/\/$/, '') === '/userReadings';
     const authPath = window.location.pathname.replace(/\/$/, '');
     const isAuthPage = authPath === '/signin' || authPath === '/signup';
-    const isSchedulePage = !isRegistrationPage && !isShulPage && !isShulSettingsPage && !isUserSettingsPage && !isUserViewPage && !isAuthPage;
+    const isSchedulePage = !isRegistrationPage && !isShulPage && !isShulSettingsPage && !isUserSettingsPage && !isUserViewPage && !isUserReadingsPage && !isAuthPage;
     const viewedUserId = new URLSearchParams(window.location.search).get('user') || '';
 
     useEffect(() => {
@@ -105,17 +107,19 @@ function App() {
 
     if (isAuthPage) return <AuthPage key={authPath} mode={authPath === '/signup' ? 'signup' : 'signin'} />;
     if (!loading && !error && !user && !isRegistrationPage
-        && (!shul || isUserSettingsPage || isShulSettingsPage || isUserViewPage)) return <AuthPage mode="signin" />;
+        && (!shul || isUserSettingsPage || isShulSettingsPage || isUserViewPage || isUserReadingsPage)) return <AuthPage mode="signin" />;
 
     return (
         <div>
             <div className="app-layout">
               <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
-              ) : loading ? <LoadingSkeleton page variant={isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
+              ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
+              : isUserReadingsPage && user ? <UserReadings key={viewedUserId || user.id} user={user}
+                  userId={viewedUserId || user.id} onReadingCancelled={handleReadingCancelled} />
               : isUserViewPage ? (
                 user && ['member', 'admin'].includes(user.role)
                     ? <UserView key={viewedUserId} userId={viewedUserId} />

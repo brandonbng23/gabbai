@@ -18,6 +18,7 @@ export function UserReadingStats({ user, onCancelReading, cancellationDisabled =
                     <span className="settings-eyebrow">ACTIVITY</span>
                     <h2 id={headingId}>Reading statistics</h2>
                 </div>
+                <a className="user-readings-link" href={`/userReadings?${new URLSearchParams({ user: user.id })}`}>View all readings →</a>
             </header>
             <div className="user-reading-stats">
                 <div className="stat-group">
