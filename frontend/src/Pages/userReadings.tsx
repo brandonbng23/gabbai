@@ -76,7 +76,7 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
                             onCancelReading={ownReadings && user.shulId && reading.dateString >= today ? removeReading : undefined} />)}
                     </div> : <div className="user-readings-empty">
                         <p>{view === 'all' ? 'No readings assigned yet.' : `No ${view} readings.`}</p>
-                        {ownReadings && <a href="/">Browse the schedule →</a>}
+                        {ownReadings && <a href="/">← Browse the schedule</a>}
                     </div>}
                 </section>
             </div>}

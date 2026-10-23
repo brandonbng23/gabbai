@@ -3533,25 +3533,25 @@ input[type="number"] {
 .lifetime-stat {
     background: #8bc8ff;
     border-color: #347fc1;
-    color: #347fc1;
+    color: #1f4d75;
 }
 
 .verses-stat {
     background: rgb(220, 139, 224);
     border-color: rgb(160, 2, 188);
-    color: rgb(160, 2, 188);
+    color: #651575;
 }
 
 .upcoming-stat {
     background: rgb(254, 229, 182);
     border-color: rgb(198, 129, 0);
-    color: rgb(198, 129, 0);
+    color: #704800;
 }
 
 .completed-stat {
     background: rgb(155, 222, 155);
     border-color: green;
-    color: green;
+    color: #185b27;
 }
 
 .reading-card {
@@ -4902,6 +4902,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     text-transform: uppercase;
 }
 .my-shul-page h1 {
+    color: #f6f5f7;
     margin: 5px 0 10px;
     font-size: clamp(26px, 3vw, 36px);
     font-weight: 700;
@@ -4932,13 +4933,15 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     padding: 10px 16px;
     border: 1px solid #8bc8ff70;
     border-radius: 10px;
-    background: #8bc8ff10;
+    background: #304254;
+    color: #b9dfff;
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
 }
 .my-shul-page .my-shul-schedule-link:hover {
-    background: #8bc8ff20;
+    background: #3a5066;
+    color: #ffffff;
 }
 .my-shul-sections {
     display: grid;
@@ -4960,7 +4963,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     margin: 0 0 20px;
     padding: 0;
     border: 0;
-    color: inherit;
+    color: #f6f5f7;
     font-size: 19px;
     font-weight: 650;
 }
@@ -4974,13 +4977,14 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     border-top: 1px solid #504f52;
 }
 .my-shul-card dt {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: #bdbcc4;
+    color: #c9c6cf;
 }
 .my-shul-card dd {
     margin: 5px 0 0;
     font-size: 16px;
+    color: #f6f5f7;
     line-height: 1.5;
     overflow-wrap: anywhere;
 }

@@ -108,7 +108,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
             {registered ? (
                 <section className="registration-details registration-success" aria-label="Registration complete">
                     <p role="status">You’re registered for {aliyahLabels[aliyah - 1]} of {parsha?.desc} on {parsha?.gregDate}.</p>
-                    <a className="registration-back" href={backUrl}>Return to schedule →</a>
+                    <a className="registration-back" href={backUrl}>← Return to schedule</a>
                 </section>
             ) : loading ? (
                 <LoadingSkeleton variant="registration" />
