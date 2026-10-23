@@ -3777,8 +3777,8 @@ input[type="number"] {
 }
 
 .user-readings-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    flex-wrap: wrap;
     align-items: end;
     gap: 16px;
     padding-bottom: 20px;
@@ -3790,18 +3790,18 @@ input[type="number"] {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    grid-column: 1 / -1;
+    min-width: 0;
 }
 
 .user-readings-toolbar > a {
-    justify-self: end;
+    margin-left: auto;
     padding-block: 10px;
 }
 
 .user-readings-search {
     display: grid;
-    width: 100%;
-    max-width: 420px;
+    flex: 1 1 300px;
+    max-width: 440px;
     min-width: 0;
     gap: 6px;
 }
@@ -3933,14 +3933,12 @@ input[type="number"] {
     .reading-card-header > .schedule-assigned-reader {
         margin-left: 0;
     }
-    .user-readings-toolbar {
-        grid-template-columns: minmax(0, 1fr);
-    }
     .user-readings-search {
+        flex-basis: 100%;
         max-width: none;
     }
     .user-readings-toolbar > a {
-        justify-self: start;
+        margin-left: 0;
     }
     .stat-group {
         grid-template-columns: 80px minmax(0, 1fr);

@@ -83,7 +83,7 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
                         <div className="user-readings-search">
                             <label htmlFor="reading-name-search">Search by reading name</label>
                             <input id="reading-name-search" type="search" value={query}
-                                placeholder="e.g. Pinchas or Pesach" autoComplete="off"
+                                placeholder="e.g. 'Pinchas' or 'Pesach'" autoComplete="off"
                                 onChange={event => setQuery(event.target.value)} />
                         </div>
                         <a href={`/userView?${new URLSearchParams({ user: reader.id })}`}>View profile →</a>
