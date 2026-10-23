@@ -4027,6 +4027,9 @@ body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-
 .skeleton-avatar { height: 80px; border-radius: 50%; }
 .skeleton-avatar-small { height: 32px; }
 .skeleton-profile-name { flex: 1; display: grid; gap: 12px; }
+.skeleton-stats-heading { display: grid; gap: 8px; min-width: 0; }
+.skeleton-stat-number { height: 91px; border-radius: 15px; }
+.skeleton-stat-label { display: grid; gap: 8px; min-width: 0; }
 .skeleton-page-heading { margin-bottom: 28px; }
 .skeleton-state-schedule > div > .skeleton-page-heading { margin: 24px var(--parsha-left-gap); }
 .skeleton-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 28px; }

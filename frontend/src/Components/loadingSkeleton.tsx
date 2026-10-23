@@ -1,4 +1,4 @@
-type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'shul' | 'registration' | 'users' | 'readings';
+type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'user-settings' | 'shul' | 'registration' | 'users' | 'readings';
 
 function Block({ width = '100%', className = '' }: { width?: string; className?: string }) {
     return <span className={`skeleton-block ${className}`} style={{ width }} />;
@@ -22,10 +22,29 @@ function Profile() {
     </div>;
 }
 
+function ReadingStats() {
+    return <div className="shul-card user-stats">
+        <div className="settings-summary-heading">
+            <div className="skeleton-stats-heading">
+                <Block width="64px" className="skeleton-label" />
+                <Block width="240px" className="skeleton-title" />
+            </div>
+        </div>
+        <div className="user-reading-stats">
+            {Array.from({ length: 4 }, (_, index) => <div className="stat-group" key={index}>
+                <Block width="110px" className="skeleton-stat-number" />
+                <div className="skeleton-stat-label">
+                    <Block width="75px" /><Block width="60px" />
+                </div>
+            </div>)}
+        </div>
+    </div>;
+}
+
 export function LoadingSkeleton({ variant = 'schedule', page = false }: { variant?: SkeletonVariant; page?: boolean }) {
-    const label = ({ schedule: 'schedule', profile: 'user profile', settings: 'settings', shul: 'shul information',
+    const label = ({ schedule: 'schedule', profile: 'user profile', settings: 'settings', 'user-settings': 'user settings', shul: 'shul information',
         registration: 'registration details', users: 'shul users', readings: 'readings' })[variant];
-    const settingsPage = page && ['profile', 'settings'].includes(variant);
+    const settingsPage = page && ['profile', 'settings', 'user-settings'].includes(variant);
     return <div className={`skeleton-state skeleton-state-${variant}${settingsPage ? ' shul-admin-page' : ''}${variant === 'shul' ? ' my-shul-page' : ''}`}
         role="status" aria-label={`Loading ${label}`} aria-busy="true">
         <span className="visually-hidden">Loading {label}…</span>
@@ -33,10 +52,11 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
             {page && variant !== 'shul' && <div className={`skeleton-page-heading${settingsPage ? ' settings-page-header' : ''}`}>
                 <Block width="180px" className="skeleton-title" />
             </div>}
-            {variant === 'profile' || variant === 'settings' ? <div className="shul-settings">
+            {variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="shul-settings">
                 <div className="settings-view">
                     <Profile />
-                    {variant === 'settings' && <div className="settings-panel skeleton-form">
+                    {variant !== 'settings' && <ReadingStats />}
+                    {(variant === 'settings' || variant === 'user-settings') && <div className="settings-panel skeleton-form">
                         <Block width="35%" className="skeleton-title" />
                         <Details />
                         <Block width="140px" className="skeleton-input" />

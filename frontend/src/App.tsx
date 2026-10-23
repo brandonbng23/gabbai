@@ -113,7 +113,7 @@ function App() {
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
-              ) : loading ? <LoadingSkeleton page variant={isShulSettingsPage || isUserSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
+              ) : loading ? <LoadingSkeleton page variant={isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserViewPage ? (
                 user && ['member', 'admin'].includes(user.role)
                     ? <UserView key={viewedUserId} userId={viewedUserId} />
