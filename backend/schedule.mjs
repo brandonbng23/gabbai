@@ -2,6 +2,8 @@ import { ReadingSet } from "../core/readingSet.mts";
 import { Schedule } from "../core/schedule.mts";
 import { Settings } from "../core/settings.mts";
 import { settingsForSchedule } from "./database/settings.mjs";
+import { HDate } from '@hebcal/core';
+import { countVerses } from '../core/verseCount.mts';
 
 export function getSchedule(year = 5787) {
     if (!Number.isInteger(year) || year < 1 || year > 9999) throw new TypeError('Invalid Hebrew year');
@@ -48,6 +50,7 @@ export function getShulSchedule(database, shulId, year) {
         reading.aliyahCountOverride = counts.get(JSON.stringify([reading.dateString, reading.desc])) ?? null;
         reading.aliyahCount = reading.aliyahCountOverride ?? reading.defaultAliyahCount;
         reading.psukim = reading.aliyahOptions[reading.aliyahCount - 1];
+        reading.verseCounts = reading.psukim.map(countVerses);
         for (const lock of locks.get(JSON.stringify([reading.dateString, reading.desc])) ?? []) {
             if (lock.aliyah === 0) reading.locked = lock.locked;
             else reading.lockedArr[lock.aliyah - 1] = lock.locked;
@@ -59,5 +62,26 @@ export function getShulSchedule(database, shulId, year) {
         reading.manualOccasions = occasions.get(JSON.stringify([reading.dateString, reading.desc])) ?? [];
         reading.searchTerms = [...reading.searchTerms, ...reading.manualOccasions];
         return reading;
+    });
+}
+
+export function getAssignedReadingDetails(database, user) {
+    const schedules = new Map();
+    return user.assignedReadings.map(assignment => {
+        if (!user.shulId) return { ...assignment, psukim: null, verseCount: null };
+        const date = new Date(`${assignment.dateString}T12:00:00Z`);
+        if (!Number.isFinite(date.getTime())) return { ...assignment, psukim: null, verseCount: null };
+        const year = new HDate(date).getFullYear();
+        if (!schedules.has(year)) {
+            schedules.set(year, new Map(getShulSchedule(database, user.shulId, year)
+                .map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading])));
+        }
+        const reading = schedules.get(year).get(JSON.stringify([assignment.dateString, assignment.desc]));
+        const psukim = reading?.psukim[assignment.aliyah - 1];
+        return {
+            ...assignment,
+            psukim: psukim && psukim !== 'null' ? psukim : null,
+            verseCount: reading?.verseCounts[assignment.aliyah - 1] ?? null,
+        };
     });
 }

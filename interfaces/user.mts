@@ -2,6 +2,9 @@ export interface UserReading {
     dateString: string;
     desc: string;
     aliyah: number;
+    // Resolved verse details are included by the user profile endpoint.
+    psukim?: string | null;
+    verseCount?: number | null;
 }
 
 export interface User {

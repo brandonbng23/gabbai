@@ -1,7 +1,7 @@
 import express from "express";
 import { installAuthentication } from './authentication.mjs';
 import { fileURLToPath } from "node:url";
-import { getSchedule, getShulSchedule } from "./schedule.mjs";
+import { getAssignedReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
@@ -336,7 +336,7 @@ export function createApp(database, {
         return res.json({ id, firstName, lastName, hebrewName, title, role,
             ...(pictureUrl ? { pictureUrl } : {}),
             shulName: database.getShul(target.shulId).name,
-            assignedReadings: target.assignedReadings,
+            assignedReadings: getAssignedReadingDetails(database, target),
             assignedReadingCount: target.assignedReadings.length });
     });
 

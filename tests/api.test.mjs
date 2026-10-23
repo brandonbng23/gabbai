@@ -201,10 +201,12 @@ test('user views are read-only and exclude sensitive fields for members and admi
         assert.equal(response.status, 404);
         assert.deepEqual(db.getUser(target.id), target);
     }
-    const assignment = { dateString: '2027-10-30', desc: 'Bereshit', aliyah: 1 };
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
     db.setReadingLocks(shul.id, [{ ...assignment, readerId: target.id }]);
     const profile = await (await request(path)).json();
-    assert.deepEqual(profile.assignedReadings, [assignment]);
+    assert.deepEqual(profile.assignedReadings, [{ ...assignment, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }]);
+    assert.ok(profile.assignedReadings[0].verseCount > 0);
     assert.equal(profile.assignedReadingCount, 1);
     assert.ok(!('email' in profile) && !('phone' in profile) && !('settings' in profile));
     db.updateUser(user.id, { role: 'guest' });

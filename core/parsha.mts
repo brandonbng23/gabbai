@@ -1,5 +1,6 @@
 import { Settings } from "./settings.mts";
 import { ReadingSet } from "./readingSet.mts";
+import { countVerses } from './verseCount.mts';
 import type { ParshaData } from "../interfaces/parshaData.mts"
 
 import { HDate, 
@@ -278,6 +279,7 @@ export class Parsha {
             this.gregDate = new HebcalEvent(this.hebDate, this.desc).greg();
         }
 
+        const psukim = this.readingSet.getPsukimArr();
         return {
             id: id,
             hDate: this.formatHebDateViewString(this.hebDate ?? new HDate()),
@@ -287,7 +289,8 @@ export class Parsha {
             manualOccasions: [],
             locked: this.readingSet.getLockStatus(),
             lockedArr: this.readingSet.getLockStatusArr(),
-            psukim: this.readingSet.getPsukimArr(),
+            psukim,
+            verseCounts: psukim.map(countVerses),
             book: this.readingSet.getBook(),
             readers: this.readingSet.getReaderArr(),
             searchTerms: [...this.getSearchTerms(), ...this.findOccassions()],
