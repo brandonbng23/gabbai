@@ -20,7 +20,6 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
                 <div className="my-shul-identity">
                     <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
                     <div>
-                        <span className="my-shul-eyebrow">My shul</span>
                         <h1>{shul.name}</h1>
                         <span className="my-shul-code">Shul code <strong>{shul.code}</strong></span>
                     </div>
