@@ -20,6 +20,49 @@ function setup(t) {
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
 
+test('optional membership migration preserves profiles and discarded accounts survive reopening', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-membership-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'membership.sqlite');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    let db = openDatabase(path);
+    let shul;
+    let actor;
+    let target;
+    try {
+        shul = db.createShul({ name: 'Membership', settings: { hebYear: 5787 } });
+        actor = db.createUser({ ...guest(shul.id), email: 'admin@example.com', role: 'admin' });
+        target = db.createUser({ ...guest(shul.id), settings: { language: 'he' } });
+        db.setPicture('users', target.id, png);
+        db.setReadingLocks(shul.id, [{ dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1, readerId: target.id }]);
+        target = db.getUser(target.id);
+    } finally { db.close(); }
+    const legacy = new DatabaseSync(path);
+    try {
+        legacy.exec('PRAGMA foreign_keys = OFF');
+        legacy.exec(readFileSync(new URL('../backend/database/migrations/007_guest_role.sql', import.meta.url), 'utf8'));
+        legacy.exec('DELETE FROM schema_migrations WHERE version >= 13');
+    } finally { legacy.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getUser(target.id), target);
+        assert.deepEqual(Buffer.from(db.getPicture('users', target.id).png), png);
+        db.updateShulUsers(shul.id, actor.id, [{ userId: target.id, previousRole: 'member', role: null }]);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.getUser(target.id);
+        assert.equal(saved.shulId, null);
+        assert.deepEqual(saved.assignedReadings, []);
+        assert.deepEqual(saved.settings, target.settings);
+        assert.equal(saved.pictureUrl, target.pictureUrl);
+        assert.equal(saved.email, target.email);
+        assert.deepEqual(db.listReadingReaders(shul.id), []);
+        assert.equal(db.updateUser(target.id, { phone: '555-0100' }).phone, '555-0100');
+        assert.throws(() => db.createUser({ ...guest('missing'), email: 'orphan@example.com' }), /FOREIGN KEY/);
+    } finally { db.close(); }
+});
+
 test('shul codes are unique and user creation resolves membership from the code', t => {
     const { db, shul } = setup(t);
     const shuls = [shul, ...Array.from({ length: 100 }, (_, i) => db.createShul({ name: `Shul ${i}`, settings: { hebYear: 5787 } }))];
@@ -135,7 +178,7 @@ test('demo code repair preserves edited user profiles and unrelated shul codes',
         const codes = new Set(raw.prepare('SELECT code FROM shul_codes').all().map(row => row.code));
         const wrong = ['WTUL', 'TEST', 'ABCD'].find(code => !codes.has(code));
         raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run(wrong, demo.shulId);
-        raw.exec('DELETE FROM schema_migrations WHERE version = 12');
+        raw.exec('DELETE FROM schema_migrations WHERE version >= 12');
     } finally { raw.close(); }
     db = openDatabase(path);
     try {

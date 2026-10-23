@@ -45,6 +45,7 @@ export function ensureDemoUser(database) {
     };
     const existing = database.getUserByEmail('demo@example.com');
     if (existing) {
+        if (!existing.shulId) return populateDemoProfiles(database, existing);
         database.ensureDemoShulCode(existing.shulId);
         const shul = database.getShul(existing.shulId);
         const changes = Object.fromEntries(Object.entries(profile)

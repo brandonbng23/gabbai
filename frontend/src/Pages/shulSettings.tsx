@@ -1,10 +1,10 @@
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
-import type { Shul, ShulInfo, Settings, ShulUser } from '../api.js';
+import type { Shul, ShulInfo, Settings, ShulUser, ShulUserChange, UserProfile } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
-import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
+import { getShulUsers, getShulUserProfile, getInitialShulVersion, publishReadingLocks, publishShulUsers, updateShul, updateShulSettings } from '../api.js';
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
@@ -12,9 +12,10 @@ import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingRead
 import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
+import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 
-type SettingsSection = 'info' | 'schedule' | 'readings';
+type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
 
 function SubmissionMessage({ message, onDismiss }: { message: SubmissionFeedback | null; onDismiss?: () => void }) {
@@ -70,8 +71,9 @@ function RestoreMenu({ section, disabled, onRestore }: { section: string; disabl
     );
 }
 
-export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated }: {
+export default function ShulSettings({ shul, currentUserId, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated }: {
     shul: Shul;
+    currentUserId: string;
     onSaved: (shul: Shul) => void;
     schedule: ParshaObj[];
     scheduleLoading?: boolean;
@@ -82,7 +84,13 @@ export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading 
     
 
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
-    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
+    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null, permissions: null });
+    const [permissionDrafts, setPermissionDrafts] = useState<Record<string, 'admin' | 'member' | null>>({});
+    const [openEditorId, setOpenEditorId] = useState<string | null>(null);
+    const [editableProfiles, setEditableProfiles] = useState<Record<string, UserProfile>>({});
+    const [profileDrafts, setProfileDrafts] = useState<Record<string, Partial<UserProfile>>>({});
+    const [userPictureDrafts, setUserPictureDrafts] = useState<Record<string, string | null>>({});
+    const [editorErrors, setEditorErrors] = useState<Record<string, string>>({});
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
     const [countDrafts, setCountDrafts] = useState<CountDrafts>({});
@@ -282,6 +290,140 @@ export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading 
 
 
     const busy = saving || pictureBusy || restoring !== null;
+    const permissionChanges: ShulUserChange[] = [...new Set([...Object.keys(permissionDrafts), ...Object.keys(profileDrafts), ...Object.keys(userPictureDrafts)])].flatMap(userId => {
+        const saved = users.find(user => user.id === userId);
+        if (!saved) return [];
+        const role = permissionDrafts[userId];
+        const profile = Object.fromEntries(Object.entries(profileDrafts[userId] ?? {}).map(([key, value]) =>
+            [key, key === 'email' ? value.trim().toLowerCase() : value.trim()])
+            .filter(([key, value]) => value !== editableProfiles[userId]?.[key as keyof UserProfile])) as Partial<UserProfile>;
+        const hasProfile = role !== null && Object.keys(profile).length > 0;
+        const hasPicture = role !== null && userPictureDrafts[userId] !== undefined;
+        if (role === undefined && !hasProfile && !hasPicture) return [];
+        return [{ userId, previousRole: saved.role, ...(role !== undefined ? { role } : {}),
+            ...(hasPicture ? { picture: userPictureDrafts[userId], previousPictureUrl: saved.pictureUrl ?? null } : {}),
+            ...(hasProfile ? { profile, previousProfile: Object.fromEntries(Object.keys(profile).map(key =>
+                [key, editableProfiles[userId][key as keyof UserProfile]])) } : {}) }];
+    });
+    const permissionChangeLog = permissionChanges.flatMap(change => {
+        const user = users.find(user => user.id === change.userId)!;
+        const name = `${user.firstName} ${user.lastName}`;
+        const entries = change.role === undefined ? [] : [change.role === null ? `Remove ${name} from this shul and clear their reader assignments.`
+            : change.role === 'admin' ? `Promote ${name} to admin.` : `Demote ${name} to member.`];
+        const labels: Record<keyof UserProfile, string> = { title: 'title', firstName: 'first name', lastName: 'last name', hebrewName: 'Hebrew name', email: 'email', phone: 'phone' };
+        const pictureEntry = 'picture' in change ? [`${change.picture === null ? 'Remove' : 'Update'} ${name}’s profile picture.`] : [];
+        return [...entries, ...Object.entries(change.profile ?? {}).map(([key, value]) => `Set ${name}’s ${labels[key as keyof UserProfile]} to ${value || '-'}.`), ...pictureEntry];
+    });
+
+    function resetUserPicture(userId: string): void {
+        setUserPictureDrafts(previous => {
+            const next = { ...previous };
+            delete next[userId];
+            return next;
+        });
+        clearFeedback('permissions');
+    }
+
+    async function toggleUserEditor(user: ShulUser): Promise<void> {
+        if (busy) return;
+        if (openEditorId === user.id) { setOpenEditorId(null); return; }
+        setOpenEditorId(user.id);
+        if (editableProfiles[user.id]) return;
+        setEditorErrors(previous => ({ ...previous, [user.id]: '' }));
+        try {
+            const profile = await getShulUserProfile(shul.id, user.id);
+            setEditableProfiles(previous => ({ ...previous, [user.id]: profile }));
+        } catch (failure) {
+            setEditorErrors(previous => ({ ...previous, [user.id]: failure instanceof Error ? failure.message : 'Unable to load user details.' }));
+        }
+    }
+
+    function changeUserField(userId: string, key: keyof UserProfile, value: string): void {
+        if (busy) return;
+        setProfileDrafts(previous => {
+            const draft = { ...previous[userId] };
+            if (value === editableProfiles[userId][key]) delete draft[key];
+            else draft[key] = value;
+            return { ...previous, [userId]: draft };
+        });
+        clearFeedback('permissions');
+    }
+
+    function stageUserChange(user: ShulUser, role: 'admin' | 'member' | null | undefined): void {
+        if (busy || user.id === currentUserId) return;
+        if (role === null) setOpenEditorId(previous => previous === user.id ? null : previous);
+        setPermissionDrafts(previous => {
+            const next = { ...previous };
+            if (role === undefined || role === user.role) delete next[user.id];
+            else next[user.id] = role;
+            return next;
+        });
+        clearFeedback('permissions');
+    }
+
+    function renderUserCard(user: ShulUser): React.JSX.Element {
+        const draft = permissionDrafts[user.id];
+        const editorId = `user-editor-${user.id}`;
+        return <div className="user-list-entry" key={user.id}>
+            <UserCard user={user}
+            nameClick={nameClick} setNameClick={setNameClick}
+            disabled={busy || user.id === currentUserId} pendingRemoval={draft === null} canDiscard={user.role !== 'admin'} canEdit={user.role !== 'admin'}
+            pendingRole={draft !== undefined && draft !== null}
+            onRoleChange={role => stageUserChange(user, draft === role ? undefined : role)}
+            onDiscard={() => stageUserChange(user, draft === null ? undefined : null)}
+            onEdit={() => { void toggleUserEditor(user); }} editorOpen={openEditorId === user.id} editorId={editorId} />
+            {openEditorId === user.id && <section id={editorId} className="inline-user-editor" aria-label={`Edit ${user.firstName} ${user.lastName}`}>
+                {editorErrors[user.id] ? <div role="alert">{editorErrors[user.id]} <button type="button" className="settings-reset-btn"
+                    onClick={() => { setOpenEditorId(null); }}>Close editor</button></div>
+                : !editableProfiles[user.id] ? <LoadingSkeleton variant="readings" />
+                : <UserEditor id={editorId} saved={editableProfiles[user.id]} draft={profileDrafts[user.id] ?? {}}
+                    pictureUrl={userPictureDrafts[user.id] === undefined ? user.pictureUrl : userPictureDrafts[user.id] ?? undefined}
+                    pictureChanged={userPictureDrafts[user.id] !== undefined} onPictureBusyChange={setPictureBusy}
+                    onPictureChange={picture => {
+                        if (picture === null && !user.pictureUrl) resetUserPicture(user.id);
+                        else {
+                            setUserPictureDrafts(previous => ({ ...previous, [user.id]: picture }));
+                            clearFeedback('permissions');
+                        }
+                    }} onPictureReset={() => resetUserPicture(user.id)}
+                    disabled={busy || draft === null} onChange={(key, value) => changeUserField(user.id, key, value)}
+                    onClose={() => setOpenEditorId(null)} onReset={() => {
+                        setProfileDrafts(previous => ({ ...previous, [user.id]: {} }));
+                        resetUserPicture(user.id);
+                        clearFeedback('permissions');
+                    }} />}
+            </section>}
+        </div>;
+    }
+
+    async function publishPermissions(): Promise<void> {
+        if (busy || permissionChanges.length === 0) return;
+        setActiveForm('permissions');
+        setSaving(true);
+        showFeedback('permissions', 'progress', 'Publishing user changes…');
+        try {
+            const updated = await publishShulUsers(shul.id, permissionChanges);
+            setUsers(updated);
+            setPermissionDrafts({});
+            setProfileDrafts({});
+            setUserPictureDrafts({});
+            setEditableProfiles({});
+            setOpenEditorId(null);
+            const byId = new Map(updated.map(user => [user.id, user]));
+            setReaderDrafts(previous => Object.fromEntries(Object.entries(previous)
+                .filter(([, draft]) => !draft.readerId || byId.has(draft.readerId))
+                .map(([key, draft]) => [key, { ...draft, reader: draft.readerId ? byId.get(draft.readerId)! : null }])));
+            schedule.forEach(reading => {
+                if (reading.readers.some(Boolean)) onReadingUpdated({ ...reading,
+                    readers: reading.readers.map(reader => reader ? byId.get(reader.id) ?? null : null) });
+            });
+            showFeedback('permissions', 'success', 'User changes published.');
+        } catch (failure) {
+            showFeedback('permissions', 'error', failure instanceof Error ? failure.message : 'Could not publish user changes. Your changes are still here.');
+        } finally {
+            setSaving(false);
+        }
+    }
 
     function showFeedback(section: SettingsSection, tone: SubmissionFeedback['tone'], text: string): void {
         setMessages((previous) => ({ ...previous, [section]: { tone, text } }));
@@ -1198,20 +1340,22 @@ export default function ShulSettings({ shul, onSaved, schedule, scheduleLoading 
                                                 </div>
                                         </div>
                                         <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
-                                        <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick}></UserCard>
-                                    </> : <> <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick} ></UserCard> </>;
+                                        {renderUserCard(u)}
+                                    </> : <> {renderUserCard(u)} </>;
                                 })}
                                     
                             </div>
                             <div className="settings-form-footer">
-                                <ChangeLog changes={[]} />
+                                <ChangeLog changes={permissionChangeLog} />
                                 <div className="settings-footer-actions">
                                     <span>Changes take effect after publishing.</span>
                                     <div className="settings-footer-buttons">
-                                        <button className="settings-reset-btn" type="button" disabled>Reset changes</button>
-                                        <button className="submit-btn" type="button" disabled>Publish Changes</button>
+                                        <button className="settings-reset-btn" type="button" disabled={busy || permissionChanges.length === 0}
+                                            onClick={() => { setPermissionDrafts({}); setProfileDrafts({}); setUserPictureDrafts({}); showFeedback('permissions', 'info', 'Unsaved user changes reset.'); }}>Reset changes</button>
+                                        <button className="submit-btn" type="button" disabled={busy || permissionChanges.length === 0}
+                                            onClick={() => { void publishPermissions(); }}>{saving && activeForm === 'permissions' ? 'Publishing…' : 'Publish Changes'}</button>
                                     </div>
-                                    <SubmissionMessage message={null} />
+                                    <SubmissionMessage message={messages.permissions} onDismiss={() => clearFeedback('permissions')} />
                                 </div>
                             </div>
                         </div>

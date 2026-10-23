@@ -196,6 +196,28 @@ forms are separate follow-up work. The legacy in-memory `User`, `Admin`, and
 
 ## Migrations
 
+`PATCH /api/shuls/:id/users` publishes the Users & Permissions section atomically.
+Each change has `userId`, `previousRole`, and `role` (`admin`, `member`, or `null`
+to discard the association), or a `profile` patch and matching `previousProfile`
+values for edited fields. Profile edits support title, first/last/Hebrew name,
+email, and phone for members and guests. The pencil opens an editor in normal
+page flow beneath that user; its changes join the section log and Publish batch.
+The compact editor also previews picture uploads, removals, and resets. Picture
+changes use `picture` (PNG data URL or null) and `previousPictureUrl` for stale
+change detection, and commit in the same transaction as fields and role changes.
+Selecting an image only changes the draft; the saved card updates after Publish.
+`GET /api/shuls/:id/users/:userId/profile` provides these six fields only to the
+owning shul's admins. Profile edits reject stale values, invalid fields, and email
+conflicts atomically with role changes. Only another administrator of the same shul may
+promote members, demote administrators, or discard members and guests. Self
+changes, guest promotions, admin removals, duplicate users, and stale roles are
+rejected. The UI stages changes in the section log until Publish Changes; Reset
+restores saved values. Failed batches keep all saved users unchanged.
+
+Version 13 allows a user's `shulId` to be null. Discarding clears this association
+and the user's assignments in that shul while preserving their account, profile,
+picture, and preferences. Creating a user still requires a valid shul ID or code.
+
 `GET /api/users/:id` supplies the read-only user view at `/userView?user=<id>`.
 Only signed-in members and admins from the same shul may access it, including
 when the viewed user is a guest. The response contains name, Hebrew name, title,

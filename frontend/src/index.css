@@ -3352,6 +3352,107 @@ input[type="number"] {
     height: 100%;
 }
 
+.inline-user-editor {
+    container: user-editor / inline-size;
+    color-scheme: dark;
+    position: relative;
+    margin: 8px 10px 14px;
+    padding: 14px;
+    border: 1px solid var(--settings-border);
+    border-radius: 12px;
+    background: var(--settings-surface);
+}
+
+.inline-user-editor-heading,
+.inline-user-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.inline-user-editor-heading { margin-bottom: 12px; }
+.inline-user-editor-heading h3 { margin: 0; font-size: 16px; }
+.inline-user-editor-footer { margin-top: 10px; color: var(--settings-muted); font-size: 12px; }
+
+.inline-user-editor-body {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.inline-user-editor-picture {
+    min-width: 0;
+    padding-right: 14px;
+    border-right: 1px solid var(--settings-border);
+}
+
+.inline-user-editor .user-settings-fields {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 8px 12px;
+}
+
+.inline-user-editor .user-settings-field { grid-column: span 4; }
+.inline-user-editor .inline-user-field-title { grid-column: span 2; }
+.inline-user-editor .inline-user-field-firstName,
+.inline-user-editor .inline-user-field-lastName { grid-column: span 5; }
+.inline-user-editor .settings-field-edit label { margin-bottom: 3px; font-size: 12px; }
+.inline-user-editor .settings-field-edit :is(input, select) { min-height: 32px; height: 32px; padding-block: 5px; font-size: 13px; }
+.inline-user-editor .user-settings-field[data-changed="true"] :is(input, select) {
+    border-color: #8bc8ff80;
+    background-color: #303c48;
+}
+.inline-user-editor .settings-field-edit select {
+    appearance: none;
+    padding-right: 26px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23bdbcc4' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+}
+.inline-user-editor select:has(option:checked[value=""]) { color: var(--settings-muted); }
+.inline-user-editor .settings-field-reset-row { margin-top: 1px; }
+.inline-user-editor .settings-reset-btn { min-height: 30px; padding: 5px 10px; font-size: 12px; }
+.inline-user-editor .profile-picture-editor {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: start;
+    margin-bottom: 0;
+    gap: 10px;
+}
+.inline-user-editor .profile-picture { width: 56px; height: 56px; font-size: 20px; }
+.inline-user-editor .profile-picture-buttons { gap: 8px; }
+.inline-user-editor .profile-picture-buttons > .settings-reset-btn {
+    border-color: var(--settings-accent);
+    background: var(--settings-accent);
+    color: #1a2a3e;
+}
+.inline-user-editor .profile-picture-buttons > .settings-reset-btn:hover:enabled {
+    background: #b5ddff;
+    border-color: #b5ddff;
+}
+.inline-user-editor .profile-picture-hint,
+.inline-user-editor .profile-picture-feedback { margin-top: 4px; font-size: 11px; }
+.inline-user-editor .profile-picture-feedback { color: var(--settings-accent); }
+.inline-user-editor .profile-picture-error { color: #f5b1b1; }
+
+@container user-editor (max-width: 760px) {
+    .inline-user-editor-body { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .inline-user-editor-picture { padding-right: 0; border-right: none; }
+    .inline-user-editor .profile-picture-editor { display: flex; align-items: center; }
+    .inline-user-editor .profile-picture-actions { flex-basis: 200px; }
+}
+
+@container user-editor (max-width: 500px) {
+    .inline-user-editor .user-settings-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .inline-user-editor .user-settings-field { grid-column: span 1; }
+}
+
+@container user-editor (max-width: 300px) {
+    .inline-user-editor .user-settings-fields { grid-template-columns: minmax(0, 1fr); }
+}
+
 .action-icons button {
     width: 20px;
     height: 20px;
@@ -3378,6 +3479,15 @@ input[type="number"] {
 
 .action-icons button:hover svg {
     fill: #1a2a3e;
+}
+
+.action-icons button:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+.action-icons button:disabled svg {
+    fill: white;
 }
 
 .footer {

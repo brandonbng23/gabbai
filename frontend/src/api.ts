@@ -155,6 +155,36 @@ export async function getShulUsers(id: string, signal: AbortSignal): Promise<Shu
     return response.json();
 }
 
+export interface ShulUserChange {
+    userId: string;
+    previousRole: ShulUser['role'];
+    role?: 'admin' | 'member' | null;
+    profile?: Partial<UserProfile>;
+    previousProfile?: Partial<UserProfile>;
+    picture?: string | null;
+    previousPictureUrl?: string | null;
+}
+
+export async function getShulUserProfile(shulId: string, userId: string): Promise<UserProfile> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/users/${encodeURIComponent(userId)}/profile`, { cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load this user’s details.');
+    }
+    return response.json();
+}
+
+export async function publishShulUsers(id: string, changes: ShulUserChange[]): Promise<ShulUser[]> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/users`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to publish user changes. Your changes are still here.');
+    }
+    return response.json();
+}
+
 export interface GuestRegistration {
     title: UserTitle;
     firstName: string;

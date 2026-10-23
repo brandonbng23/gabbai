@@ -6,7 +6,7 @@ export interface UserReading {
 
 export interface User {
     id: string;
-    shulId: string;
+    shulId: string | null;
     firstName: string;
     lastName: string;
     hebrewName: string;

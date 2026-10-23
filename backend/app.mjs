@@ -125,6 +125,43 @@ export function createApp(database, {
         ));
     });
 
+    app.get('/api/shuls/:id/users/:userId/profile', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        const actor = currentUserId ? database.getUser(currentUserId) : null;
+        if (!actor) return res.status(401).json({ error: 'Sign in to edit shul users.' });
+        if (actor.role !== 'admin' || actor.shulId !== req.params.id)
+            return res.status(403).json({ error: 'Only this shul’s administrators can edit its users.' });
+        const target = database.getUser(req.params.userId);
+        if (!target || target.shulId !== req.params.id) return res.status(404).json({ error: 'User not found.' });
+        if (target.role === 'admin') return res.status(403).json({ error: 'Administrators edit their own profile in My Preferences.' });
+        const { title, firstName, lastName, hebrewName, email, phone } = target;
+        return res.json({ title, firstName, lastName, hebrewName, email, phone });
+    });
+
+    app.patch('/api/shuls/:id/users', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        const actor = currentUserId ? database.getUser(currentUserId) : null;
+        if (!actor) return res.status(401).json({ error: 'Sign in to change shul users.' });
+        try {
+            validateKeys(req.body, ['changes'], 'user changes');
+            if (!Array.isArray(req.body.changes) || !req.body.changes.length || req.body.changes.length > 1000)
+                throw new TypeError('Provide between 1 and 1000 user changes.');
+            const changes = req.body.changes.map(change => {
+                validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl'], 'user change');
+                return { ...change, ...('picture' in change ? { picture: decodePicture(change.picture) } : {}) };
+            });
+            const users = database.updateShulUsers(req.params.id, actor.id, changes);
+            return res.json(users.map(({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings }) =>
+                ({ id, firstName, lastName, email, role, title, assignedReadings, ...(pictureUrl ? { pictureUrl } : {}) })));
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            if (error.message?.includes('UNIQUE constraint failed: users.email'))
+                return res.status(409).json({ error: 'This email is already used by another profile.' });
+            if (error.status) return res.status(error.status).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     app.get("/api/shuls/:id/initial-version", (req, res) => {
         res.set("Cache-Control", "no-store");
         const user = currentUserId ? app.locals.database.getUser(currentUserId) : null;
@@ -257,6 +294,7 @@ export function createApp(database, {
         if (!viewer) return res.status(401).json({ error: 'Sign in to view user profiles.' });
         if (!['member', 'admin'].includes(viewer.role))
             return res.status(403).json({ error: 'Only members and administrators can view user profiles.' });
+        if (!viewer.shulId) return res.status(403).json({ error: 'Join a shul to view its user profiles.' });
         const target = database.getUser(req.params.id);
         if (!target || target.shulId !== viewer.shulId)
             return res.status(404).json({ error: 'User not found.' });

@@ -57,7 +57,7 @@ function shulValues(input) {
 function userValues(input) {
     const role = input.role ?? 'member';
     if (!['member', 'admin', 'guest'].includes(role)) throw new TypeError('role must be member, admin, or guest');
-    return [text(input.shulId, 'shulId', true), text(input.firstName, 'firstName', true),
+    return [input.shulId === null ? null : text(input.shulId, 'shulId', true), text(input.firstName, 'firstName', true),
         text(input.lastName, 'lastName', true), text(input.hebrewName ?? '', 'hebrewName'),
         email(input.email), text(input.phone ?? '', 'phone'), role, text(input.title ?? '', 'title')];
 }
@@ -104,11 +104,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) STRICT`);
         // Rebuilding users must preserve dependent settings and reader assignments.
-        const migrateGuests = (db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0) < 7;
-        if (migrateGuests) db.exec('PRAGMA foreign_keys = OFF');
+        const rebuildUsers = (db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0) < 13;
+        if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 12) throw new Error('Database schema is newer than this application');
+            if (version > 13) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -161,8 +161,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/012_restore_demo_code.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(12);
             }
+            if (version < 13) {
+                db.exec(readFileSync(new URL('./migrations/013_optional_membership.sql', import.meta.url), 'utf8'));
+                if (db.prepare('PRAGMA foreign_key_check').all().length)
+                    throw new Error('Membership migration would violate foreign keys');
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(13);
+            }
         });
-        if (migrateGuests) db.exec('PRAGMA foreign_keys = ON');
+        if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
         db.close();
         throw error;
@@ -337,6 +343,70 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         getUserByEmail: value => decodeUser(db.prepare(`${userQuery} WHERE u.email = ?`).get(email(value))),
         listShuls: () => db.prepare(`${shulQuery} ORDER BY s.name, s.id`).all().map(decodeShul),
         listShulUsers: shulId => db.prepare(`${userQuery} WHERE u.shul_id = ? ORDER BY u.last_name, u.first_name, u.id`).all(shulId).map(decodeUser),
+        updateShulUsers(shulId, actorId, changes) {
+            return transaction(() => {
+                const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
+                const actor = getUser(actorId);
+                if (!actor || actor.role !== 'admin' || actor.shulId !== shulId)
+                    fail(403, 'Only this shul’s administrators can change its users.');
+                if (!Array.isArray(changes) || changes.length === 0 || changes.length > 1000)
+                    throw new TypeError('Provide between 1 and 1000 user changes.');
+                const seen = new Set();
+                for (const change of changes) {
+                    validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl'], 'user change');
+                    if (typeof change.userId !== 'string' || seen.has(change.userId)
+                        || !['member', 'admin', 'guest'].includes(change.previousRole)
+                        || ('role' in change && ![null, 'member', 'admin'].includes(change.role))
+                        || (!('role' in change) && !('profile' in change) && !('picture' in change)))
+                        throw new TypeError('Choose a valid, unique user and action.');
+                    seen.add(change.userId);
+                    const target = getUser(change.userId);
+                    if (!target || target.shulId !== shulId) fail(404, 'User no longer belongs to this shul.');
+                    if (target.id === actorId) fail(400, 'You cannot change your own shul role or association.');
+                    if (target.role !== change.previousRole) fail(409, 'A user’s role has changed. Reload the page before publishing.');
+                    if ('profile' in change) {
+                        if (target.role === 'admin' || change.role === null)
+                            fail(400, 'Only member and guest profiles can be edited.');
+                        const fields = ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone'];
+                        validateKeys(change.profile, fields, 'profile');
+                        validateKeys(change.previousProfile, Object.keys(change.profile), 'previous profile');
+                        if (!Object.keys(change.profile).length) throw new TypeError('Provide profile changes.');
+                        for (const [key, value] of Object.entries(change.profile)) {
+                            if (typeof value !== 'string' || value.length > 254
+                                || typeof change.previousProfile[key] !== 'string')
+                                throw new TypeError('Profile fields must be strings of at most 254 characters.');
+                            if (target[key] !== change.previousProfile[key])
+                                fail(409, 'A user’s profile has changed. Reload the page before publishing.');
+                        }
+                        if ('title' in change.profile && change.profile.title !== '' && !userTitles.includes(change.profile.title))
+                            throw new TypeError('Choose a title from the list.');
+                        const values = userValues({ ...target, ...change.profile });
+                        db.prepare(`UPDATE users SET first_name = ?, last_name = ?, hebrew_name = ?, email = ?, phone = ?, title = ?,
+                            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`)
+                            .run(values[1], values[2], values[3], values[4], values[5], values[7], target.id);
+                    } else if ('previousProfile' in change) throw new TypeError('Provide profile changes with their previous values.');
+                    if ('picture' in change) {
+                        if (target.role === 'admin' || change.role === null)
+                            fail(400, 'Only member and guest pictures can be edited.');
+                        if (change.previousPictureUrl !== null && typeof change.previousPictureUrl !== 'string')
+                            throw new TypeError('Provide the previous picture URL or null.');
+                        if ((target.pictureUrl ?? null) !== change.previousPictureUrl)
+                            fail(409, 'A user’s picture has changed. Reload the page before publishing.');
+                        writePicture('users', target.id, change.picture);
+                    } else if ('previousPictureUrl' in change) throw new TypeError('Provide a picture change with its previous URL.');
+                    if (change.role === null) {
+                        if (target.role === 'admin') fail(400, 'Demote an administrator before removing them from the shul.');
+                        db.prepare('DELETE FROM reading_readers WHERE shul_id = ? AND user_id = ?').run(shulId, target.id);
+                        db.prepare("UPDATE users SET shul_id = NULL, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(target.id);
+                    } else if ('role' in change) {
+                        if (target.role === 'guest' || target.role === change.role)
+                            fail(400, 'Only members can be promoted and administrators demoted.');
+                        db.prepare("UPDATE users SET role = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(change.role, target.id);
+                    }
+                }
+                return db.prepare(`${userQuery} WHERE u.shul_id = ? ORDER BY u.last_name, u.first_name, u.id`).all(shulId).map(decodeUser);
+            });
+        },
         getUserShul: userId => {
             const user = getUser(userId);
             return user ? getShul(user.shulId) : null;
@@ -402,7 +472,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!shul) throw new TypeError('No shul matches that code. Check the code and try again.');
                 shulId = shul.shul_id;
             }
-            const values = userValues({ ...input, shulId });
+            const values = userValues({ ...input, shulId: text(shulId, 'shulId', true) });
             const settings = serializeUserSettings(input.settings ?? {});
             const id = randomUUID();
             return transaction(() => {
