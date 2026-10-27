@@ -82,6 +82,40 @@ test('demo sign-in is unavailable for ordinary deployments and unrelated develop
     assert.equal((await signed.json()).email, 'demo@example.com');
 });
 
+test('HTTPS proxy sign-in requires proxy trust and still rejects cross-site writes', async t => {
+    const previous = process.env.GABBAI_TRUST_PROXY;
+    try {
+        for (const trusted of [false, true]) {
+            process.env.GABBAI_TRUST_PROXY = String(trusted);
+            const { request, db } = await setup(t, { production: true, preview: true });
+            const demo = db.getUserByEmail('demo@example.com');
+            db.setPasswordHash(demo.id, await hashPassword(password));
+            const headers = {
+                Origin: 'https://gabbai.onrender.com',
+                'X-Forwarded-Host': 'gabbai.onrender.com',
+                'X-Forwarded-Proto': 'https',
+                'Sec-Fetch-Site': 'same-origin',
+            };
+            assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: true });
+            const signed = await request('/api/auth/signin', json({ email: demo.email, password }, undefined, headers));
+            assert.equal(signed.status, trusted ? 200 : 403);
+            const demoSigned = await request('/api/auth/demo', json({}, undefined, headers));
+            assert.equal(demoSigned.status, trusted ? 200 : 403);
+            if (trusted) {
+                assert.match(signed.headers.get('set-cookie'), /Secure/);
+                assert.equal((await signed.json()).id, demo.id);
+                assert.equal((await request('/api/auth/demo', json({}, undefined,
+                    { ...headers, Origin: 'https://foreign.example' }))).status, 403);
+                assert.equal((await request('/api/auth/demo', json({}, undefined,
+                    { ...headers, 'Sec-Fetch-Site': 'cross-site' }))).status, 403);
+            }
+        }
+    } finally {
+        if (previous === undefined) delete process.env.GABBAI_TRUST_PROXY;
+        else process.env.GABBAI_TRUST_PROXY = previous;
+    }
+});
+
 test('registration uses shul codes, creates only members, and establishes a private session', async t => {
     const { db, shul, request, details } = await setup(t);
     assert.equal((await request('/api/me')).status, 401);

@@ -157,6 +157,14 @@ export class Parsha {
             }
         }
         
+        // The three Shabbatot after 17 Tamuz through 9 Av have haftarot of rebuke.
+        if (this.hebDate?.getDay() === 6 && (
+            (this.hebDate.getMonth() === 4 && this.hebDate.getDate() > 17) ||
+            (this.hebDate.getMonth() === 5 && this.hebDate.getDate() <= 9)
+        )) {
+            occassions = [...occassions, "Tlat DePuranuta"];
+        }
+
         // Identifying Rosh Chodesh
         const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
 
