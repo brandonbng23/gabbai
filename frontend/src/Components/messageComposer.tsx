@@ -62,11 +62,6 @@ export default function MessageComposer({ user, draft, onChange, busy, onBusyCha
     }
 
     return <section className="message-composer" aria-labelledby="compose-heading">
-        <header className="compose-heading">
-            <span className="inbox-eyebrow">NEW MESSAGE</span>
-            <h2 id="compose-heading">Write a message</h2>
-            <p>{user.role === 'admin' ? 'Send an update on behalf of your shul.' : 'Get in touch with your shul’s administrators.'}</p>
-        </header>
         <form className="compose-form" onSubmit={submit} aria-busy={busy}>
             <div className="compose-fields">
                 {!canCompose && <p role="alert">You need a member or administrator account with a shul to send messages.</p>}
