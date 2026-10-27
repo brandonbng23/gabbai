@@ -103,3 +103,15 @@ durable sending infrastructure for that work.
 
 Run `npm run test:messages`, `npm run test:db`, `npm run test:api`, and
 `npm run test:auth` to verify messaging and the surrounding backend behavior.
+
+## Sample inboxes
+
+Run `npm run db:seed-messages` to add 3–5 sample messages to each affiliated
+user in `data/gabbai.dev.sqlite`, including guest profiles. The count is stable
+per user and varies by user ID. Profiles without a shul are skipped. The utility
+includes system messages and, where an administrator exists, shul messages.
+Timestamps vary and each inbox receives read and unread examples. Sample
+confirmations do not create reading assignments. Existing messages are retained;
+rerunning the command adds no duplicate samples and preserves read status. Run
+it again after adding development users to populate their inboxes. This command
+does not seed the production or Render preview databases.

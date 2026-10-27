@@ -21,6 +21,18 @@ export interface Message {
     recipientCount?: number;
 }
 
+export async function getCurrentUserMessages(signal: AbortSignal, {
+    limit = 50, offset = 0, folder = 'inbox',
+}: { limit?: number; offset?: number; folder?: 'inbox' | 'sent' } = {}): Promise<Message[]> {
+    const query = new URLSearchParams({ limit: String(limit), offset: String(offset), folder });
+    const response = await fetch(`/api/me/messages?${query}`, { signal, cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load your messages. Please try again.');
+    }
+    return response.json();
+}
+
 export interface ReadingCountChange {
     dateString: string;
     desc: string;

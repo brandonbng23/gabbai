@@ -5060,6 +5060,33 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     }
 }
 
+.msg-card, .msg-card-unread {
+    width: 300px;
+    min-height: 75px;
+
+    padding: 10px;
+    border-radius: 15px;
+    background-color: grey;
+
+    .profile-picture {
+        width: 30px;
+        height: 30px;
+    }
+
+    .msg-sender {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    h1 {
+        font-family: Fustat;
+        font-size: 22px;
+        font-weight: 600;
+        color: white;
+    }
+}
+
 .my-shul-page {
     width: 100%;
     min-width: 0;
