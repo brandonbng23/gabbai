@@ -29,6 +29,10 @@ test('members message only their shul and the shared inbox is restricted to its 
     const sent = db.sendUserMessage(member.id, shul.id, message);
     assert.equal(sent.sender.type, 'user');
     assert.equal(sent.sender.id, member.id);
+    assert.equal(sent.sender.firstName, member.firstName);
+    assert.equal(sent.sender.email, member.email);
+    assert.deepEqual(sent.sender.assignedReadings, member.assignedReadings);
+    for (const field of ['phone', 'settings', 'password', 'hebrewName']) assert.equal(field in sent.sender, false);
     assert.equal(db.listShulMessages(admin.id, shul.id)[0].id, sent.id);
     assert.equal(db.listUserMessages(member.id, { folder: 'sent' })[0].id, sent.id);
     assert.deepEqual(db.listUserMessages(member2.id), []);
@@ -51,7 +55,7 @@ test('members message only their shul and the shared inbox is restricted to its 
 test('shul broadcasts use the shul identity, keep recipients private and track each recipient independently', t => {
     const { db, shul, admin, admin2, member, member2, outsider } = fixture(t);
     const sent = db.sendShulMessage(admin.id, shul.id, { ...message, recipientIds: [member.id, member2.id] });
-    assert.deepEqual(sent.sender, { type: 'shul', id: shul.id, name: shul.name });
+    assert.deepEqual(sent.sender, { ...shul, type: 'shul' });
     assert.equal(sent.recipientCount, 2);
     const inbox = db.listUserMessages(member.id)[0];
     for (const field of ['actorId', 'actor_user_id', 'recipientIds', 'email']) assert.equal(field in inbox, false);
@@ -67,13 +71,31 @@ test('shul broadcasts use the shul identity, keep recipients private and track e
     assert.equal(db.listUserMessages(member.id).length, 1, 'Invalid batches save no deliveries');
 });
 
+test('sender pictures use the current user or shul image and never expose the sending admin image', t => {
+    const { db, shul, admin, member } = fixture(t);
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    db.setPicture('users', member.id, png);
+    db.setPicture('users', admin.id, png);
+    const shulMessage = db.sendShulMessage(admin.id, shul.id, { ...message, recipientIds: [member.id] });
+    assert.equal(shulMessage.sender.pictureUrl, undefined);
+    db.setPicture('shuls', shul.id, png);
+    const url = db.getShul(shul.id).pictureUrl;
+    assert.equal(db.listUserMessages(member.id)[0].sender.pictureUrl, url);
+    db.sendUserMessage(member.id, shul.id, message);
+    assert.equal(db.listShulMessages(admin.id, shul.id)[0].sender.pictureUrl, db.getUser(member.id).pictureUrl);
+    db.setPicture('users', member.id, null);
+    assert.equal(db.listShulMessages(admin.id, shul.id)[0].sender.pictureUrl, undefined);
+    db.sendSystemMessage(shul.id, { ...message, kind: 'reading_invitation', recipientIds: [member.id], idempotencyKey: 'picture-test' });
+    assert.equal(db.listUserMessages(member.id).find(item => item.sender.type === 'system').sender.pictureUrl, '/api/system/picture');
+});
+
 test('system invitations are durable and idempotent, with validation and pagination', t => {
     const { db, shul, member, admin, guest } = fixture(t);
     const input = { ...message, kind: 'reading_invitation', recipientIds: [member.id], idempotencyKey: 'weekly-5787-01' };
     const first = db.sendSystemMessage(shul.id, input);
     assert.equal(db.sendSystemMessage(shul.id, input).id, first.id);
     assert.throws(() => db.sendSystemMessage(shul.id, { ...input, body: 'Different content' }), status(409));
-    assert.deepEqual(db.listUserMessages(member.id)[0].sender, { type: 'system', name: 'Gabbai' });
+    assert.deepEqual(db.listUserMessages(member.id)[0].sender, { type: 'system', name: 'The Gabbai Team', pictureUrl: '/api/system/picture' });
     assert.equal(db.listUserMessages(member.id).length, 1);
     for (const bad of [{ subject: '' }, { body: 'x'.repeat(10001) }, { senderType: 'system' },
         { recipientIds: [] }, { recipientIds: [member.id, member.id] }, { recipientIds: [guest.id] }]) {
@@ -167,6 +189,10 @@ test('HTTP messaging authenticates sessions, enforces direction and rejects send
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
     assert.equal((await request(null, '/api/me/messages')).status, 401);
+    const systemPicture = await request(null, '/api/system/picture');
+    assert.equal(systemPicture.status, 200);
+    assert.match(systemPicture.headers.get('content-type'), /image\/png/);
+    await systemPicture.arrayBuffer();
     const sent = await request(member, '/api/me/messages', 'POST', message);
     assert.equal(sent.status, 201);
     assert.equal(sent.headers.get('cache-control'), 'no-store');

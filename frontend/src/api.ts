@@ -3,6 +3,24 @@ import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
+export type MessageSender =
+    | { type: 'system'; name: string; pictureUrl: string }
+    | (Shul & { type: 'shul' })
+    | (ShulUser & { type: 'user'; name: string });
+
+export interface Message {
+    id: string;
+    shulId: string;
+    kind: 'message' | 'confirmation' | 'reading_invitation';
+    sender: MessageSender;
+    subject: string;
+    body: string;
+    sendAt: string;
+    readAt: string | null;
+    recipientIds?: string[];
+    recipientCount?: number;
+}
+
 export interface ReadingCountChange {
     dateString: string;
     desc: string;

@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "db:init": "node backend/database/init.mjs",
+    "db:seed-messages": "node scripts/seed-messages.mjs",
     "test:db": "node --test tests/database.test.mjs",
     "test:api": "node --test tests/api.test.mjs",
     "test:auth": "node --test tests/auth.test.mjs",

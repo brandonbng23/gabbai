@@ -50,11 +50,16 @@ accepts 1–1000 distinct recipient IDs and commits all deliveries atomically.
 For a broadcast, supply the intended member/admin IDs from the existing shul
 users endpoint. Permission changes or invalid recipients abort the whole send.
 
-Responses include `id`, `shulId`, `kind`, `sender`, `subject`, `body`, `createdAt`,
-and `readAt`. Sender examples:
+Responses include `id`, `shulId`, `kind`, `sender`, `subject`, `body`, `sendAt`,
+and `readAt`. User senders include the `ShulUser` profile fields; shul senders
+include the `Shul` profile fields. Both can include `pictureUrl`. The `type`
+discriminator identifies the profile shape. User senders also retain `name` as
+their combined display name. These are JSON data objects, not class instances.
+System senders use the Gabbai identity and favicon at `/api/system/picture`.
+Simplified sender examples:
 
 ```json
-{ "type": "system", "name": "Gabbai" }
+{ "type": "system", "name": "The Gabbai Team", "pictureUrl": "/api/system/picture" }
 { "type": "shul", "id": "shul-uuid", "name": "Example Shul" }
 { "type": "user", "id": "user-uuid", "name": "Example Member" }
 ```

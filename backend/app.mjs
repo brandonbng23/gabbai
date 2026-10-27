@@ -25,6 +25,12 @@ export function createApp(database, {
     installAuthentication(app, database, { development, preview, fallbackUserId });
     installMessaging(app, database);
 
+    app.get('/api/system/picture', (_req, res) => {
+        res.sendFile(fileURLToPath(new URL('../frontend/src/Assets/favicon.png', import.meta.url)), {
+            headers: { 'Cache-Control': 'public, max-age=3600' },
+        });
+    });
+
     function savePicture(req, res, next, kind) {
         res.set('Cache-Control', 'no-store');
         const user = req.currentUserId ? database.getUser(req.currentUserId) : null;

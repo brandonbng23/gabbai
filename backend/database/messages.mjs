@@ -48,15 +48,20 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
         return ids;
     }
     function decode(row) {
+        let sender = { type: 'system', name: 'The Gabbai Team', pictureUrl: '/api/system/picture' };
+        if (row.sender_type === 'shul') {
+            sender = { ...getShul(row.shul_id), type: 'shul' };
+        } else if (row.sender_type === 'user') {
+            const { id, firstName, lastName, email, role, title, pictureUrl, assignedReadings } = getUser(row.sender_user_id);
+            sender = { type: 'user', id, firstName, lastName, email, role, title, assignedReadings,
+                name: `${firstName} ${lastName}`, ...(pictureUrl ? { pictureUrl } : {}) };
+        }
         return { id: row.id, shulId: row.shul_id, kind: row.kind,
-            sender: row.sender_type === 'system' ? { type: 'system', name: 'Gabbai' }
-                : row.sender_type === 'shul' ? { type: 'shul', id: row.shul_id, name: row.shul_name }
-                    : { type: 'user', id: row.sender_user_id, name: `${row.first_name} ${row.last_name}` },
-            subject: row.subject, body: row.body, createdAt: row.created_at,
+            sender,
+            subject: row.subject, body: row.body, sendAt: row.created_at,
             readAt: row.read_at ?? null };
     }
-    const select = `SELECT m.*, s.name AS shul_name, u.first_name, u.last_name
-        FROM messages m JOIN shuls s ON s.id = m.shul_id LEFT JOIN users u ON u.id = m.sender_user_id`;
+    const select = 'SELECT m.* FROM messages m';
     function insert({ shulId, senderType, actorId = null, kind = 'message', subject, body, recipientIds = [], idempotencyKey = null }) {
         if (idempotencyKey) {
             const existing = db.prepare(`${select} WHERE m.idempotency_key = ?`).get(idempotencyKey);
