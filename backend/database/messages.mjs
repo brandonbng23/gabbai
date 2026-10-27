@@ -14,13 +14,14 @@ function content(input, extra = []) {
     return { subject: input.subject.trim(), body: input.body.trim() };
 }
 
-function page(options = {}) {
-    validateKeys(options, ['limit', 'offset', 'folder'], 'message query');
-    const { limit = 50, offset = 0, folder = 'inbox' } = options;
+function page(options = {}, personal = false) {
+    validateKeys(options, personal ? ['limit', 'offset', 'folder', 'sort', 'unread'] : ['limit', 'offset', 'folder'], 'message query');
+    const { limit = 50, offset = 0, folder = 'inbox', sort = 'newest', unread = false } = options;
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger(offset) || offset < 0)
         throw new TypeError('Use a limit from 1 to 100 and a nonnegative offset.');
-    if (!['inbox', 'sent'].includes(folder)) throw new TypeError('Choose inbox or sent.');
-    return { limit, offset, folder };
+    if (!(personal ? ['inbox', 'sent', 'trash'] : ['inbox', 'sent']).includes(folder)) throw new TypeError('Choose a valid message folder.');
+    if (!['newest', 'oldest'].includes(sort) || typeof unread !== 'boolean') throw new TypeError('Choose a valid sort order and unread filter.');
+    return { limit, offset, folder, sort, unread };
 }
 
 export function createMessagingRepository(db, { transaction, getUser, getShul }) {
@@ -114,14 +115,25 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
                     idempotencyKey: `system:${shulId}:${input.idempotencyKey}`, ...values });
             });
         },
+        getUserMessageCounts(actorId) {
+            user(actorId);
+            return db.prepare(`SELECT
+                COUNT(CASE WHEN deleted_at IS NULL THEN 1 END) AS "all",
+                COUNT(CASE WHEN deleted_at IS NULL AND read_at IS NULL THEN 1 END) AS unread,
+                COUNT(CASE WHEN deleted_at IS NOT NULL THEN 1 END) AS trash
+                FROM message_recipients WHERE user_id = ?`).get(actorId);
+        },
         listUserMessages(actorId, options) {
             user(actorId);
-            const { limit, offset, folder } = page(options);
+            const { limit, offset, folder, sort, unread } = page(options, true);
+            const order = sort === 'oldest' ? 'ASC' : 'DESC';
             if (folder === 'sent') return db.prepare(`${select} WHERE m.sender_type = 'user' AND m.sender_user_id = ?
-                ORDER BY m.created_at DESC, m.id DESC LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
+                ORDER BY m.created_at ${order}, m.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
             return db.prepare(`SELECT q.*, r.read_at FROM (${select}) q
                 JOIN message_recipients r ON r.message_id = q.id WHERE r.user_id = ?
-                ORDER BY q.created_at DESC, q.id DESC LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
+                AND r.deleted_at IS ${folder === 'trash' ? 'NOT NULL' : 'NULL'}
+                ${unread ? 'AND r.read_at IS NULL' : ''}
+                ORDER BY q.created_at ${order}, q.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
         },
         listShulMessages(actorId, shulId, options) {
             member(actorId, shulId, true);
@@ -134,6 +146,20 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             return db.prepare(`SELECT q.*, r.read_at FROM (${select}) q
                 JOIN shul_message_receipts r ON r.message_id = q.id WHERE q.shul_id = ?
                 ORDER BY q.created_at DESC, q.id DESC LIMIT ? OFFSET ?`).all(shulId, limit, offset).map(decode);
+        },
+        markUserMessageUnread(actorId, messageId) {
+            user(actorId);
+            const result = db.prepare('UPDATE message_recipients SET read_at = NULL WHERE message_id = ? AND user_id = ?').run(messageId, actorId);
+            if (!result.changes) fail(404, 'Message not found.');
+            return { read: false };
+        },
+        setUserMessageTrash(actorId, messageId, trashed) {
+            user(actorId);
+            if (typeof trashed !== 'boolean') throw new TypeError('Choose a boolean trash status.');
+            const result = db.prepare(`UPDATE message_recipients SET deleted_at = ${trashed
+                ? "COALESCE(deleted_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))" : 'NULL'} WHERE message_id = ? AND user_id = ?`).run(messageId, actorId);
+            if (!result.changes) fail(404, 'Message not found.');
+            return { trashed };
         },
         markUserMessageRead(actorId, messageId) {
             user(actorId);

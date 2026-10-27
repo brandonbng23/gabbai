@@ -142,7 +142,18 @@ test('messages and read receipts survive database reopening and migrations', t =
         assert.equal(reopened.listUserMessages(member.id)[0].id, sent.id);
         assert.ok(reopened.listUserMessages(member.id)[0].readAt);
         assert.equal(reopened.sendSystemMessage(shul.id, { ...message, kind: 'reading_invitation', recipientIds: [member.id], idempotencyKey: 'saved' }).id, sent.id);
+        reopened.markUserMessageUnread(member.id, sent.id);
+        reopened.setUserMessageTrash(member.id, sent.id, true);
     } finally { reopened.close(); }
+    const restored = openDatabase(path);
+    try {
+        assert.deepEqual(restored.listUserMessages(member.id), []);
+        const [trashed] = restored.listUserMessages(member.id, { folder: 'trash' });
+        assert.equal(trashed.id, sent.id);
+        assert.equal(trashed.readAt, null);
+        restored.setUserMessageTrash(member.id, sent.id, false);
+        assert.equal(restored.listUserMessages(member.id)[0].id, sent.id);
+    } finally { restored.close(); }
 });
 
 test('version 15 databases migrate without changing memberships, and failed confirmation writes roll back bookings', t => {
@@ -155,7 +166,7 @@ test('version 15 databases migrate without changing memberships, and failed conf
     db.close();
     const raw = new DatabaseSync(path);
     raw.exec(`DROP TABLE message_recipients; DROP TABLE shul_message_receipts; DROP TABLE messages;
-        DELETE FROM schema_migrations WHERE version = 16;`);
+        DELETE FROM schema_migrations WHERE version >= 16;`);
     raw.close();
     db = openDatabase(path);
     try {
@@ -169,6 +180,38 @@ test('version 15 databases migrate without changing memberships, and failed conf
         }, () => {}), /Confirmation failed/);
         assert.deepEqual(db.getUser(member.id).assignedReadings, []);
     } finally { db.close(); }
+});
+
+test('personal inbox filters, sorting, unread status, and trash stay scoped to the recipient', t => {
+    const { db, shul, admin, member, member2, outsider } = fixture(t);
+    const first = db.sendShulMessage(admin.id, shul.id, { ...message, recipientIds: [member.id, member2.id] });
+    const second = db.sendShulMessage(admin.id, shul.id, { ...message, subject: 'Another message', recipientIds: [member.id] });
+    const newest = db.listUserMessages(member.id);
+    assert.deepEqual({ ...db.getUserMessageCounts(member.id) }, { all: 2, unread: 2, trash: 0 });
+    db.listUserMessages(member.id, { limit: 1 });
+    assert.equal(db.getUserMessageCounts(member.id).all, 2, 'Counts cover all pages');
+    assert.equal(db.getUserMessageCounts(member2.id).all, 1, 'Counts are private to each recipient');
+    assert.throws(() => db.getUserMessageCounts(null), status(401));
+    assert.deepEqual(db.listUserMessages(member.id, { sort: 'oldest' }).map(item => item.id), newest.map(item => item.id).reverse());
+    assert.deepEqual(db.listUserMessages(member.id, { sort: 'oldest', limit: 1 }).map(item => item.id), [newest.at(-1).id]);
+    db.markUserMessageRead(member.id, first.id);
+    assert.equal(db.getUserMessageCounts(member.id).unread, 1);
+    assert.deepEqual(db.listUserMessages(member.id, { unread: true }).map(item => item.id), [second.id]);
+    db.markUserMessageUnread(member.id, first.id);
+    assert.equal(db.listUserMessages(member.id, { unread: true }).length, 2);
+    db.setUserMessageTrash(member.id, first.id, true);
+    assert.deepEqual({ ...db.getUserMessageCounts(member.id) }, { all: 1, unread: 1, trash: 1 });
+    assert.deepEqual(db.listUserMessages(member.id).map(item => item.id), [second.id]);
+    assert.deepEqual(db.listUserMessages(member.id, { folder: 'trash', unread: true }).map(item => item.id), [first.id]);
+    assert.ok(db.listUserMessages(member2.id).some(item => item.id === first.id));
+    assert.throws(() => db.setUserMessageTrash(outsider.id, first.id, true), status(404));
+    assert.throws(() => db.markUserMessageUnread(outsider.id, first.id), status(404));
+    assert.throws(() => db.setUserMessageTrash(member.id, first.id, 'true'), TypeError);
+    assert.throws(() => db.listUserMessages(member.id, { sort: 'invalid' }), TypeError);
+    db.setUserMessageTrash(member.id, first.id, false);
+    assert.deepEqual({ ...db.getUserMessageCounts(member.id) }, { all: 2, unread: 2, trash: 0 });
+    assert.equal(db.listUserMessages(member.id).length, 2);
+    assert.deepEqual(db.listUserMessages(member.id, { folder: 'trash' }), []);
 });
 
 test('HTTP messaging authenticates sessions, enforces direction and rejects sender spoofing and cross-site writes', async t => {
@@ -189,6 +232,7 @@ test('HTTP messaging authenticates sessions, enforces direction and rejects send
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
     assert.equal((await request(null, '/api/me/messages')).status, 401);
+    assert.equal((await request(null, '/api/me/messages/counts')).status, 401);
     const systemPicture = await request(null, '/api/system/picture');
     assert.equal(systemPicture.status, 200);
     assert.match(systemPicture.headers.get('content-type'), /image\/png/);
@@ -208,8 +252,19 @@ test('HTTP messaging authenticates sessions, enforces direction and rejects send
     const broadcast = await request(admin, `/api/shuls/${shul.id}/messages`, 'POST', { ...message, recipientIds: [member.id] });
     assert.equal(broadcast.status, 201);
     const broadcastId = (await broadcast.json()).id;
+    const countsResponse = await request(member, '/api/me/messages/counts');
+    assert.equal(countsResponse.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await countsResponse.json(), { all: 1, unread: 1, trash: 0 });
     assert.equal((await request(member2, `/api/me/messages/${broadcastId}/read`, 'PATCH', {})).status, 404);
     assert.equal((await request(member, `/api/me/messages/${broadcastId}/read`, 'PATCH', {})).status, 200);
+    assert.equal((await request(member2, `/api/me/messages/${broadcastId}/unread`, 'PATCH', {})).status, 404);
+    assert.equal((await request(member, `/api/me/messages/${broadcastId}/unread`, 'PATCH', {})).status, 200);
+    assert.equal((await request(member, `/api/me/messages/${broadcastId}/trash`, 'PATCH', { trashed: true }, { Origin: 'https://foreign.example' })).status, 403);
+    assert.equal((await request(member2, `/api/me/messages/${broadcastId}/trash`, 'PATCH', { trashed: true })).status, 404);
+    assert.equal((await request(member, `/api/me/messages/${broadcastId}/trash`, 'PATCH', { trashed: true })).status, 200);
+    assert.deepEqual((await (await request(member, '/api/me/messages?folder=trash&sort=oldest&unread=true')).json()).map(item => item.id), [broadcastId]);
+    assert.equal((await request(member, `/api/me/messages/${broadcastId}/trash`, 'PATCH', { trashed: false })).status, 200);
+    assert.equal((await request(member, '/api/me/messages?unread=invalid')).status, 400);
     assert.equal((await request(member, '/api/me/messages?limit=foo')).status, 400);
     assert.equal((await request(member, '/api/me/messages?sender=system')).status, 400);
     // Use the real booking endpoint to verify the integration, rather than only repository calls.

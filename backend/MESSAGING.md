@@ -2,6 +2,7 @@
 
 Messages are persisted in SQLite by migration 16, which runs on startup. This
 implements in-app messaging; it does not send email, SMS, or push notifications.
+Migration 17 adds per-recipient trash status without removing message content.
 Message subjects and bodies are plain text. Clients should render them as text,
 never as HTML.
 
@@ -34,9 +35,12 @@ identities apply. Inbox responses use `Cache-Control: no-store`.
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/api/me/messages` | Current user's inbox |
+| GET | `/api/me/messages/counts` | Current user's totals: `{ all, unread, trash }`, independent of pagination; All and Unread exclude trash |
 | GET | `/api/me/messages?folder=sent` | Messages the member sent to their shul |
 | POST | `/api/me/messages` | Send `{ subject, body }` to the member's current shul |
 | PATCH | `/api/me/messages/:messageId/read` | Mark a personal delivery read; body `{}` |
+| PATCH | `/api/me/messages/:messageId/unread` | Mark a personal delivery unread; body `{}` |
+| PATCH | `/api/me/messages/:messageId/trash` | Move to trash or restore; body `{ trashed: true }` or `{ trashed: false }` |
 | GET | `/api/shuls/:id/messages` | Admin-only shared inbox of member messages |
 | GET | `/api/shuls/:id/messages?folder=sent` | Admin-only history of shul messages, including `recipientIds` |
 | POST | `/api/shuls/:id/messages` | Send `{ subject, body, recipientIds: [...] }` as the shul |
@@ -49,6 +53,11 @@ body are required, trimmed, and limited to 200 and 10,000 characters. A shul sen
 accepts 1–1000 distinct recipient IDs and commits all deliveries atomically.
 For a broadcast, supply the intended member/admin IDs from the existing shul
 users endpoint. Permission changes or invalid recipients abort the whole send.
+
+Personal lists also accept `folder=trash`, `sort=newest|oldest` (default `newest`),
+and `unread=true|false` (default `false`). Filters and ordering apply before
+pagination. Trashed deliveries are excluded from the inbox. Trash and read status
+belong to the recipient; changing them never modifies another recipient's copy.
 
 Responses include `id`, `shulId`, `kind`, `sender`, `subject`, `body`, `sendAt`,
 and `readAt`. User senders include the `ShulUser` profile fields; shul senders

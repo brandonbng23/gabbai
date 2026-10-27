@@ -5088,6 +5088,19 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     gap: 16px;
     margin-bottom: 24px;
 }
+.inbox-compose {
+    padding: 9px 18px;
+    border: 1px solid var(--inbox-accent);
+    border-radius: 9px;
+    background: var(--inbox-accent);
+    color: #152b40;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.inbox-compose:hover { background: #a6d5ff; }
+.inbox-compose:focus-visible { outline: 2px solid var(--inbox-accent); outline-offset: 3px; }
 .inbox-eyebrow {
     color: #a6d5ff;
     font-size: 11px;
@@ -5116,7 +5129,14 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     min-height: 0;
     width: 100%;
 }
+.message-list-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
 .message-list {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -5129,6 +5149,80 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     scrollbar-color: #77737e transparent;
 }
 .message-list > * { flex-shrink: 0; }
+.msg-filters, .msg-buttons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.msg-filters {
+    gap: 0;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    padding: 8px 3px 12px;
+    /* Match the message list's reserved scrollbar space. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    background: #464545;
+}
+.msg-filter-group {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+.msg-filter-group:last-child { justify-content: flex-end; }
+.msg-filter-separator {
+    flex: 1;
+    padding-inline: 8px;
+    text-align: center;
+    color: #aaaab4;
+}
+.msg-buttons { justify-content: flex-end; margin-bottom: 20px; }
+.msg-filters button, .msg-buttons button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid #ffffff24;
+    border-radius: 8px;
+    background: #383739;
+    color: #d9d9df;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.msg-filter-count {
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: #ffffff0d;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.msg-filters button {
+    flex-shrink: 0;
+    gap: 4px;
+    padding-inline: 6px;
+    white-space: nowrap;
+}
+.msg-filters button[aria-pressed="true"] {
+    background: #354657;
+    border-color: var(--inbox-accent);
+    color: #c5e5ff;
+}
+.msg-filters button:hover:enabled, .msg-buttons button:hover:enabled { background: #48515b; color: #fff; }
+.msg-buttons .msg-delete { color: #f5b1b1; border-color: #f5b1b140; }
+.msg-buttons .msg-delete:hover:enabled { background: #f5b1b120; color: #ffd4d4; }
+.msg-filters button:focus-visible, .msg-buttons button:focus-visible, .message-list nav button:focus-visible {
+    outline: 2px solid var(--inbox-accent);
+    outline-offset: 2px;
+}
+.msg-filters button:disabled, .msg-buttons button:disabled { opacity: .5; cursor: wait; }
 .message-list > p, .message-list [role="alert"] {
     padding: 20px;
     color: #bdbcc4;

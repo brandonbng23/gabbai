@@ -22,14 +22,26 @@ export interface Message {
 }
 
 export async function getCurrentUserMessages(signal: AbortSignal, {
-    limit = 50, offset = 0, folder = 'inbox',
-}: { limit?: number; offset?: number; folder?: 'inbox' | 'sent' } = {}): Promise<Message[]> {
-    const query = new URLSearchParams({ limit: String(limit), offset: String(offset), folder });
+    limit = 50, offset = 0, folder = 'inbox', sort = 'newest', unread = false,
+}: { limit?: number; offset?: number; folder?: 'inbox' | 'sent' | 'trash'; sort?: 'newest' | 'oldest'; unread?: boolean } = {}): Promise<Message[]> {
+    const query = new URLSearchParams({ limit: String(limit), offset: String(offset), folder, sort, unread: String(unread) });
     const response = await fetch(`/api/me/messages?${query}`, { signal, cache: 'no-store' });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to load your messages. Please try again.');
     }
+    return response.json();
+}
+
+export interface MessageCounts {
+    all: number;
+    unread: number;
+    trash: number;
+}
+
+export async function getMessageCounts(signal: AbortSignal): Promise<MessageCounts> {
+    const response = await fetch('/api/me/messages/counts', { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load message totals. Please try again.');
     return response.json();
 }
 
@@ -42,6 +54,24 @@ export async function markMessageRead(messageId: string): Promise<void> {
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to mark the message as read. Please try again.');
+    }
+}
+
+export async function markMessageUnread(messageId: string): Promise<void> {
+    await updateMessageStatus(messageId, 'unread', {});
+}
+
+export async function setMessageTrash(messageId: string, trashed: boolean): Promise<void> {
+    await updateMessageStatus(messageId, 'trash', { trashed });
+}
+
+async function updateMessageStatus(messageId: string, action: 'unread' | 'trash', body: object): Promise<void> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/${action}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to update the message. Please try again.');
     }
 }
 

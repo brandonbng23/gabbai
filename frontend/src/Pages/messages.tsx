@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getCurrentUserMessages, markMessageRead } from '../api.ts';
-import type { Message } from '../api.ts';
+import { getCurrentUserMessages, getMessageCounts, markMessageRead, markMessageUnread, setMessageTrash } from '../api.ts';
+import type { Message, MessageCounts } from '../api.ts';
 import MessageCard from '../Components/messageCard.tsx';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 
@@ -8,12 +8,18 @@ const pageSize = 50;
 
 export default function Messages() {
     const [messages, setMessages] = useState<Message[]>([]);
+    const [counts, setCounts] = useState<MessageCounts | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
     const [offset, setOffset] = useState<number>(0);
     const [attempt, setAttempt] = useState<number>(0);
     const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
     const [readError, setReadError] = useState('');
+    const [unreadOnly, setUnreadOnly] = useState(false);
+    const [sort, setSort] = useState<'oldest' | 'newest'>('newest');
+    const [folder, setFolder] = useState<'inbox' | 'trash'>('inbox');
+    const [actionBusy, setActionBusy] = useState(false);
+    const visibleMessages = unreadOnly ? messages.filter(message => message.readAt === null) : messages;
 
     async function updatedSelectedMsg(message: Message) {
         const readAt = message.readAt ?? new Date().toISOString();
@@ -23,15 +29,47 @@ export default function Messages() {
 
         setMessages(previous => previous.map(item =>
             item.id === message.id ? { ...item, readAt: item.readAt ?? readAt } : item));
+        if (folder === 'inbox') setCounts(previous => previous && { ...previous, unread: Math.max(0, previous.unread - 1) });
+        setActionBusy(true);
         try {
             await markMessageRead(message.id);
         } catch (failure) {
+            if (folder === 'inbox') setCounts(previous => previous && { ...previous, unread: previous.unread + 1 });
             setMessages(previous => previous.map(item =>
                 item.id === message.id && item.readAt === readAt ? { ...item, readAt: null } : item));
             setSelectedMsg(previous => previous?.id === message.id && previous.readAt === readAt
                 ? { ...previous, readAt: null }
                 : previous);
             setReadError(failure instanceof Error ? failure.message : 'Unable to mark the message as read.');
+        } finally {
+            setActionBusy(false);
+        }
+    }
+
+    async function updateSelectedMessage(action: 'unread' | 'trash') {
+        if (!selectedMsg || actionBusy) return;
+        setActionBusy(true);
+        setReadError('');
+        try {
+            if (action === 'unread') {
+                await markMessageUnread(selectedMsg.id);
+                setMessages(previous => previous.map(message =>
+                    message.id === selectedMsg.id ? { ...message, readAt: null } : message));
+                setSelectedMsg(previous => previous?.id === selectedMsg.id
+                    ? { ...previous, readAt: null }
+                    : previous);
+                if (folder === 'inbox' && selectedMsg.readAt !== null) {
+                    setCounts(previous => previous && { ...previous, unread: previous.unread + 1 });
+                }
+            } else {
+                await setMessageTrash(selectedMsg.id, folder !== 'trash');
+                setSelectedMsg(null);
+                setAttempt(previous => previous + 1);
+            }
+        } catch (failure) {
+            setReadError(failure instanceof Error ? failure.message : 'Unable to update the message.');
+        } finally {
+            setActionBusy(false);
         }
     }
 
@@ -39,15 +77,24 @@ export default function Messages() {
         const controller = new AbortController();
         setLoading(true);
         setError('');
-        getCurrentUserMessages(controller.signal, { limit: pageSize, offset })
-            .then(result => { if (!controller.signal.aborted) setMessages(result); })
+        setSelectedMsg(null);
+        Promise.all([
+            getCurrentUserMessages(controller.signal, { limit: pageSize, offset, folder, sort, unread: unreadOnly }),
+            getMessageCounts(controller.signal),
+        ])
+            .then(([result, totals]) => {
+                if (!controller.signal.aborted) {
+                    setMessages(result);
+                    setCounts(totals);
+                }
+            })
             .catch(failure => {
                 if (!controller.signal.aborted)
                     setError(failure instanceof Error ? failure.message : 'Unable to load your messages.');
             })
             .finally(() => { if (!controller.signal.aborted) setLoading(false); });
         return () => controller.abort();
-    }, [offset, attempt]);
+    }, [offset, attempt, folder, sort, unreadOnly]);
 
     return <main className="messages-page" aria-label="My messages" aria-busy={loading}>
         <header className="inbox-header">
@@ -55,37 +102,66 @@ export default function Messages() {
                 <h1>My Messages</h1>
                 {readError && <p role="alert">{readError}</p>}
             </div>
+            <button type="button" className="inbox-compose">Compose</button>
         </header>
         <div className="inbox">
-            <div className="message-list">
-                {!loading && !error && <span className="inbox-unread-count">{messages.filter(message => !message.readAt).length} Unread Messages</span>}
-                {loading ? <p role="status">Loading messages…</p>
-                    : error ? <div role="alert">
-                        <p>{error}</p>
-                        <button type="button" onClick={() => setAttempt(previous => previous + 1)}>Try again</button>
+            <div className="message-list-panel">
+                <div className="msg-filters" role="group" aria-label="Message filters">
+                    <div className="msg-filter-group" role="group" aria-label="Sort order">
+                    <button type="button" disabled={actionBusy} aria-pressed={sort === 'newest'} onClick={() => { setSort('newest'); setOffset(0); }}>Newest</button>
+                    <button type="button" disabled={actionBusy} aria-pressed={sort === 'oldest'} onClick={() => { setSort('oldest'); setOffset(0); }}>Oldest</button>
                     </div>
-                    : messages.length ? messages.map(message => (
-                        <button
-                            key={message.id}
-                            type="button"
-                            className="message-select"
-                            aria-pressed={selectedMsg?.id === message.id}
-                            onClick={() => void updatedSelectedMsg(message)}
-                        >
-                            <MessageCard message={message} />
-                        </button>
-                    ))
-                    : <p>{offset ? 'No more messages.' : 'No messages yet.'}</p>}
-                {!loading && !error && (offset > 0 || messages.length === pageSize) && <nav aria-label="Message pages">
-                    <button type="button" disabled={offset === 0} onClick={() => setOffset(previous => Math.max(0, previous - pageSize))}>Newer messages</button>
-                    <button type="button" disabled={messages.length < pageSize} onClick={() => setOffset(previous => previous + pageSize)}>Older messages</button>
-                </nav>}
+                    <span className="msg-filter-separator" aria-hidden="true">·</span>
+                    <div className="msg-filter-group" role="group" aria-label="Message status">
+                    <button type="button" disabled={actionBusy} aria-pressed={folder === 'inbox' && !unreadOnly} onClick={() => { setFolder('inbox'); setUnreadOnly(false); setOffset(0); }}>All <span className="msg-filter-count">{counts?.all ?? '–'}</span></button>
+                    <button type="button" disabled={actionBusy} aria-pressed={folder === 'inbox' && unreadOnly} onClick={() => { setFolder('inbox'); setUnreadOnly(true); setOffset(0); }}>Unread <span className="msg-filter-count">{counts?.unread ?? '–'}</span></button>
+                    <button type="button" disabled={actionBusy} aria-pressed={folder === 'trash'} onClick={() => { setFolder('trash'); setUnreadOnly(false); setOffset(0); }}>Trash <span className="msg-filter-count">{counts?.trash ?? '–'}</span></button>
+                    </div>
+                </div>
+
+                <div className="message-list">
+                    {loading ? <p role="status">Loading messages…</p>
+                        : error ? <div role="alert">
+                            <p>{error}</p>
+                            <button type="button" onClick={() => setAttempt(previous => previous + 1)}>Try again</button>
+                        </div>
+                        : visibleMessages.length ? visibleMessages.map(message => (
+                            <button
+                                key={message.id}
+                                type="button"
+                                className="message-select"
+                                disabled={actionBusy}
+                                aria-pressed={selectedMsg?.id === message.id}
+                                onClick={() => void updatedSelectedMsg(message)}
+                            >
+                                <MessageCard message={message} />
+                            </button>
+                        ))
+                        : <p>{offset ? 'No more messages.' : folder === 'trash' ? 'Trash is empty.' : unreadOnly ? 'No unread messages.' : 'No messages yet.'}</p>}
+                    {!loading && !error && (offset > 0 || messages.length === pageSize) && <nav aria-label="Message pages">
+                        <button type="button" disabled={actionBusy || offset === 0} onClick={() => setOffset(previous => Math.max(0, previous - pageSize))}>Previous page</button>
+                        <button type="button" disabled={actionBusy || messages.length < pageSize} onClick={() => setOffset(previous => previous + pageSize)}>Next page</button>
+                    </nav>}
+                </div>
             </div>
 
             <section className={selectedMsg ? "message-view" : "no-message-view"} aria-label="Message details">
                 {selectedMsg ?
                 <>
                     <header className="message-detail-header">
+                        <div className="msg-buttons">
+                            <button
+                                type="button"
+                                disabled={actionBusy}
+                                onClick={() => void (selectedMsg.readAt === null
+                                    ? updatedSelectedMsg(selectedMsg)
+                                    : updateSelectedMessage('unread'))}
+                            >
+                                {selectedMsg.readAt === null ? 'Mark as Read' : 'Mark as Unread'}
+                            </button>
+                            <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
+                        </div>
+
                         <h2>{selectedMsg.subject}</h2>
                         <div className="message-detail-sender">
                             <ProfilePicture src={selectedMsg.sender.pictureUrl} name={selectedMsg.sender.name} small />
