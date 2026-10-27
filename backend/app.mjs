@@ -407,6 +407,11 @@ export function createApp(database, {
     });
 
     app.get(['/login', '/login.html'], (_req, res) => res.redirect('/signin'));
+    app.get(['/messages', '/messages/'], (_req, res) => {
+        res.sendFile(fileURLToPath(new URL('../frontend/dist/index.html', import.meta.url)), {
+            headers: { 'Cache-Control': 'no-store' },
+        });
+    });
     app.get('/registration.html', (_req, res) => res.redirect('/signup'));
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url)), {
         setHeaders(res, path) {
