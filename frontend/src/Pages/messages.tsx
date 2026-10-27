@@ -71,7 +71,9 @@ export default function Messages({ user }: { user: User }) {
                 }
             } else {
                 await setMessageTrash(selectedMsg.id, folder !== 'trash');
-                setComposeNotice(folder === 'trash' ? 'Message restored.' : 'Moved to Trash. It will be permanently deleted after 30 days.');
+                setComposeNotice(folder === 'trash' ? 'Message restored.' : selectedMsg.replyRestoresInbox
+                    ? 'Moved to your Trash only. A new reply will return this conversation to your inbox, even after the 30-day Trash period.'
+                    : 'Moved to Trash. It will be permanently deleted after 30 days.');
                 setSelectedMsg(null);
                 setAttempt(previous => previous + 1);
             }
@@ -177,7 +179,9 @@ export default function Messages({ user }: { user: User }) {
                     </div>
                 </div>
 
-                {folder === 'trash' && <p className="trash-retention-notice" role="note">Messages in Trash are permanently deleted after 30 days. Restore them before then to keep them. Shared shul deletions apply to all admins.</p>}
+                {folder === 'trash' && <p className="trash-retention-notice" role="note">Trash is cleared after 30 days. {user.role === 'admin'
+                    ? 'Deleting a shul conversation only hides it from your inbox. A new reply brings it back, even after it has been removed from Trash.'
+                    : 'Restore messages before then to keep them.'}</p>}
                 <div className="message-list">
                     {loading ? <p role="status">Loading messages…</p>
                         : error ? <div role="alert">
@@ -218,17 +222,20 @@ export default function Messages({ user }: { user: User }) {
                                 >
                                     {selectedMsg.readAt === null ? 'Mark as Read' : 'Mark as Unread'}
                                 </button>
-                                <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} title={folder === 'trash' ? 'Restore before the 30-day deadline' : 'Move to Trash. Permanently deleted after 30 days.'} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
+                                <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} title={folder === 'trash' ? 'Restore before the 30-day deadline' : selectedMsg.replyRestoresInbox ? 'Move to your Trash only. A new reply will bring it back.' : 'Move to Trash. Permanently deleted after 30 days.'} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
                             </div>
                             <p className="message-trash-policy">{selectedMsg.trashExpiresAt
-                                ? `Will be permanently deleted on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. Restore before then to keep it.`
-                                : 'Messages moved to Trash are permanently deleted after 30 days.'}</p>
+                                ? selectedMsg.replyRestoresInbox
+                                    ? `Removed from your Trash on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. A new reply will still return it to your inbox.`
+                                    : `Will be permanently deleted on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. Restore before then to keep it.`
+                                : selectedMsg.replyRestoresInbox ? 'Deleting only hides this conversation from your inbox. Any new reply brings it back, even after Trash expires.'
+                                    : 'Messages moved to Trash are permanently deleted after 30 days.'}</p>
 
                             <h2>{selectedMsg.subject}</h2>
                             {(selectedMsg.recipient || selectedMsg.sharedInbox) && <div className="message-shul-recipient">
                                 <span className="msg-shul-recipient">{selectedMsg.recipient ? `To: ${selectedMsg.recipient.name}` : `${selectedMsg.sharedInbox?.name} · Shul inbox`}</span>
                                 <p>{user.role === 'admin' && user.shulId === selectedMsg.shulId
-                                    ? 'Shared shul inbox. Read and trash status are shared with the other administrators.'
+                                    ? 'Shared shul conversation. Read status is shared; deleting only affects your inbox.'
                                     : 'This conversation is shared with the shul’s administrators.'}</p>
                             </div>}
                             <div className="message-detail-sender">

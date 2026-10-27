@@ -21,7 +21,7 @@ export default function MessageCard( {message}: {message: Message} ): React.JSX.
                 {Boolean(message.replyCount) && <span className="msg-thread-count">{message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}</span>}
                 <span className="msg-time-stamp">{sendAtLabel}</span>
                 {message.trashExpiresAt && <time className="msg-trash-deadline" dateTime={message.trashExpiresAt} title={new Date(message.trashExpiresAt).toLocaleString()}>
-                    Deletes permanently on {new Date(message.trashExpiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {message.replyRestoresInbox ? 'Removed from Trash on ' : 'Deletes permanently on '}{new Date(message.trashExpiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </time>}
             </div>
         </div>

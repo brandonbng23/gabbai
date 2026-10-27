@@ -6,6 +6,7 @@ Migration 17 adds per-recipient trash status without removing message content.
 Migration 18 adds trash status for shared shul inbox messages.
 Migration 19 adds persistent replies associated with the original message.
 Migration 20 adds permanent trash expiration records and cleanup indexes.
+Migration 21 makes shared-conversation trash and expiration personal to each admin.
 Message subjects and bodies are plain text. Clients should render them as text,
 never as HTML.
 
@@ -63,9 +64,10 @@ users endpoint. Permission changes or invalid recipients abort the whole send.
 
 The current user's inbox and totals include personal deliveries plus shared shul
 messages when the user is a current administrator of that shul. Shul-addressed
-messages include `recipient: { type: 'shul', id, name }`. Read, unread, trash, and
-restore actions on these messages update the shared shul receipt. All current
-admins see that shared state; former admins lose access immediately. Personal
+messages include `recipient: { type: 'shul', id, name }`. Read and unread state is
+shared by admins. Trash, restoration, and expiration apply only to the acting
+admin's inbox, using `shul_message_admin_states`; other admins retain access.
+Former admins lose shared access immediately. Personal
 delivery status remains private to its recipient. The merged inbox is sorted and
 paginated together, including messages sent before this feature was added.
 
@@ -85,11 +87,18 @@ the deadline clears it; moving the restored message back to Trash starts a new
 deadline along with warnings before deletion and in the Trash folder.
 
 Cleanup runs at database startup, hourly in the server, and before authenticated
-messaging requests. Expired delivery receipts are permanently removed, and minimal
-expiration records prevent restoration or resurrection through an old thread.
-Expiring a personal copy does not remove other recipients' copies. Expiring a
-shared shul copy removes it for all admins. Affected conversations must be started
-again as new messages rather than replying into an expired delivery.
+messaging requests. Expired personal delivery receipts are permanently removed,
+and minimal expiration records prevent resurrection of that personal copy.
+Other recipients' copies are unaffected.
+
+For admins, 30-day cleanup hides the conversation from that admin's inbox and
+Trash. The shared conversation and other admins' inbox entries are retained.
+Any new reply, from a member or an admin, clears every admin's trash/expiration
+state for that conversation so it reappears in current admins' inboxes. Inbox
+responses identify these conversations with `replyRestoresInbox: true`. Manually
+restoring an expired admin entry is not supported; a new reply revives it.
+The upgrade preserves legacy shared trash/expiration visibility for current
+admins while permitting subsequent replies to revive previously expired threads.
 
 Content still owned by another recipient or by the original sender's sent history
 is retained for that owner. Unowned system-message content is physically removed.
@@ -130,9 +139,8 @@ Simplified sender examples:
 `readAt` is null for unread deliveries and sent-folder entries. A successful
 shul send also returns `recipientCount`. Read operations return `{ "read": true }`
 and preserve the original read timestamp on repeated calls. The shul inbox's
-read state is shared among admins. There are no edit/delete or user-to-user
-send routes. These are individual messages; conversation threading is not yet
-implemented.
+read state is shared among admins. User-to-user sending and message editing are
+not supported; replies use the conversation routes above.
 
 ## System sending
 

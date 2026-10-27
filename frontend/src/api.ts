@@ -22,6 +22,7 @@ export interface Message {
     replyCount?: number;
     lastReplyAt?: string | null;
     trashExpiresAt?: string;
+    replyRestoresInbox?: boolean;
     recipientIds?: string[];
     recipientCount?: number;
 }

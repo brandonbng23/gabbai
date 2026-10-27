@@ -62,24 +62,37 @@ test('trash expires at 30 days, preserves other copies, and cannot be restored o
     assert.deepEqual(db.purgeExpiredMessages(now), { deliveriesRemoved: 0, messagesRemoved: 0 });
 });
 
-test('shared trash expiration removes access for all admins without removing the member copy', t => {
+test('admin trash is private and any reply revives both trashed and expired admin inbox entries', t => {
     const { db, raw, shul, admin, admin2, member } = retentionFixture(t);
     const root = db.sendUserMessage(member.id, shul.id, message);
     db.replyToMessage(admin.id, root.id, { body: 'A shared reply.' });
     db.setUserMessageTrash(admin.id, root.id, true);
+    assert.deepEqual(db.listUserMessages(admin.id), []);
+    assert.equal(db.listUserMessages(admin.id, { folder: 'trash' })[0].id, root.id);
+    assert.equal(db.listUserMessages(admin2.id)[0].id, root.id);
+    assert.equal(db.getUserMessageCounts(admin2.id).trash, 0);
     const now = new Date('2026-10-27T21:00:00.000Z');
-    raw.prepare('UPDATE shul_message_receipts SET deleted_at = ? WHERE message_id = ?').run(new Date(now.getTime() - 31 * 86400000).toISOString(), root.id);
+    raw.prepare('UPDATE shul_message_admin_states SET deleted_at = ? WHERE message_id = ? AND user_id = ?').run(new Date(now.getTime() - 31 * 86400000).toISOString(), root.id, admin.id);
     assert.equal(db.purgeExpiredMessages(now).deliveriesRemoved, 1);
+    assert.deepEqual(db.listUserMessages(admin.id), []);
+    assert.deepEqual(db.listUserMessages(admin.id, { folder: 'trash' }), []);
+    assert.throws(() => db.setUserMessageTrash(admin.id, root.id, false), status(404));
+    assert.equal(db.listUserMessages(admin2.id)[0].id, root.id);
+    assert.equal(db.getMessageThread(member.id, root.id).canReply, true);
+    db.setUserMessageTrash(admin2.id, root.id, true);
+    db.replyToMessage(member.id, root.id, { body: 'Please bring it back.' });
     for (const actor of [admin, admin2]) {
-        assert.deepEqual(db.listUserMessages(actor.id, { folder: 'trash' }), []);
+        assert.equal(db.listUserMessages(actor.id)[0].id, root.id);
+        assert.equal(db.listUserMessages(actor.id)[0].readAt, null);
         assert.equal(db.getUserMessageCounts(actor.id).trash, 0);
-        assert.throws(() => db.getMessageThread(actor.id, root.id), status(404));
-        assert.throws(() => db.setUserMessageTrash(actor.id, root.id, false), status(404));
+        assert.deepEqual(db.listUserMessages(actor.id, { folder: 'trash' }), []);
     }
-    assert.equal(db.listUserMessages(member.id)[0].id, root.id);
-    assert.equal(db.getMessageThread(member.id, root.id).replies[0].body, 'A shared reply.');
-    assert.equal(db.getMessageThread(member.id, root.id).canReply, false);
-    assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'Must start a new conversation' }), status(410));
+    db.setUserMessageTrash(admin.id, root.id, true);
+    raw.prepare('UPDATE shul_message_admin_states SET deleted_at = ? WHERE message_id = ? AND user_id = ?').run(new Date(now.getTime() - 31 * 86400000).toISOString(), root.id, admin.id);
+    db.purgeExpiredMessages(now);
+    db.replyToMessage(admin2.id, root.id, { body: 'Another admin can contribute too.' });
+    assert.equal(db.listUserMessages(admin.id)[0].id, root.id);
+    assert.equal(db.getMessageThread(admin.id, root.id).replies.length, 3);
 });
 
 test('startup cleanup removes expired system content when no other delivery remains', t => {
@@ -102,6 +115,43 @@ test('startup cleanup removes expired system content when no other delivery rema
         const inspect = new DatabaseSync(path, { readOnly: true });
         try { assert.equal(inspect.prepare('SELECT id FROM messages WHERE id = ?').get(root.id), undefined); }
         finally { inspect.close(); }
+    } finally { db.close(); }
+});
+
+test('legacy shared trash migrates to durable admin-specific state and old expirations revive on reply', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'gabbai-admin-trash-upgrade-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, 'messages.sqlite');
+    let db = openDatabase(path);
+    const shul = db.createShul({ name: 'Upgrade Shul', settings: { hebYear: 5787 } });
+    const admin = db.createUser({ shulId: shul.id, role: 'admin', firstName: 'Admin', lastName: 'One', email: 'upgrade-admin1@example.com' });
+    const admin2 = db.createUser({ shulId: shul.id, role: 'admin', firstName: 'Admin', lastName: 'Two', email: 'upgrade-admin2@example.com' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Reader', lastName: 'One', email: 'upgrade-reader@example.com' });
+    const trashed = db.sendUserMessage(member.id, shul.id, message);
+    const expired = db.sendUserMessage(member.id, shul.id, { ...message, subject: 'Previously expired' });
+    db.close();
+    const raw = new DatabaseSync(path);
+    raw.exec('DROP TABLE shul_message_admin_states; DELETE FROM schema_migrations WHERE version = 21;');
+    raw.prepare('UPDATE shul_message_receipts SET deleted_at = ? WHERE message_id = ?').run(new Date(Date.now() - 5 * 86400000).toISOString(), trashed.id);
+    raw.prepare('DELETE FROM shul_message_receipts WHERE message_id = ?').run(expired.id);
+    raw.prepare("INSERT INTO message_delivery_expirations (message_id, owner_type, owner_id, purged_at) VALUES (?, 'shul', ?, ?)").run(expired.id, shul.id, new Date().toISOString());
+    raw.close();
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listUserMessages(admin.id), []);
+        assert.equal(db.listUserMessages(admin.id, { folder: 'trash' })[0].id, trashed.id);
+        assert.equal(db.listUserMessages(admin2.id, { folder: 'trash' })[0].id, trashed.id);
+        assert.throws(() => db.setUserMessageTrash(admin.id, expired.id, false), status(404));
+        db.setUserMessageTrash(admin.id, trashed.id, false);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.listUserMessages(admin.id)[0].id, trashed.id);
+        assert.equal(db.listUserMessages(admin2.id, { folder: 'trash' })[0].id, trashed.id);
+        db.replyToMessage(member.id, expired.id, { body: 'A new reply after the upgrade.' });
+        assert.ok(db.listUserMessages(admin.id).some(item => item.id === expired.id));
+        assert.ok(db.listUserMessages(admin2.id).some(item => item.id === expired.id));
+        assert.equal(db.getMessageThread(admin2.id, expired.id).replies[0].body, 'A new reply after the upgrade.');
     } finally { db.close(); }
 });
 
@@ -163,8 +213,8 @@ test('admin inbox merges personal and shared shul deliveries with shared status 
     db.markUserMessageUnread(admin2.id, shared.id);
     assert.equal(db.listUserMessages(admin.id).find(item => item.id === shared.id).readAt, null);
     db.setUserMessageTrash(admin.id, shared.id, true);
-    assert.equal(db.listUserMessages(admin2.id).some(item => item.id === shared.id), false);
-    assert.equal(db.listUserMessages(admin2.id, { folder: 'trash' })[0].id, shared.id);
+    assert.equal(db.listUserMessages(admin2.id).some(item => item.id === shared.id), true);
+    assert.deepEqual(db.listUserMessages(admin2.id, { folder: 'trash' }), []);
     assert.deepEqual({ ...db.getUserMessageCounts(admin.id) }, { all: 2, unread: 2, trash: 1 });
     assert.throws(() => db.markUserMessageRead(member.id, shared.id), status(404));
     assert.throws(() => db.setUserMessageTrash(outsider.id, shared.id, false), status(404));

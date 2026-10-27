@@ -109,7 +109,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 20) throw new Error('Database schema is newer than this application');
+            if (version > 21) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -198,6 +198,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 20) {
                 db.exec(readFileSync(new URL('./migrations/020_message_trash_expiration.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(20);
+            }
+            if (version < 21) {
+                db.exec(readFileSync(new URL('./migrations/021_admin_message_trash.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(21);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
