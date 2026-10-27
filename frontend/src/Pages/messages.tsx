@@ -16,19 +16,21 @@ export default function Messages() {
     const [readError, setReadError] = useState('');
 
     async function updatedSelectedMsg(message: Message) {
-        setSelectedMsg(message);
+        const readAt = message.readAt ?? new Date().toISOString();
+        setSelectedMsg({ ...message, readAt });
         setReadError('');
         if (message.readAt !== null) return;
 
-        const readAt = new Date().toISOString();
+        setMessages(previous => previous.map(item =>
+            item.id === message.id ? { ...item, readAt: item.readAt ?? readAt } : item));
         try {
             await markMessageRead(message.id);
-            setMessages(previous => previous.map(item =>
-                item.id === message.id ? { ...item, readAt: item.readAt ?? readAt } : item));
-            setSelectedMsg(previous => previous?.id === message.id
-                ? { ...previous, readAt: previous.readAt ?? readAt }
-                : previous);
         } catch (failure) {
+            setMessages(previous => previous.map(item =>
+                item.id === message.id && item.readAt === readAt ? { ...item, readAt: null } : item));
+            setSelectedMsg(previous => previous?.id === message.id && previous.readAt === readAt
+                ? { ...previous, readAt: null }
+                : previous);
             setReadError(failure instanceof Error ? failure.message : 'Unable to mark the message as read.');
         }
     }

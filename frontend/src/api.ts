@@ -34,7 +34,11 @@ export async function getCurrentUserMessages(signal: AbortSignal, {
 }
 
 export async function markMessageRead(messageId: string): Promise<void> {
-    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/read`, { method: 'PATCH' });
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+    });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to mark the message as read. Please try again.');
