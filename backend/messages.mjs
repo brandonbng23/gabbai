@@ -34,6 +34,8 @@ export function installMessaging(app, database) {
     }
     app.get('/api/me/messages', route(req => database.listUserMessages(req.currentUserId, query(req, true))));
     app.get('/api/me/messages/counts', route(req => database.getUserMessageCounts(req.currentUserId)));
+    app.get('/api/me/messages/:messageId/thread', route(req => database.getMessageThread(req.currentUserId, req.params.messageId)));
+    app.post('/api/me/messages/:messageId/replies', route(req => database.replyToMessage(req.currentUserId, req.params.messageId, req.body)));
     app.post('/api/me/messages', route(req => {
         const shulId = database.getUser(req.currentUserId)?.shulId;
         return database.sendUserMessage(req.currentUserId, shulId, req.body);

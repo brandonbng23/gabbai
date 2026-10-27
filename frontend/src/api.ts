@@ -13,10 +13,14 @@ export interface Message {
     shulId: string;
     kind: 'message' | 'confirmation' | 'reading_invitation';
     sender: MessageSender;
+    recipient?: { type: 'shul'; id: string; name: string };
+    sharedInbox?: { id: string; name: string };
     subject: string;
     body: string;
     sendAt: string;
     readAt: string | null;
+    replyCount?: number;
+    lastReplyAt?: string | null;
     recipientIds?: string[];
     recipientCount?: number;
 }
@@ -33,13 +37,43 @@ export async function getCurrentUserMessages(signal: AbortSignal, {
     return response.json();
 }
 
-export async function sendMessage(user: User, subject: string, body: string, recipientIds: string[]): Promise<Message> {
-    const response = await fetch(user.role === 'admin'
+export interface MessageThread {
+    message: Message;
+    replies: Array<{ id: string; body: string; sendAt: string; sender: { type: 'user' | 'shul'; name: string }; authorName?: string; participantId?: string; participantName?: string }>;
+    canReply: boolean;
+    replyAs: string;
+    participants?: Array<{ id: string; name: string }>;
+}
+
+export async function getMessageThread(messageId: string, signal: AbortSignal): Promise<MessageThread> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/thread`, { signal, cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load the conversation.');
+    }
+    return response.json();
+}
+
+export async function replyToMessage(messageId: string, body: string, participantId?: string): Promise<MessageThread> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/replies`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, ...(participantId ? { participantId } : {}) }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to send the reply.');
+    }
+    return response.json();
+}
+
+export async function sendMessage(user: User, subject: string, body: string, recipientIds: string[], destination: 'shul' | 'members'): Promise<Message> {
+    const fromShul = user.role === 'admin' && destination === 'members';
+    const response = await fetch(fromShul
         ? `/api/shuls/${encodeURIComponent(user.shulId ?? '')}/messages`
         : '/api/me/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body, ...(user.role === 'admin' ? { recipientIds } : {}) }),
+        body: JSON.stringify({ subject, body, ...(fromShul ? { recipientIds } : {}) }),
     });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);

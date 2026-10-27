@@ -48,7 +48,7 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
         }
         return ids;
     }
-    function decode(row) {
+    function decode(row, viewer) {
         let sender = { type: 'system', name: 'The Gabbai Team', pictureUrl: '/api/system/picture' };
         if (row.sender_type === 'shul') {
             sender = { ...getShul(row.shul_id), type: 'shul' };
@@ -57,12 +57,41 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             sender = { type: 'user', id, firstName, lastName, email, role, title, assignedReadings,
                 name: `${firstName} ${lastName}`, ...(pictureUrl ? { pictureUrl } : {}) };
         }
-        return { id: row.id, shulId: row.shul_id, kind: row.kind,
+        const replyStats = viewer ? db.prepare(`SELECT COUNT(*) AS replyCount, MAX(created_at) AS lastReplyAt
+            FROM message_replies WHERE message_id = ? ${viewer.role === 'admin' && viewer.shulId === row.shul_id ? '' : 'AND participant_user_id = ?'}`)
+            .get(row.id, ...(viewer.role === 'admin' && viewer.shulId === row.shul_id ? [] : [viewer.id])) : {};
+        return { id: row.id, shulId: row.shul_id, kind: row.kind, ...replyStats,
             sender,
+            ...(viewer?.role === 'admin' && viewer.shulId === row.shul_id
+                && db.prepare('SELECT 1 FROM shul_message_receipts WHERE message_id = ?').get(row.id)
+                ? { sharedInbox: { id: row.shul_id, name: getShul(row.shul_id).name } } : {}),
+            ...(row.sender_type === 'user' ? { recipient: { type: 'shul', id: row.shul_id, name: getShul(row.shul_id).name } } : {}),
             subject: row.subject, body: row.body, sendAt: row.created_at,
             readAt: row.read_at ?? null };
     }
     const select = 'SELECT m.* FROM messages m';
+    function inbox(actor) {
+        const sharedAdmin = actor.role === 'admin' && Boolean(actor.shulId);
+        const sql = `SELECT m.*, r.read_at, r.deleted_at,
+            (SELECT MAX(created_at) FROM message_replies WHERE message_id = m.id AND participant_user_id = r.user_id) AS activity_at FROM messages m
+            JOIN message_recipients r ON r.message_id = m.id WHERE r.user_id = ?
+            ${sharedAdmin ? 'AND NOT (m.shul_id = ? AND EXISTS (SELECT 1 FROM shul_message_receipts s WHERE s.message_id = m.id))' : ''}`;
+        if (!sharedAdmin) return { sql, params: [actor.id] };
+        return { sql: `${sql} UNION ALL
+            SELECT m.*, r.read_at, r.deleted_at,
+            (SELECT MAX(created_at) FROM message_replies WHERE message_id = m.id) AS activity_at FROM messages m
+            JOIN shul_message_receipts r ON r.message_id = m.id WHERE m.shul_id = ?`, params: [actor.id, actor.shulId, actor.shulId] };
+    }
+    function updateReceipt(actorId, messageId, assignment) {
+        const actor = user(actorId);
+        let result;
+        if (actor.role === 'admin' && actor.shulId) {
+            result = db.prepare(`UPDATE shul_message_receipts SET ${assignment} WHERE message_id = ?
+                AND message_id IN (SELECT id FROM messages WHERE shul_id = ?)`).run(messageId, actor.shulId);
+        }
+        if (!result?.changes) result = db.prepare(`UPDATE message_recipients SET ${assignment} WHERE message_id = ? AND user_id = ?`).run(messageId, actorId);
+        if (!result.changes) fail(404, 'Message not found.');
+    }
     function insert({ shulId, senderType, actorId = null, kind = 'message', subject, body, recipientIds = [], idempotencyKey = null }) {
         if (idempotencyKey) {
             const existing = db.prepare(`${select} WHERE m.idempotency_key = ?`).get(idempotencyKey);
@@ -85,12 +114,66 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
         for (const recipientId of recipientIds) deliver.run(id, recipientId);
         return decode(db.prepare(`${select} WHERE m.id = ?`).get(id));
     }
+    function conversation(actorId, messageId) {
+        const actor = user(actorId);
+        const root = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
+        if (!root) fail(404, 'Message not found.');
+        const isAdmin = actor.role === 'admin' && actor.shulId === root.shul_id;
+        const delivered = Boolean(db.prepare('SELECT 1 FROM message_recipients WHERE message_id = ? AND user_id = ?').get(messageId, actorId));
+        const originalSender = root.sender_type === 'user' && root.sender_user_id === actorId;
+        if (!(delivered || originalSender || (isAdmin && root.sender_type !== 'system'))) fail(404, 'Message not found.');
+        const participants = root.sender_type === 'user' ? [getUser(root.sender_user_id)]
+            : root.sender_type === 'shul' ? db.prepare('SELECT user_id FROM message_recipients WHERE message_id = ?').all(messageId).map(row => getUser(row.user_id)) : [];
+        return { actor, root, isAdmin, participants };
+    }
+    function thread(actorId, messageId) {
+        const { actor, root, isAdmin, participants } = conversation(actorId, messageId);
+        const replies = db.prepare(`SELECT * FROM message_replies WHERE message_id = ? ${isAdmin ? '' : 'AND participant_user_id = ?'} ORDER BY created_at, rowid`)
+            .all(messageId, ...(isAdmin ? [] : [actorId])).map(row => {
+                const author = getUser(row.actor_user_id);
+                const participant = getUser(row.participant_user_id);
+                return { id: row.id, body: row.body, sendAt: row.created_at,
+                    sender: row.sender_type === 'shul' ? { type: 'shul', name: getShul(root.shul_id).name }
+                        : { type: 'user', name: `${author.firstName} ${author.lastName}` },
+                    ...(isAdmin ? { authorName: `${author.firstName} ${author.lastName}`, participantId: participant.id, participantName: `${participant.firstName} ${participant.lastName}` } : {}) };
+            });
+        return { message: decode(root, actor), replies,
+            canReply: root.sender_type !== 'system' && actor.shulId === root.shul_id && ['member', 'admin'].includes(actor.role),
+            replyAs: isAdmin ? getShul(root.shul_id).name : `${actor.firstName} ${actor.lastName}`,
+            ...(isAdmin ? { participants: participants.map(person => ({ id: person.id, name: `${person.firstName} ${person.lastName}` })) } : {}) };
+    }
     return {
+        getMessageThread: thread,
+        replyToMessage(actorId, messageId, input) {
+            validateKeys(input, ['body', 'participantId'], 'reply');
+            if (typeof input.body !== 'string' || !input.body.trim() || input.body.length > 10000) throw new TypeError('Reply must contain 1–10000 characters.');
+            return transaction(() => {
+                const { actor, root, isAdmin, participants } = conversation(actorId, messageId);
+                if (root.sender_type === 'system') fail(403, 'System messages do not accept replies.');
+                member(actorId, root.shul_id);
+                const participantId = isAdmin ? input.participantId ?? (participants.length === 1 ? participants[0].id : null) : actor.id;
+                if (!participants.some(person => person.id === participantId) || (!isAdmin && input.participantId && input.participantId !== actor.id))
+                    throw new TypeError('Choose a recipient from this conversation.');
+                const id = randomUUID();
+                db.prepare('INSERT INTO message_replies (id, message_id, participant_user_id, sender_type, actor_user_id, body) VALUES (?, ?, ?, ?, ?, ?)')
+                    .run(id, messageId, participantId, isAdmin ? 'shul' : 'user', actorId, input.body.trim());
+                if (isAdmin) {
+                    db.prepare(`INSERT INTO message_recipients (message_id, user_id) VALUES (?, ?)
+                        ON CONFLICT(message_id, user_id) DO UPDATE SET read_at = NULL, deleted_at = NULL`).run(messageId, participantId);
+                    db.prepare(`INSERT INTO shul_message_receipts (message_id, read_at) VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+                        ON CONFLICT(message_id) DO UPDATE SET read_at = excluded.read_at, deleted_at = NULL`).run(messageId);
+                } else {
+                    db.prepare(`INSERT INTO shul_message_receipts (message_id) VALUES (?)
+                        ON CONFLICT(message_id) DO UPDATE SET read_at = NULL, deleted_at = NULL`).run(messageId);
+                    db.prepare("UPDATE message_recipients SET read_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), deleted_at = NULL WHERE message_id = ? AND user_id = ?").run(messageId, actorId);
+                }
+                return thread(actorId, messageId);
+            });
+        },
         sendUserMessage(actorId, shulId, input) {
             const values = content(input);
             return transaction(() => {
-                const actor = member(actorId, shulId);
-                if (actor.role === 'admin') fail(403, 'Administrators send messages on behalf of their shul.');
+                member(actorId, shulId);
                 return insert({ shulId, senderType: 'user', actorId, ...values });
             });
         },
@@ -116,24 +199,23 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             });
         },
         getUserMessageCounts(actorId) {
-            user(actorId);
+            const { sql, params } = inbox(user(actorId));
             return db.prepare(`SELECT
                 COUNT(CASE WHEN deleted_at IS NULL THEN 1 END) AS "all",
                 COUNT(CASE WHEN deleted_at IS NULL AND read_at IS NULL THEN 1 END) AS unread,
                 COUNT(CASE WHEN deleted_at IS NOT NULL THEN 1 END) AS trash
-                FROM message_recipients WHERE user_id = ?`).get(actorId);
+                FROM (${sql})`).get(...params);
         },
         listUserMessages(actorId, options) {
-            user(actorId);
+            const actor = user(actorId);
             const { limit, offset, folder, sort, unread } = page(options, true);
             const order = sort === 'oldest' ? 'ASC' : 'DESC';
             if (folder === 'sent') return db.prepare(`${select} WHERE m.sender_type = 'user' AND m.sender_user_id = ?
-                ORDER BY m.created_at ${order}, m.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
-            return db.prepare(`SELECT q.*, r.read_at FROM (${select}) q
-                JOIN message_recipients r ON r.message_id = q.id WHERE r.user_id = ?
-                AND r.deleted_at IS ${folder === 'trash' ? 'NOT NULL' : 'NULL'}
-                ${unread ? 'AND r.read_at IS NULL' : ''}
-                ORDER BY q.created_at ${order}, q.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(decode);
+                ORDER BY m.created_at ${order}, m.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(row => decode(row, actor));
+            const { sql, params } = inbox(actor);
+            return db.prepare(`SELECT * FROM (${sql}) WHERE deleted_at IS ${folder === 'trash' ? 'NOT NULL' : 'NULL'}
+                ${unread ? 'AND read_at IS NULL' : ''}
+                ORDER BY COALESCE(activity_at, created_at) ${order}, id ${order} LIMIT ? OFFSET ?`).all(...params, limit, offset).map(row => decode(row, actor));
         },
         listShulMessages(actorId, shulId, options) {
             member(actorId, shulId, true);
@@ -144,28 +226,21 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
                         .all(row.id).map(recipient => recipient.user_id),
                 }));
             return db.prepare(`SELECT q.*, r.read_at FROM (${select}) q
-                JOIN shul_message_receipts r ON r.message_id = q.id WHERE q.shul_id = ?
-                ORDER BY q.created_at DESC, q.id DESC LIMIT ? OFFSET ?`).all(shulId, limit, offset).map(decode);
+                JOIN shul_message_receipts r ON r.message_id = q.id WHERE q.shul_id = ? AND r.deleted_at IS NULL
+                ORDER BY q.created_at DESC, q.id DESC LIMIT ? OFFSET ?`).all(shulId, limit, offset).map(row => decode(row));
         },
         markUserMessageUnread(actorId, messageId) {
-            user(actorId);
-            const result = db.prepare('UPDATE message_recipients SET read_at = NULL WHERE message_id = ? AND user_id = ?').run(messageId, actorId);
-            if (!result.changes) fail(404, 'Message not found.');
+            updateReceipt(actorId, messageId, 'read_at = NULL');
             return { read: false };
         },
         setUserMessageTrash(actorId, messageId, trashed) {
-            user(actorId);
             if (typeof trashed !== 'boolean') throw new TypeError('Choose a boolean trash status.');
-            const result = db.prepare(`UPDATE message_recipients SET deleted_at = ${trashed
-                ? "COALESCE(deleted_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))" : 'NULL'} WHERE message_id = ? AND user_id = ?`).run(messageId, actorId);
-            if (!result.changes) fail(404, 'Message not found.');
+            updateReceipt(actorId, messageId, `deleted_at = ${trashed
+                ? "COALESCE(deleted_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))" : 'NULL'}`);
             return { trashed };
         },
         markUserMessageRead(actorId, messageId) {
-            user(actorId);
-            const result = db.prepare(`UPDATE message_recipients SET read_at = COALESCE(read_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-                WHERE message_id = ? AND user_id = ?`).run(messageId, actorId);
-            if (!result.changes) fail(404, 'Message not found.');
+            updateReceipt(actorId, messageId, "read_at = COALESCE(read_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))");
             return { read: true };
         },
         markShulMessageRead(actorId, shulId, messageId) {

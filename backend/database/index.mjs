@@ -109,7 +109,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 17) throw new Error('Database schema is newer than this application');
+            if (version > 19) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -185,6 +185,15 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(message_recipients)').all().some(column => column.name === 'deleted_at'))
                     db.exec(readFileSync(new URL('./migrations/017_message_trash.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(17);
+            }
+            if (version < 18) {
+                if (!db.prepare('PRAGMA table_info(shul_message_receipts)').all().some(column => column.name === 'deleted_at'))
+                    db.exec(readFileSync(new URL('./migrations/018_shul_message_trash.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(18);
+            }
+            if (version < 19) {
+                db.exec(readFileSync(new URL('./migrations/019_message_replies.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(19);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');

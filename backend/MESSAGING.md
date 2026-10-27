@@ -3,6 +3,8 @@
 Messages are persisted in SQLite by migration 16, which runs on startup. This
 implements in-app messaging; it does not send email, SMS, or push notifications.
 Migration 17 adds per-recipient trash status without removing message content.
+Migration 18 adds trash status for shared shul inbox messages.
+Migration 19 adds persistent replies associated with the original message.
 Message subjects and bodies are plain text. Clients should render them as text,
 never as HTML.
 
@@ -16,6 +18,8 @@ never as HTML.
   that shul's current administrators share its inbox and sent history. The
   initiating administrator's ID is stored privately in `messages.actor_user_id`
   for auditing and is excluded from message responses.
+- Administrators can also use the personal send endpoint to write to their own
+  shul's shared inbox as themselves, just like members.
 - Shuls can address one or more current members/admins of that shul. Each
   recipient gets a private delivery and independent read status. Other recipients
   and their read status are not disclosed in a user's inbox.
@@ -38,6 +42,8 @@ identities apply. Inbox responses use `Cache-Control: no-store`.
 | GET | `/api/me/messages/counts` | Current user's totals: `{ all, unread, trash }`, independent of pagination; All and Unread exclude trash |
 | GET | `/api/me/messages?folder=sent` | Messages the member sent to their shul |
 | POST | `/api/me/messages` | Send `{ subject, body }` to the member's current shul |
+| GET | `/api/me/messages/:messageId/thread` | Original message, chronological replies, and reply permissions |
+| POST | `/api/me/messages/:messageId/replies` | Send `{ body, participantId? }` in a conversation |
 | PATCH | `/api/me/messages/:messageId/read` | Mark a personal delivery read; body `{}` |
 | PATCH | `/api/me/messages/:messageId/unread` | Mark a personal delivery unread; body `{}` |
 | PATCH | `/api/me/messages/:messageId/trash` | Move to trash or restore; body `{ trashed: true }` or `{ trashed: false }` |
@@ -54,10 +60,38 @@ accepts 1–1000 distinct recipient IDs and commits all deliveries atomically.
 For a broadcast, supply the intended member/admin IDs from the existing shul
 users endpoint. Permission changes or invalid recipients abort the whole send.
 
+The current user's inbox and totals include personal deliveries plus shared shul
+messages when the user is a current administrator of that shul. Shul-addressed
+messages include `recipient: { type: 'shul', id, name }`. Read, unread, trash, and
+restore actions on these messages update the shared shul receipt. All current
+admins see that shared state; former admins lose access immediately. Personal
+delivery status remains private to its recipient. The merged inbox is sorted and
+paginated together, including messages sent before this feature was added.
+
 Personal lists also accept `folder=trash`, `sort=newest|oldest` (default `newest`),
 and `unread=true|false` (default `false`). Filters and ordering apply before
 pagination. Trashed deliveries are excluded from the inbox. Trash and read status
-belong to the recipient; changing them never modifies another recipient's copy.
+belong to the recipient for personal deliveries; changing them never modifies
+another personal recipient's copy. Shared shul deliveries use the shared status
+described above.
+
+## Replies
+
+Replies stay attached to their original message. All current admins of the
+message's shul can read and contribute to the conversation, and reply as the shul.
+Admins see the contributing administrator's name; members see the shul identity.
+Members can see only their own conversation with the shul, including when the
+original message was a broadcast. Admins choose `participantId` when replying to
+a broadcast with multiple recipients. This must be an original recipient; clients
+cannot add arbitrary participants or spoof a sender. Normal members cannot reply
+on another recipient's branch. System messages do not accept replies. Leaving the
+shul prevents further replies, while existing personal deliveries remain readable.
+
+A reply restores the receiving side's conversation from trash, makes it unread,
+and moves it up the inbox using its latest reply date. Inbox entries include
+`replyCount` and `lastReplyAt` scoped to the viewer. Shared and personal entries
+for the same message are deduplicated for admins. The UI refreshes visible threads
+and inboxes every ten seconds and when the window regains focus.
 
 Responses include `id`, `shulId`, `kind`, `sender`, `subject`, `body`, `sendAt`,
 and `readAt`. User senders include the `ShulUser` profile fields; shul senders

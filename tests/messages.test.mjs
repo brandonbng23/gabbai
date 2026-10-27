@@ -37,7 +37,7 @@ test('members message only their shul and the shared inbox is restricted to its 
     assert.equal(db.listUserMessages(member.id, { folder: 'sent' })[0].id, sent.id);
     assert.deepEqual(db.listUserMessages(member2.id), []);
     assert.throws(() => db.sendUserMessage(member.id, other.id, message), status(403));
-    assert.throws(() => db.sendUserMessage(admin.id, shul.id, message), status(403));
+    assert.throws(() => db.sendUserMessage(admin.id, other.id, message), status(403));
     assert.throws(() => db.sendUserMessage(guest.id, shul.id, message), status(403));
     for (const actor of [member, outsider, guest]) {
         assert.throws(() => db.listShulMessages(actor.id, shul.id), status(403));
@@ -50,6 +50,51 @@ test('members message only their shul and the shared inbox is restricted to its 
     assert.equal(db.listShulMessages(admin.id, shul.id)[0].readAt, firstRead);
     db.updateUser(admin.id, { role: 'member' });
     assert.throws(() => db.listShulMessages(admin.id, shul.id), status(403));
+});
+
+test('administrators can send as themselves to their own shared shul inbox', t => {
+    const { db, shul, other, admin, admin2, outsider } = fixture(t);
+    const sent = db.sendUserMessage(admin.id, shul.id, message);
+    assert.equal(sent.sender.type, 'user');
+    assert.equal(sent.sender.id, admin.id);
+    assert.equal(db.listShulMessages(admin2.id, shul.id)[0].id, sent.id);
+    assert.equal(db.listUserMessages(admin.id, { folder: 'sent' })[0].id, sent.id);
+    assert.equal(db.listUserMessages(admin.id)[0].id, sent.id);
+    assert.throws(() => db.sendUserMessage(admin.id, other.id, message), status(403));
+    assert.throws(() => db.sendUserMessage(outsider.id, shul.id, message), status(403));
+});
+
+test('admin inbox merges personal and shared shul deliveries with shared status and current access checks', t => {
+    const { db, shul, other, admin, admin2, member, outsider } = fixture(t);
+    const personal = db.sendSystemMessage(shul.id, { ...message, kind: 'reading_invitation', recipientIds: [admin.id], idempotencyKey: 'admin-personal' });
+    const shared = db.sendUserMessage(member.id, shul.id, message);
+    db.sendUserMessage(member.id, shul.id, { ...message, subject: 'Second shul message' });
+    const combined = db.listUserMessages(admin.id);
+    assert.equal(combined.length, 3);
+    assert.equal(new Set(combined.map(item => item.id)).size, 3);
+    assert.deepEqual(combined.find(item => item.id === shared.id).recipient, { type: 'shul', id: shul.id, name: shul.name });
+    assert.equal(combined.find(item => item.id === personal.id).recipient, undefined);
+    assert.deepEqual(db.listUserMessages(admin.id, { limit: 1, offset: 1 }), combined.slice(1, 2));
+    assert.deepEqual(db.listUserMessages(admin.id, { sort: 'oldest' }).map(item => item.id), combined.map(item => item.id).reverse());
+    assert.deepEqual({ ...db.getUserMessageCounts(admin.id) }, { all: 3, unread: 3, trash: 0 });
+    db.markUserMessageRead(admin.id, shared.id);
+    assert.ok(db.listUserMessages(admin2.id).find(item => item.id === shared.id).readAt);
+    db.markUserMessageUnread(admin2.id, shared.id);
+    assert.equal(db.listUserMessages(admin.id).find(item => item.id === shared.id).readAt, null);
+    db.setUserMessageTrash(admin.id, shared.id, true);
+    assert.equal(db.listUserMessages(admin2.id).some(item => item.id === shared.id), false);
+    assert.equal(db.listUserMessages(admin2.id, { folder: 'trash' })[0].id, shared.id);
+    assert.deepEqual({ ...db.getUserMessageCounts(admin.id) }, { all: 2, unread: 2, trash: 1 });
+    assert.throws(() => db.markUserMessageRead(member.id, shared.id), status(404));
+    assert.throws(() => db.setUserMessageTrash(outsider.id, shared.id, false), status(404));
+    db.updateUser(admin.id, { role: 'member' });
+    assert.deepEqual(db.listUserMessages(admin.id).map(item => item.id), [personal.id]);
+    assert.deepEqual({ ...db.getUserMessageCounts(admin.id) }, { all: 1, unread: 1, trash: 0 });
+    assert.throws(() => db.markUserMessageUnread(admin.id, shared.id), status(404));
+    db.setUserMessageTrash(admin2.id, shared.id, false);
+    assert.ok(db.listShulMessages(admin2.id, shul.id).some(item => item.id === shared.id));
+    db.updateUser(admin2.id, { shulId: other.id });
+    assert.deepEqual(db.listUserMessages(admin2.id), []);
 });
 
 test('shul broadcasts use the shul identity, keep recipients private and track each recipient independently', t => {
@@ -214,6 +259,77 @@ test('personal inbox filters, sorting, unread status, and trash stay scoped to t
     assert.deepEqual(db.listUserMessages(member.id, { folder: 'trash' }), []);
 });
 
+test('member conversations are shared by current shul admins and replies reach the member inbox', t => {
+    const { db, shul, admin, admin2, member, member2, outsider } = fixture(t);
+    const root = db.sendUserMessage(member.id, shul.id, message);
+    const first = db.replyToMessage(admin.id, root.id, { body: 'We can help with that.' });
+    assert.equal(first.replies[0].sender.type, 'shul');
+    assert.equal(first.replies[0].authorName, 'Admin Test');
+    assert.equal(db.listUserMessages(member.id)[0].id, root.id);
+    assert.equal(db.listUserMessages(member.id)[0].readAt, null);
+    db.replyToMessage(admin2.id, root.id, { body: 'Adding some details.' });
+    const memberThread = db.getMessageThread(member.id, root.id);
+    assert.equal(memberThread.replies.length, 2);
+    assert.equal(memberThread.replies[0].authorName, undefined, 'Private admin actor identity stays private to admins');
+    assert.equal(memberThread.participants, undefined);
+    assert.equal(db.getMessageThread(admin.id, root.id).replies[1].authorName, 'SecondAdmin Test');
+    db.replyToMessage(member.id, root.id, { body: 'Thank you!' });
+    assert.equal(db.getMessageThread(admin2.id, root.id).replies.length, 3);
+    assert.equal(db.listUserMessages(admin2.id)[0].readAt, null);
+    assert.equal(db.listUserMessages(admin2.id)[0].replyCount, 3);
+    assert.throws(() => db.getMessageThread(member2.id, root.id), status(404));
+    assert.throws(() => db.replyToMessage(outsider.id, root.id, { body: 'No access' }), status(404));
+    db.updateUser(admin2.id, { role: 'member' });
+    assert.throws(() => db.getMessageThread(admin2.id, root.id), status(404));
+    assert.throws(() => db.replyToMessage(admin2.id, root.id, { body: 'No longer admin' }), status(404));
+});
+
+test('broadcast replies stay private per member while all current admins can contribute', t => {
+    const { db, shul, admin, admin2, member, member2, outsider } = fixture(t);
+    const root = db.sendShulMessage(admin.id, shul.id, { ...message, recipientIds: [member.id, member2.id, admin.id] });
+    db.replyToMessage(member.id, root.id, { body: 'Private first member reply.' });
+    db.replyToMessage(member2.id, root.id, { body: 'Private second member reply.' });
+    assert.equal(db.getMessageThread(admin2.id, root.id).replies.length, 2);
+    assert.equal(db.getMessageThread(member.id, root.id).replies.length, 1);
+    assert.equal(db.listUserMessages(member.id)[0].replyCount, 1);
+    assert.equal(db.listUserMessages(admin.id).filter(item => item.id === root.id).length, 1, 'Admin personal and shared deliveries must not duplicate');
+    assert.equal(db.getUserMessageCounts(admin.id).all, 1);
+    assert.throws(() => db.replyToMessage(admin.id, root.id, { body: 'Who is this for?' }), TypeError);
+    assert.throws(() => db.replyToMessage(admin.id, root.id, { body: 'Invalid participant', participantId: outsider.id }), TypeError);
+    assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'Spoof participant', participantId: member2.id }), TypeError);
+    db.replyToMessage(admin2.id, root.id, { body: 'Answer for the first member.', participantId: member.id });
+    assert.equal(db.getMessageThread(member.id, root.id).replies.length, 2);
+    assert.equal(db.getMessageThread(member2.id, root.id).replies.length, 1);
+    assert.equal(db.listUserMessages(member.id)[0].readAt, null);
+    assert.equal(db.getMessageThread(admin.id, root.id).replies.length, 3);
+    assert.throws(() => db.replyToMessage(member.id, root.id, { body: '   ' }), TypeError);
+    assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'x'.repeat(10001) }), TypeError);
+    db.updateUser(member.id, { shulId: null });
+    assert.equal(db.getMessageThread(member.id, root.id).canReply, false);
+    assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'Left shul' }), status(403));
+});
+
+test('thread replies survive reopening and system messages remain read-only', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'gabbai-threads-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, 'threads.sqlite');
+    let db = openDatabase(path);
+    const shul = db.createShul({ name: 'Thread Shul', settings: { hebYear: 5787 } });
+    const admin = db.createUser({ shulId: shul.id, role: 'admin', firstName: 'Admin', lastName: 'Test', email: 'thread-admin@example.com' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Reader', lastName: 'Test', email: 'thread-reader@example.com' });
+    const root = db.sendUserMessage(member.id, shul.id, message);
+    db.replyToMessage(admin.id, root.id, { body: 'A durable answer.' });
+    db.close();
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getMessageThread(member.id, root.id).replies[0].body, 'A durable answer.');
+        const system = db.sendSystemMessage(shul.id, { ...message, kind: 'confirmation', recipientIds: [member.id], idempotencyKey: 'thread-system' });
+        assert.equal(db.getMessageThread(member.id, system.id).canReply, false);
+        assert.throws(() => db.replyToMessage(member.id, system.id, { body: 'Not supported' }), status(403));
+        assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'Spoof sender', sender: 'shul' }), TypeError);
+    } finally { db.close(); }
+});
+
 test('HTTP messaging authenticates sessions, enforces direction and rejects sender spoofing and cross-site writes', async t => {
     const { db, shul, admin, member, member2, outsider } = fixture(t);
     const app = createApp(db, { development: true, preview: false });
@@ -244,10 +360,19 @@ test('HTTP messaging authenticates sessions, enforces direction and rejects send
     assert.equal((await request(member, '/api/me/messages', 'POST', { ...message, recipientIds: [member2.id] })).status, 400);
     assert.equal((await request(member, '/api/me/messages', 'POST', { ...message, senderType: 'system' })).status, 400);
     assert.equal((await request(member, '/api/me/messages', 'POST', message, { Origin: 'https://foreign.example' })).status, 403);
-    assert.equal((await request(admin, '/api/me/messages', 'POST', message)).status, 403);
     assert.equal((await request(member, `/api/shuls/${shul.id}/messages`)).status, 403);
     assert.equal((await request(outsider, `/api/shuls/${shul.id}/messages`)).status, 403);
     assert.equal((await (await request(admin, `/api/shuls/${shul.id}/messages`)).json())[0].id, id);
+    const adminToShul = await request(admin, '/api/me/messages', 'POST', message);
+    assert.equal(adminToShul.status, 201);
+    const adminMessage = await adminToShul.json();
+    assert.equal(adminMessage.sender.type, 'user');
+    assert.equal(adminMessage.sender.id, admin.id);
+    const adminInbox = await (await request(admin, '/api/me/messages')).json();
+    assert.equal(adminInbox.find(item => item.id === adminMessage.id).recipient.name, shul.name);
+    assert.equal((await request(admin, `/api/me/messages/${adminMessage.id}/read`, 'PATCH', {})).status, 200);
+    assert.equal((await request(member, `/api/me/messages/${adminMessage.id}/unread`, 'PATCH', {})).status, 404);
+    assert.ok((await (await request(admin, `/api/shuls/${shul.id}/messages`)).json()).some(item => item.id === adminMessage.id));
     assert.equal((await request(admin, `/api/shuls/${shul.id}/messages/${id}/read`, 'PATCH', {})).status, 200);
     const broadcast = await request(admin, `/api/shuls/${shul.id}/messages`, 'POST', { ...message, recipientIds: [member.id] });
     assert.equal(broadcast.status, 201);
@@ -274,4 +399,12 @@ test('HTTP messaging authenticates sessions, enforces direction and rejects send
     });
     assert.equal(booked.status, 201);
     assert.ok((await (await request(member, '/api/me/messages')).json()).some(item => item.kind === 'confirmation'));
+    assert.equal((await request(null, `/api/me/messages/${id}/thread`)).status, 401);
+    assert.equal((await request(member2, `/api/me/messages/${id}/thread`)).status, 404);
+    assert.equal((await request(admin, `/api/me/messages/${id}/replies`, 'POST', { body: 'Answer' }, { Origin: 'https://foreign.example' })).status, 403);
+    assert.equal((await request(admin, `/api/me/messages/${id}/replies`, 'POST', { body: 'Answer' })).status, 201);
+    assert.equal((await (await request(member, `/api/me/messages/${id}/thread`)).json()).replies.length, 1);
+    assert.equal((await request(member, `/api/me/messages/${id}/replies`, 'POST', { body: 'Thank you' })).status, 201);
+    assert.equal((await (await request(admin, `/api/me/messages/${id}/thread`)).json()).replies.length, 2);
+    assert.equal((await request(member, `/api/me/messages/${id}/replies`, 'POST', { body: '' })).status, 400);
 });

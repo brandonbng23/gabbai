@@ -1,9 +1,11 @@
+import PaperPlaneIcon from '../Components/paperPlaneIcon.tsx';
 import { useEffect, useState } from 'react';
 import { getCurrentUserMessages, getMessageCounts, markMessageRead, markMessageUnread, setMessageTrash } from '../api.ts';
 import type { Message, MessageCounts, User } from '../api.ts';
 import MessageCard from '../Components/messageCard.tsx';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 import MessageComposer from '../Components/messageComposer.tsx';
+import MessageThread from '../Components/messageThread.tsx';
 import type { MessageDraft } from '../Components/messageComposer.tsx';
 
 const pageSize = 50;
@@ -23,7 +25,7 @@ export default function Messages({ user }: { user: User }) {
     const [actionBusy, setActionBusy] = useState(false);
     const visibleMessages = unreadOnly ? messages.filter(message => message.readAt === null) : messages;
     const [compose, setCompose] = useState<boolean>(false);
-    const [draft, setDraft] = useState<MessageDraft>({ subject: '', body: '', recipientIds: [] });
+    const [draft, setDraft] = useState<MessageDraft>({ destination: user.role === 'admin' ? 'members' : 'shul', subject: '', body: '', recipientIds: [] });
     const [composeNotice, setComposeNotice] = useState('');
 
     async function updatedSelectedMsg(message: Message) {
@@ -102,6 +104,33 @@ export default function Messages({ user }: { user: User }) {
         return () => controller.abort();
     }, [offset, attempt, folder, sort, unreadOnly]);
 
+    useEffect(() => {
+        if (actionBusy || loading) return;
+        const controller = new AbortController();
+        let pending = false;
+        async function refreshInbox() {
+            if (pending || document.visibilityState === 'hidden') return;
+            pending = true;
+            try {
+                const [result, totals] = await Promise.all([
+                    getCurrentUserMessages(controller.signal, { limit: pageSize, offset, folder, sort, unread: unreadOnly }),
+                    getMessageCounts(controller.signal),
+                ]);
+                if (!controller.signal.aborted) {
+                    setMessages(result);
+                    setCounts(totals);
+                    setSelectedMsg(previous => previous ? result.find(message => message.id === previous.id) ?? previous : null);
+                }
+            } catch {
+                // Keep the current inbox visible; the next refresh can retry.
+            } finally { pending = false; }
+        }
+        const interval = window.setInterval(() => void refreshInbox(), 10000);
+        const focus = () => void refreshInbox();
+        window.addEventListener('focus', focus);
+        return () => { controller.abort(); window.clearInterval(interval); window.removeEventListener('focus', focus); };
+    }, [offset, folder, sort, unreadOnly, actionBusy, loading]);
+
     return <main className="messages-page" aria-label="My messages" aria-busy={loading}>
         <header className="inbox-header">
             <div>
@@ -115,9 +144,7 @@ export default function Messages({ user }: { user: User }) {
                 disabled={actionBusy}
                 onClick={() => { setCompose(true); setSelectedMsg(null); setComposeNotice(''); }}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
-                    <path d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
-                </svg>
+                <PaperPlaneIcon />
                 Compose
             </button> : <button
                 type="button"
@@ -172,7 +199,7 @@ export default function Messages({ user }: { user: User }) {
                 </div>
             </div>
             { !compose ? <>
-                <section className={selectedMsg ? "message-view" : "no-message-view"} aria-label="Message details">
+                <section key={selectedMsg?.id ?? 'empty'} className={selectedMsg ? "message-view" : "no-message-view"} aria-label="Message details">
                     {selectedMsg ?
                     <>
                         <header className="message-detail-header">
@@ -190,6 +217,12 @@ export default function Messages({ user }: { user: User }) {
                             </div>
 
                             <h2>{selectedMsg.subject}</h2>
+                            {(selectedMsg.recipient || selectedMsg.sharedInbox) && <div className="message-shul-recipient">
+                                <span className="msg-shul-recipient">{selectedMsg.recipient ? `To: ${selectedMsg.recipient.name}` : `${selectedMsg.sharedInbox?.name} · Shul inbox`}</span>
+                                <p>{user.role === 'admin' && user.shulId === selectedMsg.shulId
+                                    ? 'Shared shul inbox. Read and trash status are shared with the other administrators.'
+                                    : 'This conversation is shared with the shul’s administrators.'}</p>
+                            </div>}
                             <div className="message-detail-sender">
                                 <ProfilePicture src={selectedMsg.sender.pictureUrl} name={selectedMsg.sender.name} small />
                                 <div>
@@ -198,7 +231,15 @@ export default function Messages({ user }: { user: User }) {
                                 </div>
                             </div>
                         </header>
-                        <div key={selectedMsg.id} className="message-detail-body" tabIndex={0} role="region" aria-label="Message body">{selectedMsg.body}</div>
+                        <div key={selectedMsg.id} className="message-detail-body" tabIndex={0} role="region" aria-label="Message conversation">
+                            <MessageThread key={selectedMsg.id} message={selectedMsg} busy={actionBusy} onBusyChange={setActionBusy}
+                                onUpdate={(thread, totals) => {
+                                    setCounts(totals);
+                                    setMessages(previous => previous.map(message => message.id === selectedMsg.id
+                                        ? { ...message, replyCount: thread.message.replyCount, lastReplyAt: thread.message.lastReplyAt }
+                                        : message));
+                                }} />
+                        </div>
                     </>
                     : <div>
                         <svg className="inbox-empty-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
@@ -210,9 +251,14 @@ export default function Messages({ user }: { user: User }) {
             </> : <>
                 <MessageComposer user={user} draft={draft} onChange={setDraft}
                     busy={actionBusy} onBusyChange={setActionBusy}
+                    onClose={() => setCompose(false)}
+                    onDiscard={() => {
+                        setDraft({ destination: user.role === 'admin' ? 'members' : 'shul', subject: '', body: '', recipientIds: [] });
+                        setCompose(false);
+                    }}
                     onSent={() => {
                         setCompose(false);
-                        setDraft({ subject: '', body: '', recipientIds: [] });
+                        setDraft({ destination: user.role === 'admin' ? 'members' : 'shul', subject: '', body: '', recipientIds: [] });
                         setComposeNotice('Message sent.');
                         setAttempt(previous => previous + 1);
                     }} />
