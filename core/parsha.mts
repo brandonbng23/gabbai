@@ -157,9 +157,12 @@ export class Parsha {
             }
         }
         
-        // Pinchas has a different haftarah when it falls during the Three Weeks.
-        if (this.desc === "Pinchas" && this.hebDate?.getMonth() === 4 && this.hebDate.getDate() > 17) {
-            occassions = [...occassions, "First Haftarah of Rebuke"];
+        // The three Shabbatot after 17 Tamuz through 9 Av have haftarot of rebuke.
+        if (this.hebDate?.getDay() === 6 && (
+            (this.hebDate.getMonth() === 4 && this.hebDate.getDate() > 17) ||
+            (this.hebDate.getMonth() === 5 && this.hebDate.getDate() <= 9)
+        )) {
+            occassions = [...occassions, "Tlat DePuranuta"];
         }
 
         // Identifying Rosh Chodesh

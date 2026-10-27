@@ -152,7 +152,7 @@ export class Aliyah {
         // The Three Weeks override Rosh Chodesh / Machar Chodesh for the
         // haftarah only. Keep their Torah readings and special maftir intact.
         if (a === 9) {
-            if (this.occassions.includes("First Haftarah of Rebuke")) {
+            if (this.desc === "Pinchas" && this.occassions.includes("Tlat DePuranuta")) {
                 return "Matot";
             }
             if (["Matot", "Masei", "Matot-Masei"].includes(this.desc)) {

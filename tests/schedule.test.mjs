@@ -18,12 +18,19 @@ test('Three Weeks haftarot follow the calendar in annual and triennial schedules
                 settings.setTriennial(tri);
                 settings.setIL(il);
                 const schedule = new Schedule(settings, year);
+                const rebukeReadings = schedule.getScheduleData().filter(reading =>
+                    reading.occassions.includes('Tlat DePuranuta'));
+                assert.equal(rebukeReadings.length, 3, `Three rebuke Shabbatot: year=${year}, il=${il}, tri=${tri}`);
+                for (const reading of rebukeReadings) {
+                    assert.ok(reading.searchTerms.includes('Tlat DePuranuta'));
+                }
                 const pinchas = schedule.schedule.find(reading => reading.desc === 'Pinchas');
                 const inThreeWeeks = pinchas.hebDate.getDate() > 17;
                 assert.equal(pinchas.readingSet.getPsukim(9), inThreeWeeks
                     ? 'Jeremiah 1:1-2:3' : 'I Kings 18:46-19:21',
                 `Pinchas: year=${year}, il=${il}, tri=${tri}`);
-                assert.equal(pinchas.occassions.includes('First Haftarah of Rebuke'), inThreeWeeks);
+                assert.ok(!pinchas.occassions.includes('First Haftarah of Rebuke'));
+                assert.equal(pinchas.occassions.includes('Tlat DePuranuta'), inThreeWeeks);
 
                 for (const reading of schedule.schedule.filter(reading =>
                     ['Matot', 'Masei', 'Matot-Masei', 'Devarim'].includes(reading.desc))) {
@@ -32,6 +39,7 @@ test('Three Weeks haftarot follow the calendar in annual and triennial schedules
                         : 'Jeremiah 2:4-2:28; 3:4';
                     assert.equal(reading.readingSet.getPsukim(9), expected,
                         `${reading.desc}: year=${year}, il=${il}, tri=${tri}`);
+                    assert.ok(reading.occassions.includes('Tlat DePuranuta'));
                 }
 
                 if (year === 5785) {
