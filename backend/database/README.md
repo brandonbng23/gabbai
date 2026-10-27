@@ -8,6 +8,7 @@ npm run db:init
 npm run test:db
 npm run test:api
 npm run test:auth
+npm run test:messages
 npm run test:dev
 ```
 
@@ -171,6 +172,13 @@ NODE_ENV=production GABBAI_PREVIEW_MODE=true npm start
 
 Open `http://localhost:3000`. Render supplies its own `PORT`, which the server
 already uses while binding to `0.0.0.0`.
+
+## Messaging
+
+Version 16 adds persistent system, shul, and member messaging, private deliveries,
+read receipts, and automatic registration confirmations. See
+[the messaging API and permissions](../MESSAGING.md) for routes, system invitation
+sending, and delivery scope.
 
 ## Relationships
 

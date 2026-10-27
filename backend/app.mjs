@@ -1,5 +1,6 @@
 import express from "express";
 import { installAuthentication } from './authentication.mjs';
+import { installMessaging } from './messages.mjs';
 import { fileURLToPath } from "node:url";
 import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
@@ -22,6 +23,7 @@ export function createApp(database, {
 
     app.use(express.json({ limit: '2mb' }));
     installAuthentication(app, database, { development, preview, fallbackUserId });
+    installMessaging(app, database);
 
     function savePicture(req, res, next, kind) {
         res.set('Cache-Control', 'no-store');

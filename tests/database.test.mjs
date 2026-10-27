@@ -70,7 +70,7 @@ test('guest booking attribution migrates and survives reopening without altering
     db.registerReading(shul.id, { ...first, guest: details }, () => {});
     db.close();
     const old = new DatabaseSync(path);
-    old.exec('DROP INDEX reading_readers_registered_by; ALTER TABLE reading_readers DROP COLUMN registered_by_user_id; DELETE FROM schema_migrations WHERE version = 15');
+    old.exec('DROP INDEX reading_readers_registered_by; ALTER TABLE reading_readers DROP COLUMN registered_by_user_id; DELETE FROM schema_migrations WHERE version >= 15');
     old.close();
     db = openDatabase(path);
     try {

@@ -9,6 +9,7 @@
     "test:db": "node --test tests/database.test.mjs",
     "test:api": "node --test tests/api.test.mjs",
     "test:auth": "node --test tests/auth.test.mjs",
+    "test:messages": "node --test tests/messages.test.mjs",
     "test:dev": "node --test tests/dev.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",

@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defaultShulSettings, mergeShulSettings, serializeUserSettings, validateKeys } from './settings.mjs';
+import { createMessagingRepository } from './messages.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
 const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
@@ -108,7 +109,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 15) throw new Error('Database schema is newer than this application');
+            if (version > 16) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -175,6 +176,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(reading_readers)').all().some(column => column.name === 'registered_by_user_id'))
                     db.exec(readFileSync(new URL('./migrations/015_guest_registration_owners.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(15);
+            }
+            if (version < 16) {
+                db.exec(readFileSync(new URL('./migrations/016_messages.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(16);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -285,7 +290,9 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         });
     }
 
+    const { recordReadingConfirmation, ...messaging } = createMessagingRepository(db, { transaction, getUser, getShul });
     return {
+        ...messaging,
         path,
         close: () => db.close(),
         getShul,
@@ -582,6 +589,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 }
                 db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
+                recordReadingConfirmation(shulId, { dateString, desc, aliyah,
+                    recipientIds: guest && readerId ? [id, readerId] : [id] });
             });
         },
         createUser(input) {
