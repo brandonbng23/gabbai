@@ -24,6 +24,87 @@ function fixture(t, path = ':memory:') {
 const message = { subject: 'Available readings', body: 'Please register for an upcoming reading.' };
 const status = expected => error => error.status === expected;
 
+function retentionFixture(t) {
+    const dir = mkdtempSync(join(tmpdir(), 'gabbai-trash-retention-'));
+    const state = fixture(t, join(dir, 'messages.sqlite'));
+    const raw = new DatabaseSync(state.db.path);
+    t.after(() => raw.close());
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    return { ...state, raw };
+}
+
+test('trash expires at 30 days, preserves other copies, and cannot be restored or revived by replies', t => {
+    const { db, raw, shul, admin, member, member2 } = retentionFixture(t);
+    const now = new Date('2026-10-27T21:00:00.000Z');
+    const cutoff = new Date(now.getTime() - 30 * 86400000).toISOString();
+    const expired = db.sendShulMessage(admin.id, shul.id, { ...message, recipientIds: [member.id, member2.id] });
+    const fresh = db.sendShulMessage(admin.id, shul.id, { ...message, subject: 'Not quite 30 days', recipientIds: [member.id] });
+    const restored = db.sendShulMessage(admin.id, shul.id, { ...message, subject: 'Restored before deadline', recipientIds: [member.id] });
+    const active = db.sendShulMessage(admin.id, shul.id, { ...message, subject: 'Old but not trashed', recipientIds: [member.id] });
+    db.setUserMessageTrash(member.id, expired.id, true);
+    db.setUserMessageTrash(member.id, fresh.id, true);
+    db.setUserMessageTrash(member.id, restored.id, true);
+    raw.prepare('UPDATE message_recipients SET deleted_at = ? WHERE message_id = ? AND user_id = ?').run(cutoff, expired.id, member.id);
+    raw.prepare('UPDATE message_recipients SET deleted_at = ? WHERE message_id = ?').run(new Date(new Date(cutoff).getTime() + 1).toISOString(), fresh.id);
+    raw.prepare('UPDATE messages SET created_at = ? WHERE id = ?').run('2020-01-01T00:00:00.000Z', active.id);
+    assert.equal(db.listUserMessages(member.id, { folder: 'trash' }).find(item => item.id === expired.id).trashExpiresAt, now.toISOString());
+    db.setUserMessageTrash(member.id, expired.id, true);
+    assert.equal(raw.prepare('SELECT deleted_at FROM message_recipients WHERE message_id = ? AND user_id = ?').get(expired.id, member.id).deleted_at, cutoff, 'Repeated trash actions do not restart the deadline');
+    db.setUserMessageTrash(member.id, restored.id, false);
+    assert.deepEqual(db.purgeExpiredMessages(now), { deliveriesRemoved: 1, messagesRemoved: 0 });
+    assert.deepEqual(db.listUserMessages(member.id, { folder: 'trash' }).map(item => item.id), [fresh.id]);
+    assert.ok(db.listUserMessages(member.id).some(item => item.id === restored.id));
+    assert.ok(db.listUserMessages(member.id).some(item => item.id === active.id));
+    assert.ok(db.listUserMessages(member2.id).some(item => item.id === expired.id));
+    assert.throws(() => db.setUserMessageTrash(member.id, expired.id, false), status(404));
+    assert.throws(() => db.getMessageThread(member.id, expired.id), status(404));
+    assert.throws(() => db.replyToMessage(admin.id, expired.id, { body: 'Cannot revive expired copy', participantId: member.id }), TypeError);
+    assert.deepEqual(db.purgeExpiredMessages(now), { deliveriesRemoved: 0, messagesRemoved: 0 });
+});
+
+test('shared trash expiration removes access for all admins without removing the member copy', t => {
+    const { db, raw, shul, admin, admin2, member } = retentionFixture(t);
+    const root = db.sendUserMessage(member.id, shul.id, message);
+    db.replyToMessage(admin.id, root.id, { body: 'A shared reply.' });
+    db.setUserMessageTrash(admin.id, root.id, true);
+    const now = new Date('2026-10-27T21:00:00.000Z');
+    raw.prepare('UPDATE shul_message_receipts SET deleted_at = ? WHERE message_id = ?').run(new Date(now.getTime() - 31 * 86400000).toISOString(), root.id);
+    assert.equal(db.purgeExpiredMessages(now).deliveriesRemoved, 1);
+    for (const actor of [admin, admin2]) {
+        assert.deepEqual(db.listUserMessages(actor.id, { folder: 'trash' }), []);
+        assert.equal(db.getUserMessageCounts(actor.id).trash, 0);
+        assert.throws(() => db.getMessageThread(actor.id, root.id), status(404));
+        assert.throws(() => db.setUserMessageTrash(actor.id, root.id, false), status(404));
+    }
+    assert.equal(db.listUserMessages(member.id)[0].id, root.id);
+    assert.equal(db.getMessageThread(member.id, root.id).replies[0].body, 'A shared reply.');
+    assert.equal(db.getMessageThread(member.id, root.id).canReply, false);
+    assert.throws(() => db.replyToMessage(member.id, root.id, { body: 'Must start a new conversation' }), status(410));
+});
+
+test('startup cleanup removes expired system content when no other delivery remains', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'gabbai-trash-startup-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, 'messages.sqlite');
+    let db = openDatabase(path);
+    const shul = db.createShul({ name: 'Retention Shul', settings: { hebYear: 5787 } });
+    const reader = db.createUser({ shulId: shul.id, firstName: 'Reader', lastName: 'Test', email: 'retention@example.com' });
+    const root = db.sendSystemMessage(shul.id, { ...message, kind: 'confirmation', recipientIds: [reader.id], idempotencyKey: 'expiration' });
+    db.setUserMessageTrash(reader.id, root.id, true);
+    db.close();
+    const raw = new DatabaseSync(path);
+    raw.prepare('UPDATE message_recipients SET deleted_at = ?').run(new Date(Date.now() - 31 * 86400000).toISOString());
+    raw.close();
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.listUserMessages(reader.id, { folder: 'trash' }), []);
+        assert.throws(() => db.getMessageThread(reader.id, root.id), status(404));
+        const inspect = new DatabaseSync(path, { readOnly: true });
+        try { assert.equal(inspect.prepare('SELECT id FROM messages WHERE id = ?').get(root.id), undefined); }
+        finally { inspect.close(); }
+    } finally { db.close(); }
+});
+
 test('members message only their shul and the shared inbox is restricted to its current admins', t => {
     const { db, shul, other, admin, admin2, member, member2, outsider, guest } = fixture(t);
     const sent = db.sendUserMessage(member.id, shul.id, message);

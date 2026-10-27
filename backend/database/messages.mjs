@@ -57,9 +57,10 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             sender = { type: 'user', id, firstName, lastName, email, role, title, assignedReadings,
                 name: `${firstName} ${lastName}`, ...(pictureUrl ? { pictureUrl } : {}) };
         }
+        const adminViewer = viewer?.role === 'admin' && viewer.shulId === row.shul_id && !expired(row.id, 'shul', row.shul_id);
         const replyStats = viewer ? db.prepare(`SELECT COUNT(*) AS replyCount, MAX(created_at) AS lastReplyAt
-            FROM message_replies WHERE message_id = ? ${viewer.role === 'admin' && viewer.shulId === row.shul_id ? '' : 'AND participant_user_id = ?'}`)
-            .get(row.id, ...(viewer.role === 'admin' && viewer.shulId === row.shul_id ? [] : [viewer.id])) : {};
+            FROM message_replies WHERE message_id = ? ${adminViewer ? '' : 'AND participant_user_id = ?'}`)
+            .get(row.id, ...(adminViewer ? [] : [viewer.id])) : {};
         return { id: row.id, shulId: row.shul_id, kind: row.kind, ...replyStats,
             sender,
             ...(viewer?.role === 'admin' && viewer.shulId === row.shul_id
@@ -67,9 +68,13 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
                 ? { sharedInbox: { id: row.shul_id, name: getShul(row.shul_id).name } } : {}),
             ...(row.sender_type === 'user' ? { recipient: { type: 'shul', id: row.shul_id, name: getShul(row.shul_id).name } } : {}),
             subject: row.subject, body: row.body, sendAt: row.created_at,
+            ...(row.deleted_at ? { trashExpiresAt: new Date(new Date(row.deleted_at).getTime() + 30 * 86400000).toISOString() } : {}),
             readAt: row.read_at ?? null };
     }
     const select = 'SELECT m.* FROM messages m';
+    function expired(messageId, ownerType, ownerId) {
+        return Boolean(db.prepare('SELECT 1 FROM message_delivery_expirations WHERE message_id = ? AND owner_type = ? AND owner_id = ?').get(messageId, ownerType, ownerId));
+    }
     function inbox(actor) {
         const sharedAdmin = actor.role === 'admin' && Boolean(actor.shulId);
         const sql = `SELECT m.*, r.read_at, r.deleted_at,
@@ -118,16 +123,18 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
         const actor = user(actorId);
         const root = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
         if (!root) fail(404, 'Message not found.');
-        const isAdmin = actor.role === 'admin' && actor.shulId === root.shul_id;
+        const sharedExpired = expired(messageId, 'shul', root.shul_id);
+        const isAdmin = actor.role === 'admin' && actor.shulId === root.shul_id && !sharedExpired;
         const delivered = Boolean(db.prepare('SELECT 1 FROM message_recipients WHERE message_id = ? AND user_id = ?').get(messageId, actorId));
-        const originalSender = root.sender_type === 'user' && root.sender_user_id === actorId;
+        const originalSender = root.sender_type === 'user' && root.sender_user_id === actorId && !expired(messageId, 'user', actorId);
         if (!(delivered || originalSender || (isAdmin && root.sender_type !== 'system'))) fail(404, 'Message not found.');
-        const participants = root.sender_type === 'user' ? [getUser(root.sender_user_id)]
+        const originalParticipants = root.sender_type === 'user' ? [getUser(root.sender_user_id)]
             : root.sender_type === 'shul' ? db.prepare('SELECT user_id FROM message_recipients WHERE message_id = ?').all(messageId).map(row => getUser(row.user_id)) : [];
-        return { actor, root, isAdmin, participants };
+        const participants = originalParticipants.filter(person => !expired(messageId, 'user', person.id));
+        return { actor, root, isAdmin, participants, sharedExpired };
     }
     function thread(actorId, messageId) {
-        const { actor, root, isAdmin, participants } = conversation(actorId, messageId);
+        const { actor, root, isAdmin, participants, sharedExpired } = conversation(actorId, messageId);
         const replies = db.prepare(`SELECT * FROM message_replies WHERE message_id = ? ${isAdmin ? '' : 'AND participant_user_id = ?'} ORDER BY created_at, rowid`)
             .all(messageId, ...(isAdmin ? [] : [actorId])).map(row => {
                 const author = getUser(row.actor_user_id);
@@ -138,17 +145,37 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
                     ...(isAdmin ? { authorName: `${author.firstName} ${author.lastName}`, participantId: participant.id, participantName: `${participant.firstName} ${participant.lastName}` } : {}) };
             });
         return { message: decode(root, actor), replies,
-            canReply: root.sender_type !== 'system' && actor.shulId === root.shul_id && ['member', 'admin'].includes(actor.role),
+            canReply: !sharedExpired && participants.length > 0 && root.sender_type !== 'system' && actor.shulId === root.shul_id && ['member', 'admin'].includes(actor.role),
+            ...(sharedExpired || (root.sender_type !== 'system' && !participants.length) ? { replyUnavailableReason: 'This conversation has expired from Trash. Compose a new message to continue.' } : {}),
             replyAs: isAdmin ? getShul(root.shul_id).name : `${actor.firstName} ${actor.lastName}`,
             ...(isAdmin ? { participants: participants.map(person => ({ id: person.id, name: `${person.firstName} ${person.lastName}` })) } : {}) };
     }
     return {
+        purgeExpiredMessages(now = new Date()) {
+            if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError('Choose a valid cleanup time.');
+            const cutoff = new Date(now.getTime() - 30 * 86400000).toISOString();
+            const purgedAt = now.toISOString();
+            return transaction(() => {
+                db.prepare(`INSERT OR IGNORE INTO message_delivery_expirations (message_id, owner_type, owner_id, purged_at)
+                    SELECT message_id, 'user', user_id, ? FROM message_recipients WHERE deleted_at <= ?`).run(purgedAt, cutoff);
+                db.prepare(`INSERT OR IGNORE INTO message_delivery_expirations (message_id, owner_type, owner_id, purged_at)
+                    SELECT r.message_id, 'shul', m.shul_id, ? FROM shul_message_receipts r JOIN messages m ON m.id = r.message_id WHERE r.deleted_at <= ?`).run(purgedAt, cutoff);
+                const personal = db.prepare('DELETE FROM message_recipients WHERE deleted_at <= ?').run(cutoff).changes;
+                const shared = db.prepare('DELETE FROM shul_message_receipts WHERE deleted_at <= ?').run(cutoff).changes;
+                // User/shul authored originals still belong to their senders' sent history.
+                const messages = db.prepare(`DELETE FROM messages WHERE sender_type = 'system'
+                    AND NOT EXISTS (SELECT 1 FROM message_recipients r WHERE r.message_id = messages.id)
+                    AND NOT EXISTS (SELECT 1 FROM shul_message_receipts r WHERE r.message_id = messages.id)`).run().changes;
+                return { deliveriesRemoved: personal + shared, messagesRemoved: messages };
+            });
+        },
         getMessageThread: thread,
         replyToMessage(actorId, messageId, input) {
             validateKeys(input, ['body', 'participantId'], 'reply');
             if (typeof input.body !== 'string' || !input.body.trim() || input.body.length > 10000) throw new TypeError('Reply must contain 1–10000 characters.');
             return transaction(() => {
-                const { actor, root, isAdmin, participants } = conversation(actorId, messageId);
+                const { actor, root, isAdmin, participants, sharedExpired } = conversation(actorId, messageId);
+                if (sharedExpired) fail(410, 'This conversation has expired from Trash. Compose a new message to continue.');
                 if (root.sender_type === 'system') fail(403, 'System messages do not accept replies.');
                 member(actorId, root.shul_id);
                 const participantId = isAdmin ? input.participantId ?? (participants.length === 1 ? participants[0].id : null) : actor.id;
@@ -211,7 +238,8 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             const { limit, offset, folder, sort, unread } = page(options, true);
             const order = sort === 'oldest' ? 'ASC' : 'DESC';
             if (folder === 'sent') return db.prepare(`${select} WHERE m.sender_type = 'user' AND m.sender_user_id = ?
-                ORDER BY m.created_at ${order}, m.id ${order} LIMIT ? OFFSET ?`).all(actorId, limit, offset).map(row => decode(row, actor));
+                AND NOT EXISTS (SELECT 1 FROM message_delivery_expirations e WHERE e.message_id = m.id AND e.owner_type = 'user' AND e.owner_id = ?)
+                ORDER BY m.created_at ${order}, m.id ${order} LIMIT ? OFFSET ?`).all(actorId, actorId, limit, offset).map(row => decode(row, actor));
             const { sql, params } = inbox(actor);
             return db.prepare(`SELECT * FROM (${sql}) WHERE deleted_at IS ${folder === 'trash' ? 'NOT NULL' : 'NULL'}
                 ${unread ? 'AND read_at IS NULL' : ''}
@@ -221,7 +249,8 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             member(actorId, shulId, true);
             const { limit, offset, folder } = page(options);
             if (folder === 'sent') return db.prepare(`${select} WHERE m.shul_id = ? AND m.sender_type = 'shul'
-                ORDER BY m.created_at DESC, m.id DESC LIMIT ? OFFSET ?`).all(shulId, limit, offset).map(row => ({
+                AND NOT EXISTS (SELECT 1 FROM message_delivery_expirations e WHERE e.message_id = m.id AND e.owner_type = 'shul' AND e.owner_id = ?)
+                ORDER BY m.created_at DESC, m.id DESC LIMIT ? OFFSET ?`).all(shulId, shulId, limit, offset).map(row => ({
                     ...decode(row), recipientIds: db.prepare('SELECT user_id FROM message_recipients WHERE message_id = ? ORDER BY user_id')
                         .all(row.id).map(recipient => recipient.user_id),
                 }));

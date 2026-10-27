@@ -5369,6 +5369,9 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .message-shul-recipient { margin-bottom: 18px; }
 .message-shul-recipient p { margin: 8px 0 0; color: #aaaab4; font-size: 12px; line-height: 1.5; }
 .msg-thread-count { font-size: 11px; color: #a6d5ff; }
+.trash-retention-notice { flex-shrink: 0; margin: 0 3px 12px; padding: 10px 12px; border-radius: 8px; background: #f2cc7d0d; color: #e2c898; font-size: 12px; line-height: 1.5; }
+.msg-trash-deadline { color: #e2c898; font-size: 11px; }
+.message-trash-policy { margin: 0 0 16px; color: #c5b798; font-size: 12px; line-height: 1.5; }
 .message-conversation { white-space: normal; }
 .message-original-body, .thread-reply-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .thread-reply { margin-top: 24px; padding-top: 20px; border-top: 1px solid #ffffff14; }

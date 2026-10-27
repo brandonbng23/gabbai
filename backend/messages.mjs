@@ -6,6 +6,7 @@ export function installMessaging(app, database) {
             res.set('Cache-Control', 'no-store');
             if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to use messages.' });
             try {
+                database.purgeExpiredMessages();
                 const result = work(req);
                 return res.status(req.method === 'POST' ? 201 : 200).json(result);
             } catch (error) {

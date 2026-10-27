@@ -71,6 +71,7 @@ export default function Messages({ user }: { user: User }) {
                 }
             } else {
                 await setMessageTrash(selectedMsg.id, folder !== 'trash');
+                setComposeNotice(folder === 'trash' ? 'Message restored.' : 'Moved to Trash. It will be permanently deleted after 30 days.');
                 setSelectedMsg(null);
                 setAttempt(previous => previous + 1);
             }
@@ -119,7 +120,10 @@ export default function Messages({ user }: { user: User }) {
                 if (!controller.signal.aborted) {
                     setMessages(result);
                     setCounts(totals);
-                    setSelectedMsg(previous => previous ? result.find(message => message.id === previous.id) ?? previous : null);
+                    setSelectedMsg(previous => {
+                        if (!previous || (previous.trashExpiresAt && new Date(previous.trashExpiresAt).getTime() <= Date.now())) return null;
+                        return result.find(message => message.id === previous.id) ?? previous;
+                    });
                 }
             } catch {
                 // Keep the current inbox visible; the next refresh can retry.
@@ -173,6 +177,7 @@ export default function Messages({ user }: { user: User }) {
                     </div>
                 </div>
 
+                {folder === 'trash' && <p className="trash-retention-notice" role="note">Messages in Trash are permanently deleted after 30 days. Restore them before then to keep them. Shared shul deletions apply to all admins.</p>}
                 <div className="message-list">
                     {loading ? <p role="status">Loading messages…</p>
                         : error ? <div role="alert">
@@ -213,8 +218,11 @@ export default function Messages({ user }: { user: User }) {
                                 >
                                     {selectedMsg.readAt === null ? 'Mark as Read' : 'Mark as Unread'}
                                 </button>
-                                <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
+                                <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} title={folder === 'trash' ? 'Restore before the 30-day deadline' : 'Move to Trash. Permanently deleted after 30 days.'} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
                             </div>
+                            <p className="message-trash-policy">{selectedMsg.trashExpiresAt
+                                ? `Will be permanently deleted on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. Restore before then to keep it.`
+                                : 'Messages moved to Trash are permanently deleted after 30 days.'}</p>
 
                             <h2>{selectedMsg.subject}</h2>
                             {(selectedMsg.recipient || selectedMsg.sharedInbox) && <div className="message-shul-recipient">

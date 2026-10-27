@@ -93,7 +93,7 @@ export default function MessageThread({ message, busy, onBusyChange, onUpdate }:
                 <button className="inbox-compose" type="submit" disabled={busy || !body.trim() || Boolean(thread.participants && thread.participants.length > 1 && !participantId)}><PaperPlaneIcon />{busy ? 'Sending…' : 'Send reply'}</button>
                 <span>{body.length.toLocaleString()} / 10,000</span>
             </div>
-        </form> : thread && <p className="thread-status">{message.sender.type === 'system' ? 'This automated message does not accept replies.' : 'Only current members and administrators can reply.'}</p>}
+        </form> : thread && <p className="thread-status">{thread.replyUnavailableReason ?? (message.sender.type === 'system' ? 'This automated message does not accept replies.' : 'Only current members and administrators can reply.')}</p>}
         {notice && <p className="thread-status" role="status">{notice}</p>}
     </div>;
 }

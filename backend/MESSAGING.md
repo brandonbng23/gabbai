@@ -5,6 +5,7 @@ implements in-app messaging; it does not send email, SMS, or push notifications.
 Migration 17 adds per-recipient trash status without removing message content.
 Migration 18 adds trash status for shared shul inbox messages.
 Migration 19 adds persistent replies associated with the original message.
+Migration 20 adds permanent trash expiration records and cleanup indexes.
 Message subjects and bodies are plain text. Clients should render them as text,
 never as HTML.
 
@@ -74,6 +75,25 @@ pagination. Trashed deliveries are excluded from the inbox. Trash and read statu
 belong to the recipient for personal deliveries; changing them never modifies
 another personal recipient's copy. Shared shul deliveries use the shared status
 described above.
+
+## Trash retention
+
+A delivery expires after 30 continuous days in Trash, measured from `deleted_at`
+in UTC. Repeated delete actions preserve the original deadline. Restoring before
+the deadline clears it; moving the restored message back to Trash starts a new
+30-day period. Trash responses include `trashExpiresAt` so the UI can display the
+deadline along with warnings before deletion and in the Trash folder.
+
+Cleanup runs at database startup, hourly in the server, and before authenticated
+messaging requests. Expired delivery receipts are permanently removed, and minimal
+expiration records prevent restoration or resurrection through an old thread.
+Expiring a personal copy does not remove other recipients' copies. Expiring a
+shared shul copy removes it for all admins. Affected conversations must be started
+again as new messages rather than replying into an expired delivery.
+
+Content still owned by another recipient or by the original sender's sent history
+is retained for that owner. Unowned system-message content is physically removed.
+These are per-owner deletions, not deletion of other users' message copies.
 
 ## Replies
 

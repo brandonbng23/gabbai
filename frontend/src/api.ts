@@ -21,6 +21,7 @@ export interface Message {
     readAt: string | null;
     replyCount?: number;
     lastReplyAt?: string | null;
+    trashExpiresAt?: string;
     recipientIds?: string[];
     recipientCount?: number;
 }
@@ -41,6 +42,7 @@ export interface MessageThread {
     message: Message;
     replies: Array<{ id: string; body: string; sendAt: string; sender: { type: 'user' | 'shul'; name: string }; authorName?: string; participantId?: string; participantName?: string }>;
     canReply: boolean;
+    replyUnavailableReason?: string;
     replyAs: string;
     participants?: Array<{ id: string; name: string }>;
 }
