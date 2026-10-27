@@ -2754,7 +2754,8 @@ input[type="number"] {
     background-color: #b5ddff;
 }
 
-.settings-check-options input {
+.settings-check-options input,
+.compose-recipient input[type="checkbox"] {
     appearance: none;
     flex: 0 0 16px;
     width: 16px;
@@ -2766,19 +2767,22 @@ input[type="number"] {
     cursor: pointer;
 }
 
-.settings-check-options input:checked {
-    border-color: var(--settings-accent);
-    background: var(--settings-accent);
+.settings-check-options input:checked,
+.compose-recipient input[type="checkbox"]:checked {
+    border-color: var(--settings-accent, var(--inbox-accent));
+    background: var(--settings-accent, var(--inbox-accent));
     padding: 2px;
     background-clip: content-box;
 }
 
-.settings-check-options input:enabled:hover {
+.settings-check-options input:enabled:hover,
+.compose-recipient input[type="checkbox"]:enabled:hover {
     border-color: #b5ddff;
     background-color: #8bc8ff20;
 }
 
-.settings-check-options input:checked:enabled:hover {
+.settings-check-options input:checked:enabled:hover,
+.compose-recipient input[type="checkbox"]:checked:enabled:hover {
     background-color: #b5ddff;
 }
 
@@ -5158,7 +5162,6 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .compose-recipient-list { max-height: 160px; overflow-y: auto; margin-top: 6px; scrollbar-width: thin; }
 .compose-recipient { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
 .compose-recipient:hover, .compose-recipient:has(input:checked) { background: #8bc8ff10; }
-.compose-recipient input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--inbox-accent); }
 .compose-recipient > span { overflow-wrap: anywhere; min-width: 0; }
 .compose-recipient small { color: #aaaab4; margin-left: auto; font-size: 11px; }
 .compose-recipient-list p { margin: 8px; color: #aaaab4; font-size: 13px; }

@@ -97,7 +97,7 @@ export default function MessageComposer({ user, draft, onChange, busy, onBusyCha
 
     return <section className="message-composer" aria-labelledby="compose-heading">
         <header className="compose-window-header">
-            <h2 id="compose-heading">New message</h2>
+            <h2 id="compose-heading">{draft.subject ? draft.subject : "New Message (no subject)"}</h2>
             <button type="button" className="compose-icon-button" disabled={busy} onClick={onClose} aria-label="Close composer and keep draft" title="Close and keep draft">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
             </button>
