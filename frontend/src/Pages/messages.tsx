@@ -173,7 +173,7 @@ export default function Messages({ user }: { user: User }) {
                     </div>
                     <span className="msg-filter-separator" aria-hidden="true">·</span>
                     <div className="msg-filter-group" role="group" aria-label="Message status">
-                    <button type="button" disabled={actionBusy} aria-pressed={folder === 'inbox' && !unreadOnly} onClick={() => { setFolder('inbox'); setUnreadOnly(false); setOffset(0); }}>All <span className="msg-filter-count">{counts?.all ?? '–'}</span></button>
+                    <button type="button" disabled={actionBusy} aria-pressed={folder === 'inbox' && !unreadOnly} onClick={() => { setFolder('inbox'); setUnreadOnly(false); setOffset(0); }}>Inbox <span className="msg-filter-count">{counts?.all ?? '–'}</span></button>
                     <button type="button" disabled={actionBusy} aria-pressed={folder === 'inbox' && unreadOnly} onClick={() => { setFolder('inbox'); setUnreadOnly(true); setOffset(0); }}>Unread <span className="msg-filter-count">{counts?.unread ?? '–'}</span></button>
                     <button type="button" disabled={actionBusy} aria-pressed={folder === 'trash'} onClick={() => { setFolder('trash'); setUnreadOnly(false); setOffset(0); }}>Trash <span className="msg-filter-count">{counts?.trash ?? '–'}</span></button>
                     </div>
