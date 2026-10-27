@@ -135,6 +135,7 @@ Render terminates HTTPS at its reverse proxy. `GABBAI_TRUST_PROXY=true`
 lets the API recognize the browser's HTTPS origin; without it, sign-in and other
 writes can fail with "This request must come from Gabbai."
 `GABBAI_PREVIEW_MODE=true` enables **Sign in to demo** on the sign-in page.
+Both flags accept `true` regardless of capitalization or surrounding whitespace.
 For a manually configured service, add these variables in Render's Environment
 settings and save and deploy; deploying updated source alone does not apply
 the repository's Blueprint configuration. After deployment,

@@ -8,7 +8,7 @@ const sessionAge = 7 * 24 * 60 * 60 * 1000;
 const digest = value => createHash('sha256').update(value).digest('hex');
 
 export function installAuthentication(app, database, { development, preview, fallbackUserId }) {
-    if (process.env.GABBAI_TRUST_PROXY === 'true') app.set('trust proxy', 1);
+    if (process.env.GABBAI_TRUST_PROXY?.trim().toLowerCase() === 'true') app.set('trust proxy', 1);
     app.use('/api', (req, res, next) => {
         const token = (req.headers.cookie ?? '').split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
         req.sessionToken = token;

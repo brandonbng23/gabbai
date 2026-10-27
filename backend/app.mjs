@@ -11,7 +11,7 @@ import { userTitles } from '../interfaces/titles.mts';
 export function createApp(database, {
     development = process.env.NODE_ENV === "development",
     devUserId = process.env.GABBAI_DEV_USER_ID,
-    preview = process.env.GABBAI_PREVIEW_MODE === "true",
+    preview = process.env.GABBAI_PREVIEW_MODE?.trim().toLowerCase() === "true",
 } = {}) {
     database ??= openDatabase(process.env.GABBAI_DATABASE_PATH || (preview
         ? fileURLToPath(new URL('../data/gabbai.preview.sqlite', import.meta.url))
