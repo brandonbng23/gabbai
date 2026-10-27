@@ -117,7 +117,7 @@ function App() {
               <Navbar user={user}></Navbar>
               <Aside user={user}></Aside>
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
-              {isMessagesPage ? (user ? <Messages key={user.id} /> : null) : isRegistrationPage ? (
+              {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : null) : isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserReadingsPage && user ? <UserReadings key={viewedUserId || user.id} user={user}

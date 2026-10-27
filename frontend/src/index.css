@@ -5089,6 +5089,9 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     margin-bottom: 24px;
 }
 .inbox-compose {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 9px 18px;
     border: 1px solid var(--inbox-accent);
     border-radius: 9px;
@@ -5101,6 +5104,61 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .inbox-compose:hover { background: #a6d5ff; }
 .inbox-compose:focus-visible { outline: 2px solid var(--inbox-accent); outline-offset: 3px; }
+.inbox-compose:disabled { opacity: .45; cursor: default; }
+.inbox-compose:hover:disabled { background: var(--inbox-accent); }
+.message-composer {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: clamp(16px, 2.5vw, 28px);
+    border: 1px solid #ffffff12;
+    border-radius: 16px;
+    background: #302f30;
+}
+.compose-heading { padding-bottom: 20px; }
+.compose-heading h2 { margin: 6px 0 8px; font-size: 25px; font-weight: 600; color: #f6f5f7; }
+.compose-heading p { margin: 0; color: #aaaab4; font-size: 13px; line-height: 1.5; }
+.compose-form { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+.compose-fields { display: flex; flex-direction: column; gap: 20px; min-height: 0; overflow-y: auto; padding: 3px; scrollbar-width: thin; scrollbar-color: #77737e transparent; }
+.compose-to { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 14px; }
+.compose-to > span { color: #aaaab4; }
+.compose-to strong { background: #8bc8ff10; border-radius: 6px; color: #b9dfff; padding: 6px 10px; font-weight: 500; }
+.compose-field { display: flex; flex-direction: column; gap: 8px; }
+.compose-field > label, .compose-recipients legend { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 500; color: #e5e4e9; }
+.compose-field label span, .compose-recipients legend span { color: #aaaab4; font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.compose-field input, .compose-field textarea, .compose-recipients input[type="search"] {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    padding: 10px 12px;
+    background: #383739;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    color-scheme: dark;
+}
+.compose-field textarea { min-height: 180px; resize: vertical; }
+.compose-field input::placeholder, .compose-field textarea::placeholder, .compose-recipients input::placeholder { color: #9997a2; }
+.compose-form :is(input, textarea, button):focus-visible { outline: 2px solid var(--inbox-accent); outline-offset: 2px; }
+.compose-form :is(input, textarea):disabled { opacity: .6; }
+.compose-recipients { margin: 0; padding: 0; border: 0; min-width: 0; }
+.compose-recipients legend { float: none; width: 100%; padding: 0; margin-bottom: 8px; }
+.compose-search-label { display: block; margin-bottom: 6px; color: #aaaab4; font-size: 12px; }
+.compose-recipient-list { max-height: 150px; overflow-y: auto; padding: 4px; margin-top: 8px; border-radius: 8px; background: #ffffff04; scrollbar-width: thin; }
+.compose-recipient { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.compose-recipient:hover, .compose-recipient:has(input:checked) { background: #8bc8ff10; }
+.compose-recipient input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--inbox-accent); }
+.compose-recipient > span { overflow-wrap: anywhere; min-width: 0; }
+.compose-recipient small { color: #aaaab4; margin-left: auto; font-size: 11px; }
+.compose-recipient-list p { margin: 8px; color: #aaaab4; font-size: 13px; }
+.compose-recipient-list button { border: 1px solid #77737e; border-radius: 6px; padding: 5px 10px; background: #383739; color: #e5e4e9; font: inherit; cursor: pointer; }
+.compose-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 20px; }
+.compose-footer p { margin: 0; color: #aaaab4; font-size: 12px; }
+.compose-fields > .compose-error { margin: 0; color: #f5b1b1; font-size: 13px; }
 .inbox-eyebrow {
     color: #a6d5ff;
     font-size: 11px;

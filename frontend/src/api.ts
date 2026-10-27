@@ -33,6 +33,21 @@ export async function getCurrentUserMessages(signal: AbortSignal, {
     return response.json();
 }
 
+export async function sendMessage(user: User, subject: string, body: string, recipientIds: string[]): Promise<Message> {
+    const response = await fetch(user.role === 'admin'
+        ? `/api/shuls/${encodeURIComponent(user.shulId ?? '')}/messages`
+        : '/api/me/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, ...(user.role === 'admin' ? { recipientIds } : {}) }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to send your message. Please try again.');
+    }
+    return response.json();
+}
+
 export interface MessageCounts {
     all: number;
     unread: number;
