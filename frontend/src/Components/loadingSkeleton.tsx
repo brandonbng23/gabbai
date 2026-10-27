@@ -1,4 +1,4 @@
-type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'user-settings' | 'user-readings' | 'shul' | 'registration' | 'users' | 'readings';
+type SkeletonVariant = 'schedule' | 'profile' | 'settings' | 'user-settings' | 'user-readings' | 'shul' | 'registration' | 'users' | 'readings' | 'messages' | 'message-view' | 'message-thread' | 'message-recipients';
 
 function Block({ width = '100%', className = '' }: { width?: string; className?: string }) {
     return <span className={`skeleton-block ${className}`} style={{ width }} />;
@@ -64,8 +64,19 @@ function ReadingStats() {
 }
 
 export function LoadingSkeleton({ variant = 'schedule', page = false }: { variant?: SkeletonVariant; page?: boolean }) {
+    if (page && variant === 'messages') return <main className="messages-page skeleton-state" role="status" aria-label="Loading messages" aria-busy="true">
+        <span className="visually-hidden">Loading messages…</span>
+        <header className="inbox-header" aria-hidden="true"><Block width="200px" className="skeleton-title" /><Block width="120px" className="skeleton-input" /></header>
+        <div className="inbox" aria-hidden="true">
+            <div className="message-list-panel">
+                <div className="msg-filters"><Block className="skeleton-input" /></div>
+                <div className="message-list"><LoadingSkeleton variant="messages" /></div>
+            </div>
+            <section className="message-view"><LoadingSkeleton variant="message-view" /></section>
+        </div>
+    </main>;
     const label = ({ schedule: 'schedule', profile: 'user profile', settings: 'settings', 'user-settings': 'user settings', 'user-readings': 'user readings', shul: 'shul information',
-        registration: 'registration details', users: 'shul users', readings: 'readings' })[variant];
+        registration: 'registration details', users: 'shul users', readings: 'readings', messages: 'messages', 'message-view': 'message', 'message-thread': 'conversation', 'message-recipients': 'recipients' })[variant];
     const settingsPage = page && ['profile', 'settings', 'user-settings', 'user-readings'].includes(variant);
     return <div className={`skeleton-state skeleton-state-${variant}${settingsPage ? ' shul-admin-page' : ''}${variant === 'shul' ? ' my-shul-page' : ''}`}
         role="status" aria-label={`Loading ${label}`} aria-busy="true">
@@ -74,7 +85,23 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
             {page && variant !== 'shul' && <div className={`skeleton-page-heading${settingsPage ? ' settings-page-header' : ''}`}>
                 <Block width="180px" className="skeleton-title" />
             </div>}
-            {variant === 'user-readings' ? <div className="shul-settings user-readings-page">
+            {variant === 'messages' ? <div className="skeleton-message-list">
+                {Array.from({ length: 6 }, (_, index) => <div className="msg-card skeleton-message-card" key={index}>
+                    <div className="skeleton-message-sender"><Block width="6.5px" className="skeleton-message-dot" /><Block width="30px" className="skeleton-message-avatar" /><Block width={index % 2 ? '42%' : '58%'} /></div>
+                    <div className="skeleton-message-info"><Block width={index % 2 ? '80%' : '65%'} /><Block width="40%" className="skeleton-label" /></div>
+                </div>)}
+            </div> : variant === 'message-view' ? <div className="skeleton-message-view">
+                <div className="skeleton-message-actions"><Block width="100px" className="skeleton-input" /><Block width="65px" className="skeleton-input" /></div>
+                <Block width="68%" className="skeleton-title" />
+                <div className="skeleton-message-sender"><Block width="32px" className="skeleton-message-avatar" /><div className="skeleton-message-author"><Block width="130px" /><Block width="95px" className="skeleton-label" /></div></div>
+                <div className="skeleton-message-lines">{['95%', '100%', '83%', '92%', '58%'].map((width, index) => <Block width={width} key={index} />)}</div>
+            </div> : variant === 'message-thread' ? <div className="skeleton-message-thread">
+                <div className="skeleton-message-sender"><Block width="35%" /><Block width="20%" className="skeleton-label" /></div>
+                <div className="skeleton-message-lines"><Block /><Block width="85%" /><Block width="60%" /></div>
+                <Block className="skeleton-reply-editor" />
+            </div> : variant === 'message-recipients' ? <div className="skeleton-message-recipients">
+                {Array.from({ length: 3 }, (_, index) => <div className="skeleton-message-sender" key={index}><Block width="16px" /><Block width={index % 2 ? '45%' : '65%'} /></div>)}
+            </div> : variant === 'user-readings' ? <div className="shul-settings user-readings-page">
                 <div className="settings-panel user-readings-panel">
                     <div className="user-readings-toolbar">
                         <Block width="280px" className="skeleton-input" />

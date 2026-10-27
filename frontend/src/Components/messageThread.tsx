@@ -1,4 +1,5 @@
 import PaperPlaneIcon from './paperPlaneIcon.tsx';
+import { LoadingSkeleton } from './loadingSkeleton.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { getMessageThread, getMessageCounts, replyToMessage } from '../api.ts';
@@ -65,7 +66,7 @@ export default function MessageThread({ message, busy, onBusyChange, onUpdate }:
 
     return <div className="message-conversation">
         <div className="message-original-body">{message.body}</div>
-        {!thread && !error && <p className="thread-status" role="status">Loading conversation…</p>}
+        {!thread && !error && <LoadingSkeleton variant="message-thread" />}
         {thread?.replies.map(reply => <article className="thread-reply" key={reply.id}>
             <header>
                 <div><strong>{reply.sender.name}</strong>

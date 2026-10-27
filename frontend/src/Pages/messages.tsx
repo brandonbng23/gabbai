@@ -6,6 +6,7 @@ import MessageCard from '../Components/messageCard.tsx';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 import MessageComposer from '../Components/messageComposer.tsx';
 import MessageThread from '../Components/messageThread.tsx';
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { MessageDraft } from '../Components/messageComposer.tsx';
 
 const pageSize = 50;
@@ -183,7 +184,7 @@ export default function Messages({ user }: { user: User }) {
                     ? 'Deleting a shul conversation only hides it from your inbox. A new reply brings it back, even after it has been removed from Trash.'
                     : 'Restore messages before then to keep them.'}</p>}
                 <div className="message-list">
-                    {loading ? <p role="status">Loading messages…</p>
+                    {loading ? <LoadingSkeleton variant="messages" />
                         : error ? <div role="alert">
                             <p>{error}</p>
                             <button type="button" onClick={() => setAttempt(previous => previous + 1)}>Try again</button>
@@ -208,8 +209,8 @@ export default function Messages({ user }: { user: User }) {
                 </div>
             </div>
             { !compose ? <>
-                <section key={selectedMsg?.id ?? 'empty'} className={selectedMsg ? "message-view" : "no-message-view"} aria-label="Message details">
-                    {selectedMsg ?
+                <section key={selectedMsg?.id ?? 'empty'} className={selectedMsg || loading ? "message-view" : "no-message-view"} aria-label="Message details">
+                    {loading && !selectedMsg ? <LoadingSkeleton variant="message-view" /> : selectedMsg ?
                     <>
                         <header className="message-detail-header">
                             <div className="msg-buttons">

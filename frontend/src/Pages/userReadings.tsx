@@ -63,9 +63,7 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
     return <main className="shul-admin-page user-readings-page">
         <header className="settings-page-header">
             <div>
-                <span className="settings-eyebrow">READING ACTIVITY</span>
-                <h1>{ownReadings ? 'My readings' : fullName ? `${fullName}’s readings` : 'User readings'}</h1>
-                <p>Upcoming assignments and past readings in one place.</p>
+                <h1>My Readings</h1>
             </div>
         </header>
         {error ? <p className="user-readings-error" role="alert">{error}</p>
