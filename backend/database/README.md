@@ -128,7 +128,17 @@ to use it. For an existing Render web service, set these values manually:
 | `NODE_VERSION` | `24.18.0` |
 | `NODE_ENV` | `production` |
 | `GABBAI_PREVIEW_MODE` | `true` |
+| `GABBAI_TRUST_PROXY` | `true` |
 | `GABBAI_DATABASE_PATH` | `./data/gabbai.preview.sqlite` |
+
+Render terminates HTTPS at its reverse proxy. `GABBAI_TRUST_PROXY=true`
+lets the API recognize the browser's HTTPS origin; without it, sign-in and other
+writes can fail with "This request must come from Gabbai."
+`GABBAI_PREVIEW_MODE=true` enables **Sign in to demo** on the sign-in page.
+For a manually configured service, add these variables in Render's Environment
+settings and save and deploy; deploying updated source alone does not apply
+the repository's Blueprint configuration. After deployment,
+`GET /api/auth/options` should return `{"demoAvailable":true}` for the preview.
 
 Preview mode supplies a shared Demo User and Demo Shul so the frontend works
 without requiring a sign-in. Records are created at server startup if missing; existing

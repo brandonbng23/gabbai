@@ -13,5 +13,7 @@ services:
         value: production
       - key: GABBAI_PREVIEW_MODE
         value: "true"
+      - key: GABBAI_TRUST_PROXY
+        value: "true"
       - key: GABBAI_DATABASE_PATH
         value: ./data/gabbai.preview.sqlite
