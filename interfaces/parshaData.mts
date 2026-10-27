@@ -33,6 +33,7 @@ export interface ParshaData {
 
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
+    verseCounts: (number | null)[];
     aliyahCount?: number;
     defaultAliyahCount?: number;
     aliyahCountOverride?: number | null;

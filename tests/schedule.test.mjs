@@ -135,9 +135,11 @@ test('reading data contains user profiles and null slots without credentials or 
     assert.equal(data[7].firstName, 'Joshua');
     assert.equal(data[7].lastName, 'Rosen');
     assert.equal(data[7].title, 'Rabbi');
-    assert.deepEqual(Object.keys(data[7]).sort(), ['id', 'firstName', 'lastName', 'email', 'role', 'title'].sort());
+    assert.deepEqual(Object.keys(data[7]).sort(), ['id', 'firstName', 'lastName', 'email', 'role', 'title', 'assignedReadings'].sort());
     assert.ok(!('password' in data[7]));
     assert.ok(!('readings' in data[7]));
+    assert.deepEqual(data[7].assignedReadings, []);
+    assert.deepEqual(user.toJSON().assignedReadings, []);
     readings.removeReader(8);
     assert.equal(readings.getReaderArr()[7], null);
     assert.deepEqual(user.getReadings(), []);

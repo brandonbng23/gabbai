@@ -1,20 +1,21 @@
-function WelcomeBar({fName}: {fName?: string}) {
-    let hour = new Date().getHours();
-    let greeting = "";
+export function getGreeting(): string {
+    const hour = new Date().getHours();
 
     if (hour < 12) {
-        greeting = "Boker Tov"
+        return "Boker Tov";
     } else if (hour < 18) {
-        greeting = "Tazaharayim Tovim"
+        return "Tazaharayim Tovim";
     } else {
-        greeting = "Erev Tov"
+        return "Erev Tov";
     }
+}
 
+function WelcomeBar({ fName }: { fName?: string }) {
     return (
         <div className="welcomeBar">
-            <h4>{greeting}{fName ? `, ${fName}` : ''}!</h4>
+            <h4>{getGreeting()}{fName ? `, ${fName}` : ''}!</h4>
         </div>
-    )
+    );
 }
 
 export default WelcomeBar;

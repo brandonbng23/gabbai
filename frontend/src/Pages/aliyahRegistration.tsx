@@ -5,6 +5,8 @@ import { registerForReading } from '../api.js';
 import type { GuestRegistration, User } from '../api.js';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import InfoIcon from '../Components/infoTip.tsx';
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
+import { ProfilePicture } from '../Components/profilePicture.tsx';
 
 interface RegistrationProps {
     shulId?: string;
@@ -89,25 +91,27 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     }
 
     let heading = `Register for ${parsha?.desc ?? 'a reading'}`;
-    if (loading) heading = 'Loading registration…';
+    if (loading) heading = 'Aliyah Registration';
     else if (!validSelection) heading = 'Oy Gevalt!';
-    else if (locked || unavailable) heading = 'Registration has Closed';
+    else if (locked || unavailable) heading = 'Registration is closed';
     if (registered) heading = 'Registration confirmed';
 
     return (
-        <main className="aliyah-registration">
+        <main className="aliyah-registration registration-page">
             <a className="registration-back" href={backUrl}>← Back to schedule</a>
-            <h1>{heading}</h1>
+            <header className="registration-header">
+                <span className="registration-eyebrow">Aliyah registration</span>
+                <h1>{heading}</h1>
+                {canRegister && !registered && <p>Review your reading and choose how you’d like to register.</p>}
+            </header>
             {registrationError && <p role="alert">{registrationError}</p>}
             {registered ? (
-                <p role="status">You’re registered for {aliyahLabels[aliyah - 1]} of {parsha?.desc} on {parsha?.gregDate}.</p>
+                <section className="registration-details registration-success" aria-label="Registration complete">
+                    <p role="status">You’re registered for {aliyahLabels[aliyah - 1]} of {parsha?.desc} on {parsha?.gregDate}.</p>
+                    <a className="registration-back" href={backUrl}>← Return to schedule</a>
+                </section>
             ) : loading ? (
-                <div className="registration-details registration-details-loading" role="status" aria-label="Loading registration details">
-                    <h5 aria-hidden="true">Aliyah Summary</h5>
-                    <dl aria-hidden="true">
-                        {['Date', 'Parsha', 'Aliyah', 'Psukim'].map(label => <div key={label}><dt>{label}</dt><dd>&nbsp;</dd></div>)}
-                    </dl>
-                </div>
+                <LoadingSkeleton variant="registration" />
             ) : error ? (
                 <p role="alert">{error}</p>
             ) : !validSelection || !parsha ? (
@@ -116,7 +120,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                 <>
                     {canRegister && <div className="register-identity">
                         <div className={`register-switch${useProfile ? '' : ' register-switch-guest'}`}>
-                            <div className="register-switch-options">
+                            <div className="register-switch-options" role="group" aria-label="Registration method">
                                 <button type="button" disabled={submitting || !user} aria-pressed={useProfile}
                                     className={`register-option${useProfile ? ' register-option-focus' : ''}`}
                                     onClick={() => selectMode('profile')}>Register with Profile</button>
@@ -130,9 +134,9 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                         </div>
                     </div>}
                     <section className="registration-details" aria-labelledby="aliyah-summary-heading">
-                        <h5 id="aliyah-summary-heading">Aliyah Summary</h5>
+                        <h2 id="aliyah-summary-heading">Your reading</h2>
                         <dl>
-                            <div><dt>Date</dt><dd>{parsha.gregDate} · {parsha.hDate}</dd></div>
+                            <div><dt>Date</dt><dd>{parsha.gregDate}<span className="registration-hebrew-date">{parsha.hDate}</span></dd></div>
                             <div><dt>Parsha</dt><dd>{parsha.desc}</dd></div>
                             <div><dt>Aliyah</dt><dd>
                                 <span className="registration-aliyah-label">{aliyahLabels[aliyah - 1]}</span>
@@ -141,9 +145,21 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                             <div><dt>Psukim</dt><dd>{parsha.psukim[aliyah - 1]}</dd></div>
                         </dl>
                     </section>
-                    <form id="guest-registration" onSubmit={submitRegistration}>
+                    <form id="guest-registration" onSubmit={submitRegistration} aria-busy={submitting}>
+                        {canRegister && useProfile && user && (
+                            <section className="registration-details" aria-labelledby="profile-heading">
+                                <h2 id="profile-heading">Registering as</h2>
+                                <div className="registration-profile">
+                                    <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} small />
+                                    <div>
+                                        <strong>{[user.title, user.firstName, user.lastName].filter(Boolean).join(' ')}</strong>
+                                        <span>{user.email}</span>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
                         {canRegister && !useProfile && <section className="registration-details" aria-labelledby="guest-heading">
-                            <h5 id="guest-heading">Register as Guest</h5>
+                            <h2 id="guest-heading">Guest details</h2>
                             <fieldset className="guest-registration-fields" disabled={submitting}>
                                 <legend className="visually-hidden">Guest details</legend>
                                 <div className="registration-names">
@@ -157,35 +173,37 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                                     <div className="registration-item">
                                         <label className="registration-label" htmlFor="guest-first-name">First Name</label>
                                         <input id="guest-first-name" type="text" name="firstNameRegister" required maxLength={254}
-                                            autoComplete="given-name" placeholder="i.e. Josh" />
+                                            autoComplete="given-name" placeholder="e.g. Josh" />
                                     </div>
                                     <div className="registration-item">
                                         <label className="registration-label" htmlFor="guest-last-name">Last Name</label>
                                         <input id="guest-last-name" type="text" name="lastNameRegister" required maxLength={254}
-                                            autoComplete="family-name" placeholder="i.e. Cohen" />
+                                            autoComplete="family-name" placeholder="e.g. Cohen" />
                                     </div>
                                 </div>
                                 <div className="registration-item">
-                                    <label className="registration-label" htmlFor="guest-hebrew-name">Hebrew Name</label>
+                                    <label className="registration-label" htmlFor="guest-hebrew-name">Hebrew Name <span className="registration-optional">(optional)</span></label>
                                     <input id="guest-hebrew-name" type="text" name="hebrewNameRegister" maxLength={254}
-                                        placeholder="i.e. Moishe ben Shlomo v'et Devorah" />
+                                        placeholder="e.g. Moishe ben Shlomo v'et Devorah" />
                                 </div>
                                 <div className="registration-item">
                                     <label className="registration-label" htmlFor="guest-email">Email</label>
                                     <input id="guest-email" type="email" name="emailRegister" required maxLength={254}
-                                        autoComplete="email" placeholder="i.e. iheartleyning@gabbai.com" />
+                                        autoComplete="email" placeholder="e.g. josh@example.com" />
                                 </div>
                             </fieldset>
                         </section>}
-                        <p id="registration-status" role="status">
+                        <div className="registration-actions">
+                          <p id="registration-status" role="status">
                             {locked ? 'Your shul has locked this aliyah. Choose another aliyah from the schedule.'
                                 : unavailable ? 'Another reader has already registered for this reading. Choose another aliyah from the schedule.'
                                 : submitting ? 'Registering…'
                                 : useProfile ? 'Register using your saved profile details.'
                                 : 'Confirm your details to reserve this aliyah.'}
-                        </p>
-                        <button type="submit" className="registration-confirm" disabled={submitting || !canRegister}
-                            aria-describedby="registration-status">Confirm Registration</button>
+                          </p>
+                          {canRegister && <button type="submit" className="registration-confirm" disabled={submitting}
+                            aria-describedby="registration-status">{submitting ? 'Registering…' : 'Confirm registration'}</button>}
+                        </div>
                     </form>
                 </>
             )}

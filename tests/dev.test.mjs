@@ -56,6 +56,14 @@ test('combined startup proxies saved profiles and stops both servers', { timeout
     }
     assert.ok(ready, output);
     assert.equal((await (await fetch(`${base}/api/me`)).json()).id, user.id);
+    const passwordSetup = await fetch(`${base}/api/auth/password`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: base }, body: JSON.stringify({ password: 'Development test password!' }) });
+    assert.equal(passwordSetup.status, 200, 'Same-origin auth requests must work through the Vite proxy');
+    const session = passwordSetup.headers.getSetCookie()[0].split(';')[0];
+    const signedOut = await fetch(`${base}/api/auth/signout`, { method: 'POST', headers: { Cookie: session, Origin: base } });
+    assert.equal(signedOut.status, 204);
+    const loggedOutCookie = signedOut.headers.getSetCookie()[0].split(';')[0];
+    assert.equal((await fetch(`${base}/api/me`, { headers: { Cookie: loggedOutCookie } })).status, 401);
     assert.deepEqual(await (await fetch(`${base}/api/shuls`)).json(), [{ id: shul.id, name: shul.name }]);
     const readings = await (await fetch(`${base}/api/schedule?shul=${shul.id}`)).json();
     assert.ok(readings.length > 0);

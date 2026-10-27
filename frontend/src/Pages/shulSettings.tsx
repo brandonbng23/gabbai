@@ -1,23 +1,31 @@
-import type { Shul, ShulInfo, Settings, ShulUser } from '../api.js';
+import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
+import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
+import type { Shul, ShulInfo, Settings, ShulUser, ShulUserChange, UserProfile } from '../api.js';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
-import { getShulUsers, getInitialShulVersion, publishReadingLocks, updateShul, updateShulSettings } from '../api.js';
+import { getShulUsers, getShulUserProfile, getInitialShulVersion, publishReadingLocks, publishShulUsers, updateShul, updateShulSettings } from '../api.js';
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
-import { pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
+import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
 import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
+import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
+import { UserEditor } from '../Components/userEditor.tsx';
+import InfoIcon  from "../Components/infoTip.tsx"
 
-type SettingsSection = 'info' | 'schedule' | 'readings';
+type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
 
-function SubmissionMessage({ message }: { message: SubmissionFeedback | null }) {
+function SubmissionMessage({ message, onDismiss }: { message: SubmissionFeedback | null; onDismiss?: () => void }) {
     return (
         <div className={`submission-msg${message ? ` submission-msg-${message.tone}` : ''}`}
             role={message?.tone === 'error' ? 'alert' : 'status'} aria-atomic="true">
-            {message?.text}
+            {message && <>
+                <span>{message.text}</span>
+                {message.tone !== 'progress' && onDismiss && <DismissMessageButton onDismiss={onDismiss} />}
+            </>}
         </div>
     );
 }
@@ -34,7 +42,7 @@ function SettingsNoResults() {
 function FieldReset({ label, changed, onReset }: { label: string; changed: boolean; onReset: () => void }) {
     return (
         <div className="settings-field-reset-row">
-            <button type="button" className="settings-field-reset" disabled={!changed}
+            <button type="button" className="settings-field-reset" tabIndex={-1} disabled={!changed}
                 aria-label={`Reset ${label} to its last saved value`} title="Reset to last saved value" onClick={onReset}>Reset</button>
         </div>
     );
@@ -63,17 +71,26 @@ function RestoreMenu({ section, disabled, onRestore }: { section: string; disabl
     );
 }
 
-export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated }: {
+export default function ShulSettings({ shul, currentUserId, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated }: {
     shul: Shul;
+    currentUserId: string;
     onSaved: (shul: Shul) => void;
     schedule: ParshaObj[];
+    scheduleLoading?: boolean;
+    scheduleError?: string | null;
     onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
     
 
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
-    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null });
+    const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null, permissions: null });
+    const [permissionDrafts, setPermissionDrafts] = useState<Record<string, 'admin' | 'member' | null>>({});
+    const [openEditorId, setOpenEditorId] = useState<string | null>(null);
+    const [editableProfiles, setEditableProfiles] = useState<Record<string, UserProfile>>({});
+    const [profileDrafts, setProfileDrafts] = useState<Record<string, Partial<UserProfile>>>({});
+    const [userPictureDrafts, setUserPictureDrafts] = useState<Record<string, string | null>>({});
+    const [editorErrors, setEditorErrors] = useState<Record<string, string>>({});
 
     const [readingDrafts, setReadingDrafts] = useState<ReadingDrafts>({});
     const [countDrafts, setCountDrafts] = useState<CountDrafts>({});
@@ -151,6 +168,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
     const [saving, setSaving] = useState(false);
+    const [pictureBusy, setPictureBusy] = useState(false);
+    const [pictureDraft, setPictureDraft] = useState<string | null | undefined>();
+    const picturePreview = pictureDraft === undefined ? shul.pictureUrl : pictureDraft ?? undefined;
     const [activeForm, setActiveForm] = useState<SettingsSection>('info');
 
     const [hebYear, setHebYear] = useState(settings.hebYear);
@@ -192,6 +212,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const contactChangeLog = contactFields
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${field.value ? `“${field.value}”` : '(empty)'}.`);
+
+    if (pictureDraft !== undefined) contactChangeLog.push(pictureDraft === null ? 'Remove shul picture.' : 'Change shul picture.');
 
     const scheduleChanges = [
         { label: 'Schedule Hebrew year', value: hebYear, savedValue: settings.hebYear },
@@ -239,18 +261,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     for (const change of countChanges) {
         readingAdjustmentChangeLog.push(`Set ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) to ${change.aliyahCount === null ? 'the schedule rule' : `${change.aliyahCount} aliyot`}.`);
     }
-    for (const change of occasionChanges) {
-        const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
-        const before = saved?.manualOccasions ?? [];
-        const previousOrder = before.filter(label => change.manualOccasions.includes(label));
-        const nextOrder = change.manualOccasions.filter(label => before.includes(label));
-        if (JSON.stringify(previousOrder) !== JSON.stringify(nextOrder))
-            readingAdjustmentChangeLog.push(`Reorder manually added occasions for ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-        for (const label of change.manualOccasions.filter(label => !before.includes(label)))
-            readingAdjustmentChangeLog.push(`Add “${label}” to ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-        for (const label of before.filter(label => !change.manualOccasions.includes(label)))
-            readingAdjustmentChangeLog.push(`Remove “${label}” from ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}).`);
-    }
+    readingAdjustmentChangeLog.push(...occasionChangeLog(occasionDrafts, schedule));
 
     for (const change of readerChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
@@ -278,7 +289,141 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     const matchingUsers = searchUsers(sortUsers());
 
 
-    const busy = saving || restoring !== null;
+    const busy = saving || pictureBusy || restoring !== null;
+    const permissionChanges: ShulUserChange[] = [...new Set([...Object.keys(permissionDrafts), ...Object.keys(profileDrafts), ...Object.keys(userPictureDrafts)])].flatMap(userId => {
+        const saved = users.find(user => user.id === userId);
+        if (!saved) return [];
+        const role = permissionDrafts[userId];
+        const profile = Object.fromEntries(Object.entries(profileDrafts[userId] ?? {}).map(([key, value]) =>
+            [key, key === 'email' ? value.trim().toLowerCase() : value.trim()])
+            .filter(([key, value]) => value !== editableProfiles[userId]?.[key as keyof UserProfile])) as Partial<UserProfile>;
+        const hasProfile = role !== null && Object.keys(profile).length > 0;
+        const hasPicture = role !== null && userPictureDrafts[userId] !== undefined;
+        if (role === undefined && !hasProfile && !hasPicture) return [];
+        return [{ userId, previousRole: saved.role, ...(role !== undefined ? { role } : {}),
+            ...(hasPicture ? { picture: userPictureDrafts[userId], previousPictureUrl: saved.pictureUrl ?? null } : {}),
+            ...(hasProfile ? { profile, previousProfile: Object.fromEntries(Object.keys(profile).map(key =>
+                [key, editableProfiles[userId][key as keyof UserProfile]])) } : {}) }];
+    });
+    const permissionChangeLog = permissionChanges.flatMap(change => {
+        const user = users.find(user => user.id === change.userId)!;
+        const name = `${user.firstName} ${user.lastName}`;
+        const entries = change.role === undefined ? [] : [change.role === null ? `Remove ${name} from this shul and clear their reader assignments.`
+            : change.role === 'admin' ? `Promote ${name} to admin.` : `Demote ${name} to member.`];
+        const labels: Record<keyof UserProfile, string> = { title: 'title', firstName: 'first name', lastName: 'last name', hebrewName: 'Hebrew name', email: 'email', phone: 'phone' };
+        const pictureEntry = 'picture' in change ? [`${change.picture === null ? 'Remove' : 'Update'} ${name}’s profile picture.`] : [];
+        return [...entries, ...Object.entries(change.profile ?? {}).map(([key, value]) => `Set ${name}’s ${labels[key as keyof UserProfile]} to ${value || '-'}.`), ...pictureEntry];
+    });
+
+    function resetUserPicture(userId: string): void {
+        setUserPictureDrafts(previous => {
+            const next = { ...previous };
+            delete next[userId];
+            return next;
+        });
+        clearFeedback('permissions');
+    }
+
+    async function toggleUserEditor(user: ShulUser): Promise<void> {
+        if (busy) return;
+        if (openEditorId === user.id) { setOpenEditorId(null); return; }
+        setOpenEditorId(user.id);
+        if (editableProfiles[user.id]) return;
+        setEditorErrors(previous => ({ ...previous, [user.id]: '' }));
+        try {
+            const profile = await getShulUserProfile(shul.id, user.id);
+            setEditableProfiles(previous => ({ ...previous, [user.id]: profile }));
+        } catch (failure) {
+            setEditorErrors(previous => ({ ...previous, [user.id]: failure instanceof Error ? failure.message : 'Unable to load user details.' }));
+        }
+    }
+
+    function changeUserField(userId: string, key: keyof UserProfile, value: string): void {
+        if (busy) return;
+        setProfileDrafts(previous => {
+            const draft = { ...previous[userId] };
+            if (value === editableProfiles[userId][key]) delete draft[key];
+            else draft[key] = value;
+            return { ...previous, [userId]: draft };
+        });
+        clearFeedback('permissions');
+    }
+
+    function stageUserChange(user: ShulUser, role: 'admin' | 'member' | null | undefined): void {
+        if (busy || user.id === currentUserId) return;
+        if (role === null) setOpenEditorId(previous => previous === user.id ? null : previous);
+        setPermissionDrafts(previous => {
+            const next = { ...previous };
+            if (role === undefined || role === user.role) delete next[user.id];
+            else next[user.id] = role;
+            return next;
+        });
+        clearFeedback('permissions');
+    }
+
+    function renderUserCard(user: ShulUser): React.JSX.Element {
+        const draft = permissionDrafts[user.id];
+        const editorId = `user-editor-${user.id}`;
+        return <div className="user-list-entry" key={user.id}>
+            <UserCard user={user}
+            nameClick={nameClick} setNameClick={setNameClick}
+            disabled={busy || user.id === currentUserId} pendingRemoval={draft === null} canDiscard={user.role !== 'admin'} canEdit={user.role !== 'admin'}
+            pendingRole={draft !== undefined && draft !== null}
+            onRoleChange={role => stageUserChange(user, draft === role ? undefined : role)}
+            onDiscard={() => stageUserChange(user, draft === null ? undefined : null)}
+            onEdit={() => { void toggleUserEditor(user); }} editorOpen={openEditorId === user.id} editorId={editorId} />
+            {openEditorId === user.id && <section id={editorId} className="inline-user-editor" aria-label={`Edit ${user.firstName} ${user.lastName}`}>
+                {editorErrors[user.id] ? <div role="alert">{editorErrors[user.id]} <button type="button" className="settings-reset-btn"
+                    onClick={() => { setOpenEditorId(null); }}>Close editor</button></div>
+                : !editableProfiles[user.id] ? <LoadingSkeleton variant="readings" />
+                : <UserEditor id={editorId} saved={editableProfiles[user.id]} draft={profileDrafts[user.id] ?? {}}
+                    pictureUrl={userPictureDrafts[user.id] === undefined ? user.pictureUrl : userPictureDrafts[user.id] ?? undefined}
+                    pictureChanged={userPictureDrafts[user.id] !== undefined} onPictureBusyChange={setPictureBusy}
+                    onPictureChange={picture => {
+                        if (picture === null && !user.pictureUrl) resetUserPicture(user.id);
+                        else {
+                            setUserPictureDrafts(previous => ({ ...previous, [user.id]: picture }));
+                            clearFeedback('permissions');
+                        }
+                    }} onPictureReset={() => resetUserPicture(user.id)}
+                    disabled={busy || draft === null} onChange={(key, value) => changeUserField(user.id, key, value)}
+                    onClose={() => setOpenEditorId(null)} onReset={() => {
+                        setProfileDrafts(previous => ({ ...previous, [user.id]: {} }));
+                        resetUserPicture(user.id);
+                        clearFeedback('permissions');
+                    }} />}
+            </section>}
+        </div>;
+    }
+
+    async function publishPermissions(): Promise<void> {
+        if (busy || permissionChanges.length === 0) return;
+        setActiveForm('permissions');
+        setSaving(true);
+        showFeedback('permissions', 'progress', 'Publishing user changes…');
+        try {
+            const updated = await publishShulUsers(shul.id, permissionChanges);
+            setUsers(updated);
+            setPermissionDrafts({});
+            setProfileDrafts({});
+            setUserPictureDrafts({});
+            setEditableProfiles({});
+            setOpenEditorId(null);
+            const byId = new Map(updated.map(user => [user.id, user]));
+            setReaderDrafts(previous => Object.fromEntries(Object.entries(previous)
+                .filter(([, draft]) => !draft.readerId || byId.has(draft.readerId))
+                .map(([key, draft]) => [key, { ...draft, reader: draft.readerId ? byId.get(draft.readerId)! : null }])));
+            schedule.forEach(reading => {
+                if (reading.readers.some(Boolean)) onReadingUpdated({ ...reading,
+                    readers: reading.readers.map(reader => reader ? byId.get(reader.id) ?? null : null) });
+            });
+            showFeedback('permissions', 'success', 'User changes published.');
+        } catch (failure) {
+            showFeedback('permissions', 'error', failure instanceof Error ? failure.message : 'Could not publish user changes. Your changes are still here.');
+        } finally {
+            setSaving(false);
+        }
+    }
 
     function showFeedback(section: SettingsSection, tone: SubmissionFeedback['tone'], text: string): void {
         setMessages((previous) => ({ ...previous, [section]: { tone, text } }));
@@ -375,6 +520,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
     }
 
     function resetContactChanges(): void {
+        setPictureDraft(undefined);
         applyContactValues(shul);
         showFeedback('info', 'info', 'Unsaved changes reset.');
     }
@@ -443,7 +589,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
         try {
             const updated = await updateShul(shul.id, {
                 name, address, phone, email, websiteUrl: website, donationUrl: donation,
+                ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}),
             });
+            setPictureDraft(undefined);
             setName(updated.name);
             setAddress(updated.address);
             setPhone(updated.phone);
@@ -518,7 +666,8 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
             <main className="shul-settings">
                 <div className="settings-view">
                     <aside className="shul-card" aria-label="Published shul information">
-                        <div className="settings-summary-heading">
+                        <div className="settings-summary-heading shul-profile-heading">
+                            <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
                             <div>
                                 <span className="settings-eyebrow">YOUR CONGREGATION</span>
                                 <h2>{shul.name}</h2>
@@ -546,6 +695,10 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M305 151.1L320 171.8L335 151.1C360 116.5 400.2 96 442.9 96C516.4 96 576 155.6 576 229.1L576 231.7C576 343.9 436.1 474.2 363.1 529.9C350.7 539.3 335.5 544 320 544C304.5 544 289.2 539.4 276.9 529.9C203.9 474.2 64 343.9 64 231.7L64 229.1C64 155.6 123.6 96 197.1 96C239.8 96 280 116.5 305 151.1z"/></svg>
                                 <div><span className="settings-contact-label">Donations</span><span>{shul.donationUrl.replace("https://", "") || 'Not provided'}</span></div>
                             </div>
+                            <div className="shul-card-item">
+                                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">{/* Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc. */}<path fill="currentColor" d="M280 88C280 57.1 254.9 32 224 32C193.1 32 168 57.1 168 88C168 118.9 193.1 144 224 144C254.9 144 280 118.9 280 88zM304 300.7L341 350.6C353.8 333.1 369.5 317.9 387.3 305.6L331.1 229.9C306 196 266.3 176 224 176C181.7 176 142 196 116.8 229.9L46.3 324.9C35.8 339.1 38.7 359.1 52.9 369.7C67.1 380.3 87.1 377.3 97.7 363.1L144 300.7L144 576C144 593.7 158.3 608 176 608C193.7 608 208 593.7 208 576L208 416C208 407.2 215.2 400 224 400C232.8 400 240 407.2 240 416L240 576C240 593.7 254.3 608 272 608C289.7 608 304 593.7 304 576L304 300.7zM496 608C575.5 608 640 543.5 640 464C640 384.5 575.5 320 496 320C416.5 320 352 384.5 352 464C352 543.5 416.5 608 496 608zM512 400L512 448L560 448C568.8 448 576 455.2 576 464C576 472.8 568.8 480 560 480L512 480L512 528C512 536.8 504.8 544 496 544C487.2 544 480 536.8 480 528L480 480L432 480C423.2 480 416 472.8 416 464C416 455.2 423.2 448 432 448L480 448L480 400C480 391.2 487.2 384 496 384C504.8 384 512 391.2 512 400z"/></svg>
+                                <div><span className="settings-contact-label">Shul Code</span><span>{shul.code}</span></div>
+                            </div>
                         </div>
                     </aside>
 
@@ -557,9 +710,20 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                         <form className="shul-settings-edit" onSubmit={updateShulInfo} onChange={() => clearFeedback('info')}>
                             <fieldset className="shul-edit" disabled={busy}>
                                 <legend className="visually-hidden">Shul information</legend>
-                                <div className="settings-field-row settings-column-headings">
-                                    <span>Edit details</span>
-                                    <span>Preview <small>Visible to your congregation after publishing.</small></span>
+                                <div className="settings-field-row shul-picture-field">
+                                    <div className="settings-field-edit">
+                                        <span className="settings-field-label">Shul Profile Picture</span>
+                                        <PictureEditor pictureUrl={picturePreview} name={shul.name} square showPicture={false}
+                                            onChange={picture => {
+                                                setPictureDraft(picture === null && !shul.pictureUrl ? undefined : picture);
+                                                clearFeedback('info');
+                                            }} onReset={() => setPictureDraft(undefined)} changed={pictureDraft !== undefined}
+                                            disabled={busy} onBusyChange={setPictureBusy} />
+                                    </div>
+                                    <div className="settings-field-preview">
+                                        <span className="settings-field-label">Shul Profile Picture</span>
+                                        <ProfilePicture src={picturePreview} name={shul.name} square />
+                                    </div>
                                 </div>
                                 {contactFields.map((field) => (
                                     <div className="settings-field-row" key={field.id}>
@@ -601,7 +765,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetContactChanges} disabled={busy || contactChangeLog.length === 0}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || contactChangeLog.length === 0}>{saving && activeForm === 'info' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.info} />
+                                        <SubmissionMessage message={messages.info} onDismiss={() => clearFeedback('info')} />
                                     </div>
                                 </div>
                             </fieldset>
@@ -613,7 +777,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
                         </div>
                         <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
-                            <fieldset className="shul-edit" disabled={busy}>
+                            <fieldset className="shul-edit" disabled={busy || scheduleLoading || Boolean(scheduleError)}>
                                 <legend className="visually-hidden">Reading adjustments</legend>
                                 <div className="reading-search">
                                     <label htmlFor="reading-search">Search by Parsha or Yontif name</label>
@@ -631,6 +795,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                 </div>
 
                                 <div className="results">
+                                        {scheduleLoading ? <LoadingSkeleton variant="readings" />
+                                        : scheduleError ? <p role="alert">{scheduleError}</p>
+                                        : <>
                                         {search.trim() && matchingReadings.length === 0 && <SettingsNoResults />}
                                         {search ? matchingReadings
                                             .map((reading) => (
@@ -667,6 +834,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                 ))}
                                         </>
                                         }
+                                        </>}
                                 </div>
 
                                 <div className="settings-form-footer">
@@ -677,7 +845,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetReadingAdjustments} disabled={busy || !hasReadingChanges}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || !hasReadingChanges}>{saving && activeForm === 'readings' ? 'Publishing…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.readings} />
+                                        <SubmissionMessage message={messages.readings} onDismiss={() => clearFeedback('readings')} />
                                     </div>
                                 </div>
                             </fieldset>
@@ -1038,7 +1206,7 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                             <button className="settings-reset-btn" type="button" onClick={resetScheduleChanges} disabled={busy || scheduleChangeLog.length === 0}>Reset changes</button>
                                             <button className="submit-btn" type="submit" disabled={busy || scheduleChangeLog.length === 0}>{saving && activeForm === 'schedule' ? 'Saving…' : 'Publish Changes'}</button>
                                         </div>
-                                        <SubmissionMessage message={messages.schedule} />
+                                        <SubmissionMessage message={messages.schedule} onDismiss={() => clearFeedback('schedule')} />
                                     </div>
                                 </div>
                             </fieldset>
@@ -1066,13 +1234,15 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                             </div>
 
                             <div className="user-list">
+                                {usersLoading && <LoadingSkeleton variant="users" />}
+                                {usersError && <p role="alert">{usersError}</p>}
                                 
                                 {!usersLoading && !usersError && userSearch.trim() && matchingUsers.length === 0 && <SettingsNoResults />}
                                 {matchingUsers.map((u: ShulUser, index) => {
                                     return index % 10 === 0 ? <>
                                         {index !== 0 ? <br></br> : null}
                                         <div className="list-heading">
-                                            <div>
+                                            <div className="user-name-heading">
                                                 <button
                                                     onClick={() => {
                                                         setUserSort("name")
@@ -1080,7 +1250,24 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                     }}
                                                     className="field-btn"
                                                     style={{ color: "#bdbcc3", fontWeight: "800"}}
-                                                    >Name</button>
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M130.4 268.2C135.4 280.2 147 288 160 288L480 288C492.9 288 504.6 280.2 509.6 268.2C514.6 256.2 511.8 242.5 502.7 233.3L342.7 73.3C330.2 60.8 309.9 60.8 297.4 73.3L137.4 233.3C128.2 242.5 125.5 256.2 130.5 268.2zM130.4 371.7C125.4 383.7 128.2 397.4 137.3 406.6L297.3 566.6C309.8 579.1 330.1 579.1 342.6 566.6L502.6 406.6C511.8 397.4 514.5 383.7 509.5 371.7C504.5 359.7 492.9 352 480 352L160 352C147.1 352 135.4 359.8 130.4 371.8z"/></svg>
+                                                        Name
+                                                        </button>
+                                                <InfoIcon message="Click on a name to toggle name formatting"
+                                                    iconStyle={{ width: '14px', height: '14px', fontSize: '9px' }}
+                                                    style={{
+                                                        width: '220px',
+                                                        left: '50%',
+                                                        right: 'auto',
+                                                        top: 'calc(100% + 10px)',
+                                                        transform: 'translateX(-50%)',
+                                                        backgroundColor: 'var(--settings-surface)',
+                                                        color: '#f6f5f7',
+                                                        border: '1px solid var(--settings-border)',
+                                                        fontSize: '13px',
+                                                        zIndex: 350,
+                                                    }} />
                                             </div>
                                             <div>
                                                 <button
@@ -1089,7 +1276,9 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                         setEmailSortClicks(emailSortClicks+1)}}
                                                     className="field-btn"
                                                     style={{ color: "#bdbcc3", fontWeight: "800"}}
-                                                    >Email</button>
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M130.4 268.2C135.4 280.2 147 288 160 288L480 288C492.9 288 504.6 280.2 509.6 268.2C514.6 256.2 511.8 242.5 502.7 233.3L342.7 73.3C330.2 60.8 309.9 60.8 297.4 73.3L137.4 233.3C128.2 242.5 125.5 256.2 130.5 268.2zM130.4 371.7C125.4 383.7 128.2 397.4 137.3 406.6L297.3 566.6C309.8 579.1 330.1 579.1 342.6 566.6L502.6 406.6C511.8 397.4 514.5 383.7 509.5 371.7C504.5 359.7 492.9 352 480 352L160 352C147.1 352 135.4 359.8 130.4 371.8z"/></svg>
+                                                        Email</button>
                                             </div>
                                             <div>
                                                 <button
@@ -1099,25 +1288,74 @@ export default function ShulSettings({ shul, onSaved, schedule, onReadingUpdated
                                                     }}
                                                     className="field-btn"
                                                     style={{ color: "#bdbcc3", fontWeight: "800"}}
-                                                    >Role</button>
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M130.4 268.2C135.4 280.2 147 288 160 288L480 288C492.9 288 504.6 280.2 509.6 268.2C514.6 256.2 511.8 242.5 502.7 233.3L342.7 73.3C330.2 60.8 309.9 60.8 297.4 73.3L137.4 233.3C128.2 242.5 125.5 256.2 130.5 268.2zM130.4 371.7C125.4 383.7 128.2 397.4 137.3 406.6L297.3 566.6C309.8 579.1 330.1 579.1 342.6 566.6L502.6 406.6C511.8 397.4 514.5 383.7 509.5 371.7C504.5 359.7 492.9 352 480 352L160 352C147.1 352 135.4 359.8 130.4 371.8z"/></svg>
+                                                        Role
+                                                        </button>
                                             </div>
-                                            <div>Actions</div>
+                                            <div className="user-name-heading">
+                                                Actions
+                                                <InfoIcon message={ <>
+                                                    <div className="action-icon-info">
+                                                        <svg style={{padding: "3px"}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z"/></svg>
+                                                        Click to view user's profile
+                                                    </div>
+
+                                                    <div className="action-icon-info" style={{marginTop: "5.5px"}}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M285.7 368C384.2 368 464 447.8 464 546.3C464 562.7 450.7 576 434.3 576L77.7 576C61.3 576 48 562.7 48 546.3C48 447.8 127.8 368 226.3 368L285.7 368zM528 144C541.3 144 552 154.7 552 168L552 216L600 216C613.3 216 624 226.7 624 240C624 253.3 613.3 264 600 264L552 264L552 312C552 325.3 541.3 336 528 336C514.7 336 504 325.3 504 312L504 264L456 264C442.7 264 432 253.3 432 240C432 226.7 442.7 216 456 216L504 216L504 168C504 154.7 514.7 144 528 144zM256 312C189.7 312 136 258.3 136 192C136 125.7 189.7 72 256 72C322.3 72 376 125.7 376 192C376 258.3 322.3 312 256 312z"/></svg>
+                                                        Click to add member as an admin
+                                                    </div>
+
+                                                    <div className="action-icon-info" style={{marginTop: "5.5px"}}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M285.7 368C384.2 368 464 447.8 464 546.3C464 562.7 450.7 576 434.3 576L77.7 576C61.3 576 48 562.7 48 546.3C48 447.8 127.8 368 226.3 368L285.7 368zM256 312C189.7 312 136 258.3 136 192C136 125.7 189.7 72 256 72C322.3 72 376 125.7 376 192C376 258.3 322.3 312 256 312zM600 216C613.3 216 624 226.7 624 240C624 253.3 613.3 264 600 264L456 264C442.7 264 432 253.3 432 240C432 226.7 442.7 216 456 216L600 216z"/></svg>
+                                                        Click to demote admin to a member
+                                                    </div>
+
+                                                    <div className="action-icon-info" style={{marginTop: "5.5px"}}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M256.1 312C322.4 312 376.1 258.3 376.1 192C376.1 125.7 322.4 72 256.1 72C189.8 72 136.1 125.7 136.1 192C136.1 258.3 189.8 312 256.1 312zM226.4 368C127.9 368 48.1 447.8 48.1 546.3C48.1 562.7 61.4 576 77.8 576L274.3 576L285.2 521.5C289.5 499.8 300.2 479.9 315.8 464.3L383.1 397C355.1 378.7 321.7 368.1 285.7 368.1L226.3 368.1zM332.3 530.9L320.4 590.5C320.2 591.4 320.1 592.4 320.1 593.4C320.1 601.4 326.6 608 334.7 608C335.7 608 336.6 607.9 337.6 607.7L397.2 595.8C409.6 593.3 421 587.2 429.9 578.3L548.8 459.4L468.8 379.4L349.9 498.3C341 507.2 334.9 518.6 332.4 531zM600.1 407.9C622.2 385.8 622.2 350 600.1 327.9C578 305.8 542.2 305.8 520.1 327.9L491.3 356.7L571.3 436.7L600.1 407.9z"/></svg>
+                                                        Click to edit a member
+                                                    </div>
+
+                                                    <div className="action-icon-info" style={{marginTop: "5.5px"}}>
+                                                        <svg style={{padding: "0", marginLeft: "2px"}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M73 39.1C63.6 29.7 48.4 29.7 39.1 39.1C29.8 48.5 29.7 63.7 39 73.1L567 601.1C576.4 610.5 591.6 610.5 600.9 601.1C610.2 591.7 610.3 576.5 600.9 567.2L343.5 309.7C398.5 298.8 440 250.2 440 192C440 125.7 386.3 72 320 72C261.8 72 213.2 113.5 202.3 168.5L73 39.1zM267.6 369.4C179.9 380.6 112 455.5 112 546.3C112 562.7 125.3 576 141.7 576L474.2 576L267.6 369.4z"/></svg>
+                                                        <span style={{marginLeft: "4px"}}>Click to remove member's association with your shul</span>
+                                                    </div>
+
+                                                    <div className="divider" style={{width: "100%"}}></div>
+                                                    Some actions cannot be applied to some roles and will not be available to select.
+                                                </>}
+                                                    iconStyle={{ width: '14px', height: '14px', fontSize: '9px' }}
+                                                    style={{
+                                                        width: '265px',
+                                                        left: '50%',
+                                                        right: 'auto',
+                                                        top: 'calc(100% + 10px)',
+                                                        transform: 'translateX(-50%)',
+                                                        backgroundColor: 'var(--settings-surface)',
+                                                        color: '#f6f5f7',
+                                                        border: '1px solid var(--settings-border)',
+                                                        fontSize: '13px',
+                                                        zIndex: 350,
+                                                    }} />
+                                                </div>
                                         </div>
                                         <div className="divider" style={{ width: "100%", borderBottom: "0.5px solid #504f52"}}></div>
-                                        <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick}></UserCard>
-                                    </> : <> <UserCard user={u} nameClick={nameClick} setNameClick={setNameClick} ></UserCard> </>;
+                                        {renderUserCard(u)}
+                                    </> : <> {renderUserCard(u)} </>;
                                 })}
                                     
                             </div>
                             <div className="settings-form-footer">
-                                <ChangeLog changes={[]} />
+                                <ChangeLog changes={permissionChangeLog} />
                                 <div className="settings-footer-actions">
                                     <span>Changes take effect after publishing.</span>
                                     <div className="settings-footer-buttons">
-                                        <button className="settings-reset-btn" type="button" disabled>Reset changes</button>
-                                        <button className="submit-btn" type="button" disabled>Publish Changes</button>
+                                        <button className="settings-reset-btn" type="button" disabled={busy || permissionChanges.length === 0}
+                                            onClick={() => { setPermissionDrafts({}); setProfileDrafts({}); setUserPictureDrafts({}); showFeedback('permissions', 'info', 'Unsaved user changes reset.'); }}>Reset changes</button>
+                                        <button className="submit-btn" type="button" disabled={busy || permissionChanges.length === 0}
+                                            onClick={() => { void publishPermissions(); }}>{saving && activeForm === 'permissions' ? 'Publishing…' : 'Publish Changes'}</button>
                                     </div>
-                                    <SubmissionMessage message={null} />
+                                    <SubmissionMessage message={messages.permissions} onDismiss={() => clearFeedback('permissions')} />
                                 </div>
                             </div>
                         </div>

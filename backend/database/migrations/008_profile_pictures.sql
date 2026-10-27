@@ -1,0 +1,10 @@
+CREATE TABLE user_pictures (
+    user_id TEXT PRIMARY KEY NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    png BLOB NOT NULL,
+    version TEXT NOT NULL
+) STRICT;
+CREATE TABLE shul_pictures (
+    shul_id TEXT PRIMARY KEY NOT NULL REFERENCES shuls(id) ON DELETE CASCADE,
+    png BLOB NOT NULL,
+    version TEXT NOT NULL
+) STRICT;

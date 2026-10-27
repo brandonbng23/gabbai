@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { test } from 'node:test';
 import { createApp } from '../backend/app.mjs';
@@ -23,6 +24,209 @@ const patchShul = body => ({
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+});
+
+test('inline picture edits publish with user changes atomically and enforce ownership and stale-picture checks', async t => {
+    const { request, shul, user: actor, db } = await setup(t, true);
+    db.updateUser(actor.id, { role: 'admin' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Picture', lastName: 'Member', email: 'picture@example.com' });
+    const guest = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Guest', email: 'guest-picture@example.com', role: 'guest' });
+    const admin = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Admin', email: 'admin-picture@example.com', role: 'admin' });
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    const picture = `data:image/png;base64,${png.toString('base64')}`;
+    const path = `/api/shuls/${shul.id}/users`;
+    const change = { userId: member.id, previousRole: 'member', picture, previousPictureUrl: null };
+    const publish = changes => request(path, patchShul({ changes }));
+    assert.equal(db.getPicture('users', member.id), null);
+    for (const bad of [false, 'invalid', `data:image/png;base64,${Buffer.from('invalid').toString('base64')}`])
+        assert.equal((await publish([{ ...change, picture: bad }])).status, 400);
+    assert.equal((await publish([{ ...change, previousPictureUrl: undefined }])).status, 400);
+    assert.equal((await publish([{ ...change, userId: admin.id, previousRole: 'admin' }])).status, 400);
+    const conflict = { userId: guest.id, previousRole: 'guest', profile: { email: member.email }, previousProfile: { email: guest.email } };
+    assert.equal((await publish([change, conflict])).status, 409);
+    assert.equal(db.getPicture('users', member.id), null, 'Failed batches must roll back the picture');
+    assert.equal(db.getUser(guest.id).email, guest.email);
+    const response = await publish([{ ...change, profile: { firstName: 'Updated' }, previousProfile: { firstName: member.firstName } }]);
+    assert.equal(response.status, 200);
+    const saved = db.getUser(member.id);
+    assert.equal(saved.firstName, 'Updated');
+    assert.ok(saved.pictureUrl);
+    assert.deepEqual(Buffer.from(db.getPicture('users', member.id).png), png);
+    assert.equal((await publish([{ ...change, picture: null }])).status, 409, 'A stale picture cannot be removed');
+    assert.ok(db.getPicture('users', member.id));
+    db.updateUser(actor.id, { role: 'member' });
+    assert.equal((await publish([{ ...change, previousPictureUrl: saved.pictureUrl, picture: null }])).status, 403);
+    db.updateUser(actor.id, { role: 'admin' });
+    const otherShul = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    const otherPath = `/api/shuls/${otherShul.id}/users`;
+    assert.equal((await request(otherPath, patchShul({ changes: [change] }))).status, 403);
+    assert.equal((await publish([{ ...change, previousPictureUrl: saved.pictureUrl, picture: null }])).status, 200);
+    assert.equal(db.getPicture('users', member.id), null);
+    assert.equal(db.getUser(member.id).firstName, 'Updated');
+    assert.equal((await publish([{ userId: guest.id, previousRole: 'guest', picture, previousPictureUrl: null }])).status, 200);
+    assert.ok(db.getUser(guest.id).pictureUrl);
+});
+
+test('inline user editing exposes only editable fields and publishes profile changes atomically', async t => {
+    const { request, shul, user: actor, db } = await setup(t, true);
+    db.updateUser(actor.id, { role: 'admin' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Member', lastName: 'Reader', email: 'member@example.com', settings: { private: true } });
+    const guest = db.createUser({ shulId: shul.id, firstName: 'Guest', lastName: 'Reader', email: 'guest@example.com', role: 'guest' });
+    const path = `/api/shuls/${shul.id}/users`;
+    const editorPath = id => `${path}/${id}/profile`;
+    let response = await request(editorPath(member.id));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await response.json(), { title: '', firstName: 'Member', lastName: 'Reader', hebrewName: '', email: member.email, phone: '' });
+    const change = (target, profile) => ({ userId: target.id, previousRole: target.role, profile,
+        previousProfile: Object.fromEntries(Object.keys(profile).map(key => [key, target[key]])) });
+    const publish = changes => request(path, patchShul({ changes }));
+    for (const profile of [{ firstName: '' }, { email: 'bad' }, { title: 'Not a title' }, { phone: 123 },
+        { settings: {} }, { shulId: 'other' }, { picture: null }, { firstName: 'x'.repeat(255) }]) {
+        assert.equal((await publish([change(guest, { firstName: 'Partial' }), change(member, profile)])).status, 400);
+        assert.deepEqual(db.getUser(guest.id), guest);
+        assert.deepEqual(db.getUser(member.id), member);
+    }
+    assert.equal((await publish([change(member, { email: guest.email })])).status, 409);
+    const stale = change(member, { firstName: 'Edited' });
+    stale.previousProfile.firstName = 'Outdated';
+    assert.equal((await publish([stale])).status, 409);
+    assert.equal((await publish([{ ...change(member, { phone: '555-0100' }), previousProfile: {} }])).status, 400);
+    assert.equal((await publish([change(actor, { firstName: 'Other' })])).status, 400);
+    const other = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    const foreign = db.createUser({ shulId: other.id, firstName: 'Other', lastName: 'Reader', email: 'foreign@example.com' });
+    assert.equal((await request(editorPath(foreign.id))).status, 404);
+    assert.equal((await publish([change(foreign, { phone: '555' })])).status, 404);
+    assert.equal((await request(editorPath(actor.id))).status, 403);
+    response = await publish([change(member, { title: 'Dr.', firstName: ' Edited ', email: ' EDITED@EXAMPLE.COM ', phone: '555-0100' }),
+        change(guest, { hebrewName: 'Hebrew name' })]);
+    assert.equal(response.status, 200);
+    const saved = db.getUser(member.id);
+    assert.equal(saved.firstName, 'Edited');
+    assert.equal(saved.email, 'edited@example.com');
+    assert.equal(saved.title, 'Dr.');
+    assert.equal(saved.phone, '555-0100');
+    assert.deepEqual(saved.settings, member.settings);
+    assert.equal(db.getUser(guest.id).hebrewName, 'Hebrew name');
+    assert.ok((await response.json()).every(user => !('phone' in user) && !('settings' in user)));
+    for (const role of ['member', 'guest']) {
+        db.updateUser(actor.id, { role });
+        assert.equal((await request(editorPath(member.id))).status, 403);
+        assert.equal((await publish([change(saved, { phone: 'changed' })])).status, 403);
+    }
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request(`/api/shuls/${anonymous.shul.id}/users/${anonymous.user.id}/profile`)).status, 401);
+});
+
+test('shul user actions publish atomically, protect permissions and retain discarded accounts', async t => {
+    const { request, shul, user: actor, db } = await setup(t, true);
+    db.updateUser(actor.id, { role: 'admin' });
+    const member = db.createUser({ shulId: shul.id, firstName: 'Member', lastName: 'Reader', email: 'member@example.com', settings: { language: 'he' } });
+    const guest = db.createUser({ shulId: shul.id, firstName: 'Guest', lastName: 'Reader', email: 'guest@example.com', role: 'guest' });
+    const other = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    const foreign = db.createUser({ shulId: other.id, firstName: 'Other', lastName: 'Reader', email: 'other@example.com' });
+    const path = `/api/shuls/${shul.id}/users`;
+    const change = (target, role) => ({ userId: target.id, previousRole: target.role, role });
+    const publish = changes => request(path, patchShul({ changes }));
+    const promote = change(member, 'admin');
+    for (const [changes, status] of [
+        [[], 400], [[promote, promote], 400], [[change(actor, 'member')], 400],
+        [[change(actor, null)], 400], [[change(guest, 'admin')], 400],
+        [[promote, change(foreign, null)], 404], [[promote, { ...change(guest, null), role: 'guest' }], 400],
+        [[promote, { ...change(guest, null), unexpected: true }], 400],
+        [[promote, { ...change(guest, null), previousRole: 'member' }], 409],
+    ]) {
+        assert.equal((await publish(changes)).status, status);
+        assert.deepEqual(db.getUser(member.id), member, 'Invalid batches must roll back earlier role changes');
+        assert.deepEqual(db.getUser(guest.id), guest);
+    }
+    let response = await publish([promote]);
+    assert.equal(response.status, 200);
+    const publicUsers = await response.json();
+    assert.equal(publicUsers.find(user => user.id === member.id).role, 'admin');
+    assert.ok(publicUsers.every(user => !('settings' in user) && !('phone' in user)));
+    assert.equal((await publish([promote])).status, 409, 'Stale roles cannot overwrite current permissions');
+    assert.equal((await publish([change(db.getUser(member.id), null)])).status, 400, 'Admins must be demoted first');
+    assert.equal((await publish([change(db.getUser(member.id), 'member')])).status, 200);
+    const key = { dateString: '2027-10-30', desc: 'Bereshit' };
+    db.setReadingLocks(shul.id, [{ ...key, aliyah: 1, readerId: member.id }, { ...key, aliyah: 2, readerId: guest.id }]);
+    assert.equal((await publish([change(guest, null), change(foreign, null)])).status, 404);
+    assert.equal(db.getUser(guest.id).shulId, shul.id);
+    assert.equal(db.listReadingReaders(shul.id).length, 2, 'Failed removals must restore reader assignments');
+    assert.equal((await publish([change(db.getUser(member.id), null), change(guest, null)])).status, 200);
+    for (const removed of [member, guest]) {
+        const saved = db.getUser(removed.id);
+        assert.equal(saved.shulId, null);
+        assert.equal(saved.email, removed.email);
+        assert.deepEqual(saved.settings, removed.settings);
+        assert.deepEqual(saved.assignedReadings, []);
+        assert.ok(!db.listShulUsers(shul.id).some(user => user.id === removed.id));
+    }
+    assert.deepEqual(db.listReadingReaders(shul.id), []);
+    db.updateUser(actor.id, { shulId: null, role: 'member' });
+    assert.equal((await request(`/api/users/${member.id}`)).status, 403, 'Detached users cannot access other detached profiles');
+    db.updateUser(actor.id, { shulId: shul.id, role: 'admin' });
+    assert.equal((await publish([change(guest, null)])).status, 404);
+    assert.equal((await request(`/api/shuls/${other.id}/users`, patchShul({ changes: [change(foreign, null)] }))).status, 403);
+    db.updateUser(actor.id, { role: 'member' });
+    assert.equal((await publish([change(foreign, null)])).status, 403);
+    db.updateUser(actor.id, { role: 'guest' });
+    assert.equal((await publish([change(foreign, null)])).status, 403);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request(`/api/shuls/${anonymous.shul.id}/users`, patchShul({ changes: [] }))).status, 401);
+});
+
+test('user views are read-only and exclude sensitive fields for members and admins', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const target = db.createUser({ shulId: shul.id, title: 'Mr.', firstName: 'Viewed', lastName: 'Guest',
+        hebrewName: 'Hebrew name', email: 'private@example.com', phone: '555-0100', role: 'guest',
+        settings: { privatePreference: true } });
+    const path = `/api/users/${target.id}`;
+    const expected = { id: target.id, title: target.title, firstName: target.firstName,
+        lastName: target.lastName, hebrewName: target.hebrewName, role: 'guest',
+        shulName: shul.name, assignedReadings: [], assignedReadingCount: 0 };
+    for (const role of ['member', 'admin']) {
+        db.updateUser(user.id, { role });
+        const response = await request(path);
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        assert.deepEqual(await response.json(), expected);
+    }
+    const otherShul = db.createShul({ name: 'Other', settings: { hebYear: 5788 } });
+    const foreign = db.createUser({ shulId: otherShul.id, firstName: 'Other', lastName: 'User', email: 'foreign@example.com' });
+    assert.equal((await request(`/api/users/${foreign.id}`)).status, 404);
+    assert.equal((await request('/api/users/missing')).status, 404);
+    assert.equal((await request('/userView?user=' + target.id)).status, 200);
+    for (const method of ['PATCH', 'PUT', 'DELETE']) {
+        const response = await request(path, { ...patchShul({ firstName: 'Changed' }), method });
+        assert.equal(response.status, 404);
+        assert.deepEqual(db.getUser(target.id), target);
+    }
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
+    db.setReadingLocks(shul.id, [{ ...assignment, readerId: target.id }]);
+    const profile = await (await request(path)).json();
+    assert.deepEqual(profile.assignedReadings, [{ ...assignment, gregDate: reading.gregDate, hDate: reading.hDate, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }]);
+    assert.ok(profile.assignedReadings[0].verseCount > 0);
+    assert.equal(profile.assignedReadingCount, 1);
+    assert.ok(!('email' in profile) && !('phone' in profile) && !('settings' in profile));
+    db.updateUser(user.id, { role: 'guest' });
+    assert.equal((await request(path)).status, 403);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request(`/api/users/${anonymous.user.id}`)).status, 401);
+});
+
+test('shul codes resolve to a shul without exposing user profiles', async t => {
+    const { request, shul, db } = await setup(t, false);
+    const response = await request(`/api/shuls/by-code/${shul.code}`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { id: shul.id, name: shul.name });
+    assert.equal((await request('/api/shuls/by-code/123')).status, 400);
+    assert.equal((await request('/api/shuls/by-code/DEMO')).status, 404);
+    assert.equal((await (await request(`/api/shuls/${shul.id}`)).json()).code, shul.code);
+    const codes = new Set(db.listShuls().map(item => item.code));
+    const unused = Array.from({ length: 676 }, (_, i) => `AA${String.fromCharCode(65 + Math.floor(i / 26))}${String.fromCharCode(65 + i % 26)}`).find(code => !codes.has(code));
+    assert.equal((await request(`/api/shuls/by-code/${unused}`)).status, 404);
 });
 
 test('publishing reading adjustments validates and saves the entire batch atomically', async t => {
@@ -257,6 +461,23 @@ test('invalid reading settings fail atomically', async t => {
     }
 });
 
+test('anonymous shul search matches names and locations and returns limited public registration details', async t => {
+    const { request, shul, db } = await setup(t, false);
+    db.updateShul(shul.id, { name: 'Beth Shalom', address: '12 Main Street, Baltimore', email: 'private@example.com' });
+    const other = db.createShul({ name: 'Beth Shalom', address: 'New York', settings: { hebYear: 5788 } });
+    const response = await request('/api/shuls/search?q=%20BETH%20baltimore%20');
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), [{ id: shul.id, name: 'Beth Shalom', address: '12 Main Street, Baltimore', code: shul.code }]);
+    const duplicates = await (await request('/api/shuls/search?q=beth')).json();
+    assert.equal(duplicates.length, 2);
+    assert.ok(duplicates.some(result => result.id === other.id && result.address === 'New York'));
+    assert.deepEqual(await (await request('/api/shuls/search?q=missing')).json(), []);
+    for (const query of ['', '?q=a', '?q=' + 'x'.repeat(101), '?q=a&q=b'])
+        assert.equal((await request('/api/shuls/search' + query)).status, 400);
+    for (let index = 0; index < 21; index++) db.createShul({ name: `Bounded ${index}`, settings: { hebYear: 5788 } });
+    assert.equal((await (await request('/api/shuls/search?q=bounded')).json()).length, 20);
+});
+
 test('frontend APIs return saved profiles and shul schedules', async t => {
     const { request, shul, user, db } = await setup(t, true);
     assert.deepEqual(await (await request('/api/shuls')).json(), [{ id: shul.id, name: shul.name }]);
@@ -284,7 +505,7 @@ test('frontend APIs return saved profiles and shul schedules', async t => {
 test('production never exposes development user profiles or member lists', async t => {
     const { request, shul, user } = await setup(t, false);
     assert.equal((await request('/api/me')).status, 401);
-    assert.equal((await request(`/api/users/${user.id}`)).status, 404);
+    assert.equal((await request(`/api/users/${user.id}`)).status, 401);
     assert.equal((await request(`/api/shuls/${shul.id}/users`)).status, 401);
 });
 
@@ -401,7 +622,7 @@ test('admin reader assignments publish atomically, respect locks and membership,
     const response = await request(path, patchShul({ changes: [assignment, { ...key, manualOccasions: ['Birthday'] }] }));
     assert.equal(response.status, 200);
     const [updated] = await response.json();
-    assert.deepEqual(updated.readers[7], { id: reader.id, firstName: 'Josh', lastName: 'Cohen', email: reader.email, role: 'member', title: 'Rabbi' });
+    assert.deepEqual(updated.readers[7], { id: reader.id, firstName: 'Josh', lastName: 'Cohen', email: reader.email, role: 'member', title: 'Rabbi', assignedReadings: [{ ...key, aliyah: 8 }] });
     assert.equal(updated.readers[0], null);
     assert.equal((await load()).readers[7].id, reader.id);
     assert.deepEqual(db.listReadingReaders(other.id), []);
@@ -508,7 +729,93 @@ test('profile registration reserves an available aliyah and rejects locked, hidd
     assert.equal(db.listReadingReaders(other.id).length, 0);
 });
 
-test('anonymous guest registration validates details, reuses matching guests and never overwrites existing identities', async t => {
+test('readers can cancel only their own assignments, including locked readings, and register again', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reading = readings.find(item => item.desc === 'Bereshit');
+    const selection = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
+    const path = `/api/shuls/${shul.id}/readings/register`;
+    const cancel = (body = selection, headers = {}) => request(path, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body),
+    });
+    assert.equal((await request(path, registrationRequest(selection))).status, 201);
+    assert.equal((await cancel(selection, { cookie: 'gabbai_session=invalid' })).status, 401);
+    assert.equal((await cancel({ ...selection, aliyah: 0 })).status, 400);
+    assert.equal((await cancel({ ...selection, readerId: user.id })).status, 400);
+    const otherShul = db.createShul({ name: 'Other Shul', settings: shul.settings });
+    assert.equal((await request(`/api/shuls/${otherShul.id}/readings/register`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection),
+    })).status, 403);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Another', lastName: 'Reader', email: 'another-reader@example.com' });
+    db.setReadingLocks(shul.id, [{ ...selection, readerId: other.id }]);
+    assert.equal((await cancel()).status, 409, 'A stale cancellation must not remove a replacement reader');
+    assert.equal(db.listReadingReaders(shul.id)[0].reader.id, other.id);
+    db.setReadingLocks(shul.id, [{ ...selection, readerId: user.id }, { ...selection, locked: true }]);
+    const response = await cancel();
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await response.json(), { cancelled: true });
+    assert.equal(db.listReadingReaders(shul.id).length, 0);
+    assert.equal(db.getUser(user.id).assignedReadings.length, 0);
+    const refreshed = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const updated = refreshed.find(item => item.dateString === selection.dateString && item.desc === selection.desc);
+    assert.equal(updated.readers[0], null);
+    assert.equal(updated.lockedArr[0], true, 'Cancellation preserves the shul’s locks');
+    assert.equal((await cancel()).status, 409);
+    db.setReadingLocks(shul.id, [{ ...selection, locked: false }]);
+    assert.equal((await request(path, registrationRequest(selection))).status, 201);
+});
+
+test('guest registration history is private to the signed-in booker and excluded from their profile stats', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const token = 'a'.repeat(64);
+    const session = `gabbai_session=${token}`;
+    db.createSession(user.id, createHash('sha256').update(token).digest('hex'), Date.now() + 60_000);
+    const own = (path, options = {}) => request(path, { ...options, headers: { ...options.headers, Cookie: session } });
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const key = { dateString: reading.dateString, desc: reading.desc };
+    const path = `/api/shuls/${shul.id}/readings/register`;
+    const guest = { title: 'Mr.', firstName: 'Guest', lastName: 'Reader', hebrewName: '', email: 'booked-guest@example.com' };
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 1 }))).status, 201);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 2, guest }))).status, 201);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 2, guest }))).status, 409);
+    assert.equal((await own(path, registrationRequest({ ...key, aliyah: 3, guest, registeredBy: user.id }))).status, 400);
+    const anonymousOptions = registrationRequest({ ...key, aliyah: 3, guest });
+    anonymousOptions.headers.Cookie = 'gabbai_session=signed-out';
+    assert.equal((await request(path, anonymousOptions)).status, 201);
+    const otherShul = db.createShul({ name: 'Visiting Shul', settings: shul.settings });
+    const otherGuest = { ...guest, email: 'visiting-guest@example.com' };
+    assert.equal((await own(`/api/shuls/${otherShul.id}/readings/register`, registrationRequest({ ...key, aliyah: 1, guest: otherGuest }))).status, 201);
+    assert.equal((await request('/api/me/guest-readings')).status, 401, 'A development fallback is not an authenticated booking owner');
+    const response = await own('/api/me/guest-readings');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const bookings = await response.json();
+    assert.equal(bookings.length, 2);
+    const booking = bookings.find(item => item.shulId === shul.id);
+    assert.equal(booking.registrationType, 'guest');
+    assert.equal(booking.aliyah, 2);
+    assert.equal(booking.reader.firstName, 'Guest');
+    assert.equal(booking.psukim, reading.psukim[1]);
+    assert.ok(booking.verseCount > 0);
+    assert.ok(!('email' in booking.reader) && !('settings' in booking.reader));
+    assert.equal(bookings.find(item => item.shulId === otherShul.id).shulName, 'Visiting Shul');
+    const me = await (await own('/api/me?session=required')).json();
+    assert.equal(me.assignedReadings.length, 1);
+    assert.equal(me.assignedReadings[0].aliyah, 1);
+    const profile = await (await own(`/api/users/${user.id}`)).json();
+    assert.equal(profile.assignedReadingCount, 1);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Owner', email: 'other-owner@example.com' });
+    const otherToken = 'b'.repeat(64);
+    db.createSession(other.id, createHash('sha256').update(otherToken).digest('hex'), Date.now() + 60_000);
+    assert.deepEqual(await (await request(`/api/me/guest-readings?user=${user.id}`, { headers: { Cookie: `gabbai_session=${otherToken}` } })).json(), []);
+    db.setReadingLocks(shul.id, [{ ...key, aliyah: 2, readerId: other.id }]);
+    const afterReassignment = await (await own('/api/me/guest-readings')).json();
+    assert.equal(afterReassignment.length, 1, 'Admin reassignment clears the original guest booking attribution');
+    assert.equal(afterReassignment[0].shulId, otherShul.id);
+});
+
+test('anonymous guest registration identifies guests by email and updates their submitted profile details', async t => {
     const { request, shul, user, db } = await setup(t, false);
     const readings = await (await request(`/api/schedule?shul=${shul.id}`)).json();
     const reading = readings.find(item => item.desc === 'Bereshit');
@@ -526,11 +833,18 @@ test('anonymous guest registration validates details, reuses matching guests and
     assert.equal(visitor.role, 'guest');
     assert.equal(visitor.title, 'Mr.');
     assert.equal(visitor.hebrewName, guest.hebrewName);
-    assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, email: 'VISITOR@EXAMPLE.COM' } })).status, 201);
+    assert.equal((await post({ ...base, aliyah: 2, guest: { ...guest, title: 'Dr.', firstName: 'Different', lastName: 'Spelling', hebrewName: 'Updated Hebrew', email: ' VISITOR@EXAMPLE.COM ' } })).status, 201);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 1);
     assert.equal(db.listReadingReaders(shul.id).find(item => item.aliyah === 2).reader.id, visitor.id);
-    assert.equal((await post({ ...base, aliyah: 3, guest: { ...guest, firstName: 'Different' } })).status, 409);
-    assert.equal(db.getUser(visitor.id).firstName, guest.firstName);
+    assert.equal(db.getUser(visitor.id).firstName, 'Different');
+    assert.equal(db.getUser(visitor.id).lastName, 'Spelling');
+    assert.equal(db.getUser(visitor.id).hebrewName, 'Updated Hebrew');
+    assert.equal(db.getUser(visitor.id).title, 'Dr.');
+    assert.equal(db.getUser(visitor.id).assignedReadings.length, 2);
+    assert.ok(db.listReadingReaders(shul.id).every(item => item.reader.firstName === 'Different'));
+    const savedVisitor = db.getUser(visitor.id);
+    assert.equal((await post({ ...base, aliyah: 1, guest })).status, 409);
+    assert.deepEqual(db.getUser(visitor.id), savedVisitor, 'Unavailable readings must not overwrite guest details');
     const attempts = await Promise.all(['one', 'two'].map(name => post({ ...base, aliyah: 3, guest: { ...guest, hebrewName: undefined, email: `${name}@example.com` } })));
     assert.deepEqual(attempts.map(response => response.status).sort(), [201, 409]);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2, 'Failed competing registration creates no guest');
@@ -540,4 +854,148 @@ test('anonymous guest registration validates details, reuses matching guests and
     assert.equal(optionalHebrewReader.title, 'Mr.');
     assert.equal((await post({ ...base, aliyah: 4, guest: { ...guest, email: 'hidden@example.com' } })).status, 400);
     assert.equal(db.listShulUsers(shul.id).length, initialUsers + 2);
+});
+
+test('users can edit only their own profile fields and failed edits preserve saved data', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Member', email: 'taken@example.com' });
+    db.setUserSettings(user.id, { language: 'he' });
+    const edits = { title: 'Chazan', firstName: ' Updated ', lastName: ' Reader ', hebrewName: 'Yehoshua', email: 'UPDATED@EXAMPLE.COM', phone: '(202) 555-0101' };
+    const response = await request('/api/me', patchShul(edits));
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    assert.equal(updated.id, user.id);
+    assert.equal(updated.firstName, 'Updated');
+    assert.equal(updated.lastName, 'Reader');
+    assert.equal(updated.email, 'updated@example.com');
+    assert.equal(updated.title, 'Chazan');
+    assert.equal(updated.phone, edits.phone);
+    assert.equal(updated.hebrewName, edits.hebrewName);
+    assert.equal(updated.role, 'member');
+    assert.equal(updated.shulId, shul.id);
+    assert.deepEqual(updated.settings, { language: 'he' });
+    assert.deepEqual(await (await request('/api/me')).json(), updated);
+    for (const invalid of [null, { id: other.id }, { role: 'admin' }, { shulId: 'other' }, { settings: {} },
+        { title: 'Invented' }, { firstName: '' }, { lastName: ' ' }, { email: 'bad' }, { phone: 123 }, { firstName: 'a'.repeat(255) }]) {
+        assert.equal((await request('/api/me', patchShul(invalid))).status, 400);
+        assert.deepEqual(db.getUser(user.id), updated);
+    }
+    assert.equal((await request('/api/me', patchShul({ firstName: 'Must not save', email: other.email }))).status, 409);
+    assert.deepEqual(db.getUser(user.id), updated);
+    assert.deepEqual(db.getUser(other.id), other);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request('/api/me', patchShul({ firstName: 'Changed' }))).status, 401);
+});
+
+const picturePng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+const pictureRequest = (body = picturePng, type = 'image/png') => ({ method: 'PUT', headers: { 'Content-Type': type }, body });
+
+test('profile pictures enforce ownership, file limits and shul permissions, and update reader profiles', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Reader', email: 'picture-other@example.com' });
+    assert.equal((await request(`/api/shuls/${shul.id}/picture`, pictureRequest())).status, 403);
+    assert.equal((await request('/api/me/picture', pictureRequest(Buffer.from('<svg/>'), 'image/svg+xml'))).status, 415);
+    assert.equal((await request('/api/me/picture', pictureRequest(Buffer.from('not a picture')))).status, 400);
+    assert.equal((await request('/api/me/picture', pictureRequest(Buffer.alloc(1024 * 1024 + 1)))).status, 413);
+    assert.equal(db.getPicture('users', user.id), null);
+    const response = await request('/api/me/picture', pictureRequest());
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    assert.ok(updated.pictureUrl.startsWith(`/api/users/${user.id}/picture?v=`));
+    assert.equal(updated.role, user.role);
+    assert.equal(db.getUser(other.id).pictureUrl, undefined);
+    const image = await request(updated.pictureUrl);
+    assert.equal(image.headers.get('content-type'), 'image/png');
+    assert.equal(image.headers.get('x-content-type-options'), 'nosniff');
+    assert.deepEqual(Buffer.from(await image.arrayBuffer()), picturePng);
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    db.setReadingLocks(shul.id, [{ dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: user.id }]);
+    const schedule = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    assert.equal(schedule.find(item => item.desc === reading.desc).readers[0].pictureUrl, updated.pictureUrl);
+    db.updateUser(user.id, { role: 'admin' });
+    const users = await (await request(`/api/shuls/${shul.id}/users`)).json();
+    assert.equal(users.find(item => item.id === user.id).pictureUrl, updated.pictureUrl);
+    const replaced = await (await request('/api/me/picture', pictureRequest())).json();
+    assert.notEqual(replaced.pictureUrl, updated.pictureUrl);
+    assert.equal((await request(updated.pictureUrl)).status, 404);
+    const shulResponse = await request(`/api/shuls/${shul.id}/picture`, pictureRequest());
+    assert.equal(shulResponse.status, 200);
+    const withPicture = await shulResponse.json();
+    assert.ok(withPicture.pictureUrl.startsWith(`/api/shuls/${shul.id}/picture?v=`));
+    assert.equal((await request(withPicture.pictureUrl)).status, 200);
+    const foreign = db.createShul({ name: 'Foreign shul', settings: shul.settings });
+    assert.equal((await request(`/api/shuls/${foreign.id}/picture`, pictureRequest())).status, 403);
+    assert.equal((await request(`/api/shuls/${foreign.id}/picture`, { method: 'DELETE' })).status, 403);
+    assert.equal((await request('/api/me/picture', pictureRequest(Buffer.from('bad')))).status, 400);
+    assert.equal(db.getUser(user.id).pictureUrl, replaced.pictureUrl);
+    const removed = await request('/api/me/picture', { method: 'DELETE' });
+    assert.equal(removed.status, 200);
+    assert.equal((await removed.json()).pictureUrl, undefined);
+    assert.equal((await request(replaced.pictureUrl)).status, 404);
+    const removedShul = await request(`/api/shuls/${shul.id}/picture`, { method: 'DELETE' });
+    assert.equal((await removedShul.json()).pictureUrl, undefined);
+    const anonymous = await setup(t, false);
+    assert.equal((await anonymous.request('/api/me/picture', pictureRequest())).status, 401);
+    assert.equal((await anonymous.request(`/api/shuls/${anonymous.shul.id}/picture`, pictureRequest())).status, 401);
+});
+
+test('profile and shul form saves commit pictures and fields atomically', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const picture = `data:image/png;base64,${picturePng.toString('base64')}`;
+    const other = db.createUser({ shulId: shul.id, firstName: 'Other', lastName: 'Reader', email: 'atomic-picture@example.com' });
+    let response = await request('/api/me', patchShul({ firstName: 'Updated', picture }));
+    assert.equal(response.status, 200);
+    const updated = await response.json();
+    assert.equal(updated.firstName, 'Updated');
+    assert.ok(updated.pictureUrl);
+    for (const patch of [{ firstName: 'Bad', picture: 'invalid' }, { firstName: 'Bad', email: other.email, picture: null }]) {
+        response = await request('/api/me', patchShul(patch));
+        assert.ok([400, 409].includes(response.status));
+        assert.deepEqual(db.getUser(user.id), updated);
+        assert.deepEqual(Buffer.from(db.getPicture('users', user.id).png), picturePng);
+    }
+    response = await request('/api/me', patchShul({ phone: '123', picture: null }));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).pictureUrl, undefined);
+    assert.equal(db.getUser(user.id).phone, '123');
+    const path = `/api/shuls/${shul.id}`;
+    assert.equal((await request(path, patchShul({ picture }))).status, 403);
+    db.updateUser(user.id, { role: 'admin' });
+    response = await request(path, patchShul({ name: 'Updated Shul', picture }));
+    assert.equal(response.status, 200);
+    const savedShul = await response.json();
+    assert.ok(savedShul.pictureUrl);
+    assert.equal(savedShul.name, 'Updated Shul');
+    assert.equal((await request(path, patchShul({ name: 'Do not save', picture: 'invalid' }))).status, 400);
+    assert.deepEqual(db.getShul(shul.id), savedShul);
+    assert.equal((await request(path, patchShul({ name: '', picture: null }))).status, 400);
+    assert.deepEqual(db.getShul(shul.id), savedShul);
+    response = await request(path, patchShul({ picture: null }));
+    assert.equal((await response.json()).pictureUrl, undefined);
+    assert.equal(db.getPicture('shuls', shul.id), null);
+});
+
+test('user reading lists are available to the current user and owning admin without nested profiles', async t => {
+    const { request, shul, user, db } = await setup(t, true);
+    const reading = (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(item => item.desc === 'Bereshit');
+    const assignment = { dateString: reading.dateString, desc: reading.desc, aliyah: 1 };
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
+    const registration = await request(`/api/shuls/${shul.id}/readings/register`, registrationRequest(assignment));
+    assert.equal(registration.status, 201);
+    const details = [{ ...assignment, gregDate: reading.gregDate, hDate: reading.hDate, psukim: reading.psukim[0], verseCount: reading.verseCounts[0] }];
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, details);
+    const saved = await request('/api/me', patchShul({ firstName: 'Updated reader' }));
+    assert.equal(saved.status, 200);
+    assert.deepEqual((await saved.json()).assignedReadings, details, 'Saving a profile preserves the resolved reading statistics');
+    assert.equal((await request('/api/me', patchShul({ assignedReadings: [] }))).status, 400);
+    db.updateUser(user.id, { role: 'admin' });
+    const users = await (await request(`/api/shuls/${shul.id}/users`)).json();
+    assert.deepEqual(users.find(item => item.id === user.id).assignedReadings, [assignment]);
+    assert.ok(users.every(item => !('settings' in item)));
+    const schedule = await (await request(`/api/schedule?shul=${shul.id}`)).json();
+    const reader = schedule.find(item => item.desc === reading.desc).readers[0];
+    assert.deepEqual(reader.assignedReadings, [assignment]);
+    assert.ok(reader.assignedReadings.every(item => !('reader' in item)), 'Reading summaries must not contain nested users');
+    db.setReadingLocks(shul.id, [{ ...assignment, readerId: null }]);
+    assert.deepEqual((await (await request('/api/me')).json()).assignedReadings, []);
 });

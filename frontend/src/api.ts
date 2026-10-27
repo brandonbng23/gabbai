@@ -48,6 +48,8 @@ export interface ShulSummary {
 }
 
 export interface Shul extends ShulSummary {
+    code: string;
+    pictureUrl?: string;
     websiteUrl: string;
     donationUrl: string;
     email: string;
@@ -84,7 +86,22 @@ export async function updateShulSettings(id: string, settings: SettingsPatch): P
     return response.json();
 }
 
-export type { User, ShulUser } from '../../interfaces/user.mts';
+export type { User, ShulUser, UserReading, UserViewProfile, GuestReading } from '../../interfaces/user.mts';
+
+export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
+
+export async function updateCurrentUser(changes: Partial<UserProfile> & { picture?: string | null }): Promise<User> {
+    const response = await fetch('/api/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save your profile. Please try again.');
+    }
+    return response.json();
+}
 
 export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
 
@@ -104,7 +121,7 @@ export async function getInitialShulVersion(id: string): Promise<InitialShulVers
     return response.json();
 }
 
-export async function updateShul(id: string, info: ShulInfo): Promise<Shul> {
+export async function updateShul(id: string, info: ShulInfo & { picture?: string | null }): Promise<Shul> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +141,7 @@ export async function getJson<T>(path: string, signal: AbortSignal): Promise<T> 
 }
 
 export async function getCurrentUser(signal: AbortSignal): Promise<User | null> {
-    const response = await fetch('/api/me', { signal });
+    const response = await fetch('/api/me?session=required', { signal, cache: 'no-store' });
     if (response.status === 401) return null;
     if (!response.ok) throw new Error('Unable to load your profile. Please try again.');
     return response.json();
@@ -135,6 +152,36 @@ export async function getCurrentUser(signal: AbortSignal): Promise<User | null> 
 export async function getShulUsers(id: string, signal: AbortSignal): Promise<ShulUser[]> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/users`, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error('Unable to load shul users. Please try again.');
+    return response.json();
+}
+
+export interface ShulUserChange {
+    userId: string;
+    previousRole: ShulUser['role'];
+    role?: 'admin' | 'member' | null;
+    profile?: Partial<UserProfile>;
+    previousProfile?: Partial<UserProfile>;
+    picture?: string | null;
+    previousPictureUrl?: string | null;
+}
+
+export async function getShulUserProfile(shulId: string, userId: string): Promise<UserProfile> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/users/${encodeURIComponent(userId)}/profile`, { cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load this user’s details.');
+    }
+    return response.json();
+}
+
+export async function publishShulUsers(id: string, changes: ShulUserChange[]): Promise<ShulUser[]> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(id)}/users`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to publish user changes. Your changes are still here.');
+    }
     return response.json();
 }
 
@@ -155,5 +202,17 @@ export async function registerForReading(shulId: string, reading: ParshaObj, ali
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to register. Please try again.');
+    }
+}
+
+export async function cancelReading(shulId: string, dateString: string, desc: string, aliyah: number): Promise<void> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/register`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateString, desc, aliyah }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to cancel your reading. Please try again.');
     }
 }

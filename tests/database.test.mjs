@@ -20,6 +20,249 @@ function setup(t) {
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
 
+test('guest email unifies reading registrations across dates and survives reopening', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-email-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'guests.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let visitor;
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const second = { dateString: '2026-10-17', desc: 'Noach', aliyah: 2 };
+    try {
+        shul = db.createShul({ name: 'Guest readings', settings: { hebYear: 5787 } });
+        db.registerReading(shul.id, { ...first, guest: { title: 'Mr.', firstName: 'Josh', lastName: 'Cohen', hebrewName: 'Yehoshua', email: 'josh@example.com' } }, () => {});
+        visitor = db.getUserByEmail('josh@example.com');
+        db.registerReading(shul.id, { ...second, guest: { title: 'Dr.', firstName: 'Joshua', lastName: 'Kohen', email: ' JOSH@EXAMPLE.COM ' } }, () => {});
+        assert.equal(db.listShulUsers(shul.id).length, 1);
+        assert.ok(db.listReadingReaders(shul.id).every(item => item.reader.id === visitor.id));
+        const foreign = db.createShul({ name: 'Other shul', settings: { hebYear: 5787 } });
+        assert.throws(() => db.registerReading(foreign.id, { ...first, guest: { title: 'Mr.', ...guest(shul.id) } }, () => {}), /another shul/);
+        assert.deepEqual(db.listReadingReaders(foreign.id), []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.getUserByEmail('JOSH@example.com');
+        assert.equal(saved.id, visitor.id);
+        assert.equal(saved.firstName, 'Joshua');
+        assert.equal(saved.lastName, 'Kohen');
+        assert.equal(saved.title, 'Dr.');
+        assert.equal(saved.hebrewName, visitor.hebrewName);
+        assert.deepEqual(saved.assignedReadings, [first, second]);
+        assert.throws(() => db.registerReading(shul.id, { ...first, guest: { title: 'Rabbi', firstName: 'Must not save', lastName: 'Failed', hebrewName: '', email: saved.email } }, () => {}), /UNIQUE/);
+        assert.deepEqual(db.getUser(saved.id), saved, 'Failed assignment rolls back profile changes');
+        const third = { dateString: '2026-10-24', desc: 'Lech-Lecha', aliyah: 1 };
+        db.registerReading(shul.id, { ...third, guest: { title: 'Dr.', firstName: 'Joshua', lastName: 'Kohen', hebrewName: '', email: saved.email } }, () => {});
+        assert.equal(db.getUser(saved.id).hebrewName, '', 'An explicitly blank Hebrew name replaces the saved name');
+        assert.equal(db.getUser(saved.id).assignedReadings.length, 3);
+    } finally { db.close(); }
+});
+
+test('guest booking attribution migrates and survives reopening without altering profile assignments', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-owners-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'guests.sqlite');
+    let db = openDatabase(path);
+    const shul = db.createShul({ name: 'Guest owners', settings: { hebYear: 5787 } });
+    const actor = db.createUser({ shulId: shul.id, firstName: 'Booking', lastName: 'Owner', email: 'owner@example.com' });
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const details = { title: 'Mr.', firstName: 'Guest', lastName: 'Reader', email: 'guest-owner-test@example.com' };
+    db.registerReading(shul.id, { ...first, guest: details }, () => {});
+    db.close();
+    const old = new DatabaseSync(path);
+    old.exec('DROP INDEX reading_readers_registered_by; ALTER TABLE reading_readers DROP COLUMN registered_by_user_id; DELETE FROM schema_migrations WHERE version = 15');
+    old.close();
+    db = openDatabase(path);
+    try {
+        assert.equal(db.listReadingReaders(shul.id).length, 1);
+        assert.deepEqual(db.listGuestRegistrations(actor.id), [], 'Legacy anonymous registrations cannot be attributed by email');
+        db.registerReading(shul.id, { ...first, aliyah: 2, guest: details, readerId: actor.id }, () => {});
+        assert.deepEqual(db.getUser(actor.id).assignedReadings, []);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.listGuestRegistrations(actor.id);
+        assert.equal(saved.length, 1);
+        assert.equal(saved[0].aliyah, 2);
+        assert.equal(saved[0].reader.email, details.email);
+        assert.deepEqual(db.getUser(actor.id).assignedReadings, []);
+        db.setReadingLocks(shul.id, [{ ...first, aliyah: 2, readerId: actor.id }]);
+        assert.deepEqual(db.listGuestRegistrations(actor.id), []);
+    } finally { db.close(); }
+});
+
+test('optional membership migration preserves profiles and discarded accounts survive reopening', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-membership-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'membership.sqlite');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    let db = openDatabase(path);
+    let shul;
+    let actor;
+    let target;
+    try {
+        shul = db.createShul({ name: 'Membership', settings: { hebYear: 5787 } });
+        actor = db.createUser({ ...guest(shul.id), email: 'admin@example.com', role: 'admin' });
+        target = db.createUser({ ...guest(shul.id), settings: { language: 'he' } });
+        db.setPicture('users', target.id, png);
+        db.setReadingLocks(shul.id, [{ dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1, readerId: target.id }]);
+        target = db.getUser(target.id);
+    } finally { db.close(); }
+    const legacy = new DatabaseSync(path);
+    try {
+        legacy.exec('PRAGMA foreign_keys = OFF');
+        legacy.exec(readFileSync(new URL('../backend/database/migrations/007_guest_role.sql', import.meta.url), 'utf8'));
+        legacy.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 13');
+    } finally { legacy.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getUser(target.id), target);
+        assert.deepEqual(Buffer.from(db.getPicture('users', target.id).png), png);
+        db.updateShulUsers(shul.id, actor.id, [{ userId: target.id, previousRole: 'member', role: null }]);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        const saved = db.getUser(target.id);
+        assert.equal(saved.shulId, null);
+        assert.deepEqual(saved.assignedReadings, []);
+        assert.deepEqual(saved.settings, target.settings);
+        assert.equal(saved.pictureUrl, target.pictureUrl);
+        assert.equal(saved.email, target.email);
+        assert.deepEqual(db.listReadingReaders(shul.id), []);
+        assert.equal(db.updateUser(target.id, { phone: '555-0100' }).phone, '555-0100');
+        assert.throws(() => db.createUser({ ...guest('missing'), email: 'orphan@example.com' }), /FOREIGN KEY/);
+    } finally { db.close(); }
+});
+
+test('shul codes are unique and user creation resolves membership from the code', t => {
+    const { db, shul } = setup(t);
+    const shuls = [shul, ...Array.from({ length: 100 }, (_, i) => db.createShul({ name: `Shul ${i}`, settings: { hebYear: 5787 } }))];
+    assert.ok(shuls.every(item => /^[A-Z]{4}$/.test(item.code)));
+    assert.ok(shuls.every(item => item.code !== 'DEMO'));
+    assert.equal(new Set(shuls.map(item => item.code)).size, shuls.length);
+    const { shulId: _shulId, ...details } = guest(shul.id);
+    const user = db.createUser({ ...details, shulCode: ` ${shul.code.toLowerCase()} ` });
+    assert.equal(user.shulId, shul.id);
+    assert.equal(user.role, 'member');
+    assert.deepEqual(user.assignedReadings, []);
+    assert.throws(() => db.createUser({ ...details, email: 'other@example.com', shulId: shuls[1].id, shulCode: shul.code }), TypeError);
+    for (const code of [1234, '', 'ABC', 'ABCDE', '1234', '12AB', null, 'DEMO']) {
+        assert.throws(() => db.createUser({ ...details, email: 'other@example.com', shulCode: code }), TypeError);
+    }
+    assert.equal(db.getUserByEmail('other@example.com'), null);
+    assert.equal(db.getShulByCode(shul.code).id, shul.id);
+    assert.equal(db.updateShul(shul.id, { name: 'Renamed' }).code, shul.code);
+    assert.throws(() => db.updateShul(shul.id, { code: '1234' }), TypeError);
+});
+
+test('DEMO is reserved for the demo shul and supports code-based membership', t => {
+    const { db, shul } = setup(t);
+    const demo = ensureDemoUser(db);
+    assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+    assert.equal(db.getShulByCode(' demo ').id, demo.shulId);
+    const { shulId: _shulId, ...details } = guest(shul.id);
+    assert.equal(db.createUser({ ...details, shulCode: 'demo' }).shulId, demo.shulId);
+    ensureDemoUser(db);
+    assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+    assert.match(db.getShul(shul.id).code, /^[A-Z]{4}$/);
+});
+
+test('code migration backfills existing shuls and preserves letter codes across reopening', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-codes-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'codes.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let demo;
+    try {
+        shul = db.createShul({ name: 'Existing shul', settings: { hebYear: 5787 } });
+        demo = ensureDemoUser(db);
+    } finally { db.close(); }
+    const legacy = new DatabaseSync(path);
+    try {
+        legacy.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 10;');
+    } finally { legacy.close(); }
+    db = openDatabase(path);
+    try {
+        assert.match(db.getShul(shul.id).code, /^[A-Z]{4}$/);
+        assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+    } finally { db.close(); }
+    const raw = new DatabaseSync(path);
+    try {
+        raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run('AABC', shul.id);
+        assert.throws(() => raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run('AABC', demo.shulId), /UNIQUE/);
+        assert.throws(() => raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run('ABC1', shul.id), /CHECK/);
+    } finally { raw.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getShul(shul.id).code, 'AABC');
+        assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+        const { shulId: _shulId, ...details } = guest(shul.id);
+        assert.equal(db.createUser({ ...details, shulCode: 'AABC' }).shulId, shul.id);
+    } finally { db.close(); }
+});
+
+test('numeric shul codes migrate to letters while retaining DEMO and membership', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-numeric-codes-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'codes.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let user;
+    let demo;
+    try {
+        shul = db.createShul({ name: 'Numeric shul', settings: { hebYear: 5787 } });
+        user = db.createUser(guest(shul.id));
+        demo = ensureDemoUser(db);
+    } finally { db.close(); }
+    const raw = new DatabaseSync(path);
+    try {
+        raw.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 11;');
+        raw.exec(readFileSync(new URL('../backend/database/migrations/010_shul_codes.sql', import.meta.url), 'utf8'));
+        raw.prepare('INSERT INTO shul_codes (shul_id, code) VALUES (?, ?)').run(shul.id, '0123');
+    } finally { raw.close(); }
+    db = openDatabase(path);
+    try {
+        assert.match(db.getShul(shul.id).code, /^[A-Z]{4}$/);
+        assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+        assert.equal(db.getUser(user.id).shulId, shul.id);
+        assert.throws(() => db.getShulByCode('0123'), TypeError);
+    } finally { db.close(); }
+});
+
+test('demo code repair preserves edited user profiles and unrelated shul codes', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-demo-code-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'demo.sqlite');
+    let db = openDatabase(path);
+    let demo;
+    let edited;
+    let other;
+    try {
+        demo = ensureDemoUser(db);
+        edited = db.updateUser(demo.id, { email: 'edited@example.com', firstName: 'Edited' });
+        db.updateShul(demo.shulId, { name: 'Edited congregation' });
+        other = db.createShul({ name: 'Other', settings: { hebYear: 5787 } });
+    } finally { db.close(); }
+    const raw = new DatabaseSync(path);
+    try {
+        const codes = new Set(raw.prepare('SELECT code FROM shul_codes').all().map(row => row.code));
+        const wrong = ['WTUL', 'TEST', 'ABCD'].find(code => !codes.has(code));
+        raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run(wrong, demo.shulId);
+        raw.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 12');
+    } finally { raw.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+        assert.equal(db.getShul(demo.shulId).name, 'Edited congregation');
+        assert.deepEqual(db.getUser(demo.id), edited);
+        assert.equal(db.getShul(other.id).code, other.code);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try { assert.equal(db.getShul(demo.shulId).code, 'DEMO'); }
+    finally { db.close(); }
+});
+
 test('reading locks survive reopening and remain tied to their shul, date, and original slot', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-locks-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -89,14 +332,20 @@ test('legacy shuls retain their earliest available version without inventing his
     legacy.close();
     let db = openDatabase(path);
     let initial;
+    let code;
     try {
+        code = db.getShul('legacy').code;
+        assert.match(code, /^[A-Z]{4}$/);
         initial = db.getInitialShulVersion('legacy');
         assert.equal(initial.source, 'migration');
         assert.equal(initial.info.name, 'Earliest available');
         db.updateShul('legacy', { name: 'Later change' });
     } finally { db.close(); }
     db = openDatabase(path);
-    try { assert.deepEqual(db.getInitialShulVersion('legacy'), initial); }
+    try {
+        assert.deepEqual(db.getInitialShulVersion('legacy'), initial);
+        assert.equal(db.getShul('legacy').code, code);
+    }
     finally { db.close(); }
 });
 
@@ -125,6 +374,64 @@ test('demo startup refreshes existing shul information while preserving settings
     assert.equal(db.listShulUsers(demo.shulId).length, 1);
     ensureDemoUser(db);
     assert.deepEqual(db.getShul(demo.shulId), refreshed);
+});
+
+test('demo startup removes only unused duplicates left by failed seeding', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    const canonical = db.getShul(demo.shulId);
+    const snapshot = db.getInitialShulVersion(demo.shulId);
+    const profile = { ...snapshot.info, settings: canonical.settings };
+    const empty = db.createShul(profile);
+    const secondEmpty = db.createShul(profile);
+    const populated = db.createShul(profile);
+    const member = db.createUser({ ...guest(populated.id) });
+    const customized = db.createShul(profile);
+    db.updateShulSettings(customized.id, { a: 4 });
+    const renamed = db.createShul(profile);
+    db.updateShul(renamed.id, { name: 'A real congregation' });
+    const withLocks = db.createShul(profile);
+    db.setReadingLocks(withLocks.id, [{ dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1, locked: true }]);
+    assert.equal(ensureDemoUser(db).id, demo.id);
+    assert.equal(db.getShul(empty.id), null);
+    assert.equal(db.getShul(secondEmpty.id), null);
+    assert.deepEqual(db.getShul(demo.shulId), canonical);
+    for (const shul of [unrelated, populated, customized, renamed, withLocks]) assert.ok(db.getShul(shul.id));
+    assert.equal(db.getUser(member.id).shulId, populated.id);
+    assert.equal(db.removeUnusedDemoShuls(), 0);
+});
+
+test('demo startup reuses its shul and edited account after an email change', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-demo-restart-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const filename = join(directory, 'demo.sqlite');
+    let db = openDatabase(filename);
+    let demo;
+    let edited;
+    let unrelated;
+    try {
+        demo = ensureDemoUser(db);
+        edited = db.updateUser(demo.id, { email: 'edited@example.com', firstName: 'Edited', title: 'Dr.' });
+        db.setUserSettings(demo.id, { language: 'he' });
+        const other = db.createShul({ name: 'Unrelated shul', settings: { hebYear: 5787 } });
+        unrelated = db.createUser({ shulId: other.id, firstName: 'Unrelated', lastName: 'User', email: 'demo@example.com' });
+    } finally { db.close(); }
+    db = openDatabase(filename);
+    try {
+        for (let restart = 0; restart < 2; restart++) {
+            const recovered = ensureDemoUser(db);
+            assert.equal(recovered.id, demo.id);
+            assert.equal(recovered.shulId, demo.shulId);
+            assert.equal(recovered.email, edited.email);
+            assert.equal(recovered.firstName, edited.firstName);
+            assert.equal(recovered.title, edited.title);
+            assert.deepEqual(recovered.settings, { language: 'he' });
+            assert.equal(db.getShul(demo.shulId).code, 'DEMO');
+            assert.equal(db.listShuls().length, 2);
+            assert.equal(db.listShulUsers(demo.shulId).length, 1);
+            assert.deepEqual(db.getUser(unrelated.id), unrelated);
+        }
+    } finally { db.close(); }
 });
 
 test('profiles, membership, and independent preferences survive reopening and migration reruns', t => {
@@ -352,5 +659,89 @@ test('guest role migration preserves existing users, settings, assignments and c
         assert.equal(db.getUser('legacy-user').role, 'guest');
         assert.equal(db.listReadingReaders('legacy-shul')[0].reader.role, 'guest');
         assert.deepEqual(db.getUser('legacy-user').settings, { language: 'he' });
+    } finally { db.close(); }
+});
+
+test('demo profile enrichment fills missing sample fields and preserves existing and unrelated details', t => {
+    const { db, shul: unrelated } = setup(t);
+    const demo = ensureDemoUser(db);
+    assert.equal(demo.title, 'Mr.');
+    assert.equal(demo.hebrewName, 'Moshe ben Avraham');
+    assert.equal(demo.phone, '(202) 555-0100');
+    const sample = db.createUser({ shulId: demo.shulId, firstName: 'David', lastName: 'Cohen',
+        email: 'david.cohen@example.com', title: 'Mr.' });
+    const edited = db.createUser({ shulId: demo.shulId, firstName: 'Sarah', lastName: 'Levy',
+        email: 'sarah.levy@example.com', title: 'Dr.', hebrewName: 'Saved Hebrew name', phone: '(202) 555-0199' });
+    const outsider = db.createUser({ shulId: unrelated.id, firstName: 'Daniel', lastName: 'Goldberg',
+        email: 'daniel.goldberg@example.com' });
+    ensureDemoUser(db);
+    const populated = db.getUser(sample.id);
+    assert.equal(populated.hebrewName, 'David ben Avraham');
+    assert.equal(populated.phone, '(202) 555-0101');
+    assert.deepEqual(db.getUser(edited.id), edited);
+    assert.deepEqual(db.getUser(outsider.id), outsider);
+    ensureDemoUser(db);
+    assert.deepEqual(db.getUser(sample.id), populated);
+});
+
+test('user and shul picture bytes survive reopening and can be removed independently', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-pictures-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+    let db = openDatabase(path);
+    let user;
+    let shul;
+    try {
+        shul = db.createShul({ name: 'Pictures', settings: { hebYear: 5787 } });
+        user = db.createUser(guest(shul.id));
+        db.setPicture('users', user.id, png);
+        db.setPicture('shuls', shul.id, png);
+        assert.throws(() => db.setPicture('users', user.id, Buffer.from('invalid')), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.ok(db.getUser(user.id).pictureUrl);
+        assert.ok(db.getShul(shul.id).pictureUrl);
+        assert.deepEqual(Buffer.from(db.getPicture('users', user.id).png), png);
+        assert.deepEqual(Buffer.from(db.getPicture('shuls', shul.id).png), png);
+        db.setPicture('users', user.id, null);
+        assert.equal(db.getUser(user.id).pictureUrl, undefined);
+        assert.ok(db.getShul(shul.id).pictureUrl);
+    } finally { db.close(); }
+});
+
+test('user reading associations follow assignments, survive reopening and stay within current membership', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-user-readings-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'db.sqlite');
+    let db = openDatabase(path);
+    let shul;
+    let reader;
+    let replacement;
+    const first = { dateString: '2026-10-10', desc: 'Bereshit', aliyah: 1 };
+    const maftir = { ...first, aliyah: 8 };
+    const later = { dateString: '2026-10-17', desc: 'Noach', aliyah: 9 };
+    try {
+        shul = db.createShul({ name: 'User readings', settings: { hebYear: 5787 } });
+        reader = db.createUser({ ...guest(shul.id), role: 'guest' });
+        replacement = db.createUser({ ...guest(shul.id), email: 'replacement@example.com' });
+        assert.deepEqual(reader.assignedReadings, []);
+        db.setReadingLocks(shul.id, [later, maftir, first].map(reading => ({ ...reading, readerId: reader.id })));
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.getUserByEmail(reader.email).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.listShulUsers(shul.id).find(user => user.id === reader.id).assignedReadings, [first, maftir, later]);
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, []);
+        assert.throws(() => db.updateUser(reader.id, { assignedReadings: [] }), TypeError);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [first, maftir, later]);
+        db.setReadingLocks(shul.id, [{ ...maftir, readerId: replacement.id }, { ...first, readerId: null }]);
+        assert.deepEqual(db.getUser(reader.id).assignedReadings, [later]);
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, [maftir]);
+        const other = db.createShul({ name: 'New membership', settings: { hebYear: 5787 } });
+        db.updateUser(replacement.id, { shulId: other.id });
+        assert.deepEqual(db.getUser(replacement.id).assignedReadings, []);
     } finally { db.close(); }
 });

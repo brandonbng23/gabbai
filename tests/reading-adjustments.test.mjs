@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { stageReadingCount, pendingReadingCounts, stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
+import { occasionChangeLog, stageReadingCount, pendingReadingCounts, stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
 
 const reading = {
     id: 1, readers: Array(9).fill(null), manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
@@ -75,7 +75,7 @@ test('manual occasion reordering preserves labels and publishes only a changed o
 });
 
 test('reader drafts assign original slots, replace and revert without mutating saved assignments', () => {
-    const reader = { id: 'one', firstName: 'Josh', lastName: 'Cohen', email: 'one@example.com', role: 'member', title: 'Mr.' };
+    const reader = { id: 'one', firstName: 'Josh', lastName: 'Cohen', email: 'one@example.com', role: 'member', title: 'Mr.', assignedReadings: [] };
     const other = { ...reader, id: 'two', firstName: 'David' };
     let draft = stageReadingReader({}, reading, 8, reader);
     let preview = previewReadingLocks(reading, {}, {}, draft);
@@ -113,4 +113,49 @@ test('count drafts preview only their reading and reset independently of the sch
     const reset = stageReadingCount({}, overridden, null);
     assert.equal(previewReadingLocks(overridden, {}, {}, {}, reset).aliyahCount, 3);
     assert.equal(pendingReadingCounts(reset, [overridden])[0].aliyahCount, null);
+});
+
+
+test('occasion log reflects net additions and removals and clears when edits are undone', () => {
+    const saved = { ...reading, gregDate: 'October 10, 2026', occassions: ['Shabbat'], manualOccasions: ['Birthday'] };
+    const target = 'Bereshit (October 10, 2026)';
+    let drafts = stageReadingOccasions({}, saved, ['Birthday', 'Anniversary']);
+    assert.deepEqual(occasionChangeLog(drafts, [saved]), [`Add “Anniversary” to ${target}.`]);
+    drafts = stageReadingOccasions(drafts, saved, ['Anniversary']);
+    assert.deepEqual(occasionChangeLog(drafts, [saved]), [`Add “Anniversary” to ${target}.`, `Remove “Birthday” from ${target}.`]);
+    drafts = stageReadingOccasions(drafts, saved, []);
+    assert.deepEqual(occasionChangeLog(drafts, [saved]), [`Remove “Birthday” from ${target}.`]);
+    drafts = stageReadingOccasions(drafts, saved, ['Birthday']);
+    assert.deepEqual(occasionChangeLog(drafts, [saved]), []);
+    assert.deepEqual(occasionChangeLog({}, [saved]), []);
+    assert.deepEqual(saved.occassions, ['Shabbat']);
+    assert.deepEqual(saved.manualOccasions, ['Birthday']);
+});
+
+test('occasion log shows the final reordered list and clears after publishing', () => {
+    const saved = { ...reading, manualOccasions: ['First', 'Second', 'Third'] };
+    const drafts = stageReadingOccasions({}, saved, ['Second', 'New', 'First']);
+    assert.deepEqual(occasionChangeLog(drafts, [saved]), [
+        'Reorder manually added occasions for Bereshit (2026-10-10): “Second”, “New”, “First”.',
+        'Add “New” to Bereshit (2026-10-10).',
+        'Remove “Third” from Bereshit (2026-10-10).',
+    ]);
+    const published = { ...saved, manualOccasions: ['Second', 'New', 'First'] };
+    assert.deepEqual(occasionChangeLog(drafts, [published]), []);
+    assert.deepEqual(occasionChangeLog(stageReadingOccasions(drafts, saved, saved.manualOccasions), [saved]), []);
+});
+
+test('occasion log separates dates and retains missing readings for publish validation', () => {
+    const later = { ...reading, dateString: '2027-10-30', manualOccasions: ['Existing'] };
+    let drafts = stageReadingOccasions({}, reading, ['New']);
+    drafts = stageReadingOccasions(drafts, later, []);
+    assert.deepEqual(occasionChangeLog(drafts, [reading, later]), [
+        'Add “New” to Bereshit (2026-10-10).',
+        'Remove “Existing” from Bereshit (2027-10-30).',
+    ]);
+    assert.deepEqual(occasionChangeLog(drafts, []), [
+        'Set manually added occasions for Bereshit (2026-10-10) to “New”.',
+        'Set manually added occasions for Bereshit (2027-10-30) to none.',
+    ]);
+    assert.equal(pendingReadingOccasions(drafts, []).length, 2);
 });
