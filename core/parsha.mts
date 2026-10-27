@@ -157,6 +157,11 @@ export class Parsha {
             }
         }
         
+        // Pinchas has a different haftarah when it falls during the Three Weeks.
+        if (this.desc === "Pinchas" && this.hebDate?.getMonth() === 4 && this.hebDate.getDate() > 17) {
+            occassions = [...occassions, "First Haftarah of Rebuke"];
+        }
+
         // Identifying Rosh Chodesh
         const roshChodesh: HolidayEvent[] = holidays.filter((h: HolidayEvent) => h.hasFlag("ROSH_CHODESH"));
 

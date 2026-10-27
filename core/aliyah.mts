@@ -148,7 +148,18 @@ export class Aliyah {
         return this.desc.replace(/^(Pesach|Sukkot) [IVX]+ (Chol HaMoed Shabbat)$/, '$1 $2');
     }
 
-    private specialReadingName(): string | null {
+    private specialReadingName(a: number): string | null {
+        // The Three Weeks override Rosh Chodesh / Machar Chodesh for the
+        // haftarah only. Keep their Torah readings and special maftir intact.
+        if (a === 9) {
+            if (this.occassions.includes("First Haftarah of Rebuke")) {
+                return "Matot";
+            }
+            if (["Matot", "Masei", "Matot-Masei"].includes(this.desc)) {
+                return this.readingTableName();
+            }
+        }
+
         const specialShabbat =
             this.occassions.includes("Shabbat Shuva") ? "Shabbat Shuva" :
             this.occassions.includes("Shabbat Shirah") ? "Shabbat Shirah" :
@@ -188,7 +199,7 @@ export class Aliyah {
     tradPsukim(a: number, flag: boolean): string | void {
         const readingName = flag
             ? this.readingTableName()
-            : (this.specialReadingName() ?? this.readingTableName());
+            : (this.specialReadingName(a) ?? this.readingTableName());
 
         let __filename = fileURLToPath(import.meta.url);
         let __dirname = path.dirname(__filename);
@@ -412,7 +423,7 @@ export class Aliyah {
     // Traditional readings
     // A special maftir takes precedence over the weekly triennial maftir.
     // A "ref" maftir (such as Machar Chodesh) keeps the weekly reading.
-    const specialReading = this.specialReadingName()
+    const specialReading = this.specialReadingName(a)
         ?? (this.desc === "Chanukah VII Shabbat Rosh Chodesh" ? this.desc : null);
     if (a === 8 && specialReading) {
         const traditionalRows = fs.readFileSync(path.join(__dirname, "../data", "psukim.csv"), "utf8")

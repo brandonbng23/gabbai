@@ -8,6 +8,45 @@ import { User } from '../core/user.mts';
 const visibleAliyot = reading => reading.psukim.slice(0, 7)
     .filter(verses => verses && verses !== 'null').length;
 
+test('Three Weeks haftarot follow the calendar in annual and triennial schedules', () => {
+    for (const tri of [false, true]) {
+        for (const il of [false, true]) {
+            // Includes separate Matot/Masei, Pinchas on 17 Tamuz in Israel,
+            // and Matot-Masei on Rosh Chodesh Av.
+            for (const year of [5782, 5785, 5786, 5795]) {
+                const settings = new Settings(year);
+                settings.setTriennial(tri);
+                settings.setIL(il);
+                const schedule = new Schedule(settings, year);
+                const pinchas = schedule.schedule.find(reading => reading.desc === 'Pinchas');
+                const inThreeWeeks = pinchas.hebDate.getDate() > 17;
+                assert.equal(pinchas.readingSet.getPsukim(9), inThreeWeeks
+                    ? 'Jeremiah 1:1-2:3' : 'I Kings 18:46-19:21',
+                `Pinchas: year=${year}, il=${il}, tri=${tri}`);
+                assert.equal(pinchas.occassions.includes('First Haftarah of Rebuke'), inThreeWeeks);
+
+                for (const reading of schedule.schedule.filter(reading =>
+                    ['Matot', 'Masei', 'Matot-Masei', 'Devarim'].includes(reading.desc))) {
+                    const expected = reading.desc === 'Matot' ? 'Jeremiah 1:1-2:3'
+                        : reading.desc === 'Devarim' ? 'Isaiah 1:1-1:27'
+                        : 'Jeremiah 2:4-2:28; 3:4';
+                    assert.equal(reading.readingSet.getPsukim(9), expected,
+                        `${reading.desc}: year=${year}, il=${il}, tri=${tri}`);
+                }
+
+                if (year === 5785) {
+                    const combined = schedule.schedule.find(reading => reading.desc === 'Matot-Masei');
+                    assert.ok(combined.occassions.includes('Rosh Chodesh Av'));
+                    assert.equal(combined.readingSet.getPsukim(8), 'Numbers 28:9-28:15');
+                    const ordinary = new ReadingSet(combined.desc, 7, settings, [], year);
+                    assert.deepEqual(combined.readingSet.getPsukimArr().slice(0, 7),
+                        ordinary.getPsukimArr().slice(0, 7));
+                }
+            }
+        }
+    }
+});
+
 test('Shmini is not labeled as Shmini Atzeret in notices or search terms', () => {
     const readings = new Schedule(new Settings(5787), 5787).getScheduleData();
     const shmini = readings.find(reading => reading.desc === 'Shmini');
