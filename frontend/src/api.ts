@@ -33,6 +33,14 @@ export async function getCurrentUserMessages(signal: AbortSignal, {
     return response.json();
 }
 
+export async function markMessageRead(messageId: string): Promise<void> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/read`, { method: 'PATCH' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to mark the message as read. Please try again.');
+    }
+}
+
 export interface ReadingCountChange {
     dateString: string;
     desc: string;
