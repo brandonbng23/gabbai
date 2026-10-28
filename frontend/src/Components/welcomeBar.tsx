@@ -12,7 +12,7 @@ export function getGreeting(): string {
 
 function WelcomeBar({ fName }: { fName?: string }) {
     return (
-        <div className="welcomeBar">
+        <div className="welcome-bar">
             <h4>{getGreeting()}{fName ? `, ${fName}` : ''}!</h4>
         </div>
     );

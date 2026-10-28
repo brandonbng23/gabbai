@@ -1128,20 +1128,22 @@ h4 {
     background: radial-gradient(ellipse at top, #263b4c, #161616 65%);
 }
 
-.welcomeBar {
+.welcome-bar {
     margin-left: var(--parsha-left-gap);
     width: calc(100% + 50px - var(--parsha-left-gap));
     padding: 5px;
 
-    background-color: white;
     border-radius: 15px;
+
+
 }
 
-.welcomeBar h4 {
+.welcome-bar h4 {
     padding: 0px;
-    font-size: 40px;
+    font-size: 30px;
     margin: 2%;
-    font-weight: 750;
+    font-weight: 650;
+    text-align: center;
 }
 
 .schedule {
@@ -4677,8 +4679,8 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .schedule-page > .schedule,
 .schedule-page > .skeleton-state { width: min(calc(100% - 50px), 77.5vw); }
-.schedule-page .quick-start .welcomeBar { width: 100%; margin: 0; padding: 0; border-radius: 0; }
-.schedule-page .quick-start .welcomeBar h4 { margin: 0; }
+.schedule-page .quick-start .welcome-bar { width: 100%; margin: 0; padding: 0; border-radius: 0; }
+.schedule-page .quick-start .welcome-bar h4 { margin: 0; }
 .schedule-page {
     display: flex;
     flex-direction: column;
@@ -4691,7 +4693,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     border: 1px solid #504f52;
     background: #302f30;
 }
-.schedule-page .welcomeBar {
+.schedule-page .welcome-bar {
     background: transparent;
     border: 0;
 }
@@ -4713,7 +4715,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     height: auto;
     min-height: 40px;
 }
-.schedule-page h3, .schedule-page .welcomeBar h4 {
+.schedule-page h3, .schedule-page .welcome-bar h4 {
     color: #f6f5f7;
 }
 .schedule-page .filter-label {
@@ -5027,7 +5029,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 @media (max-width: 1000px) {
     .schedule-page > .schedule,
     .schedule-page > .skeleton-state { width: calc(100% - 20px); }
-    .schedule-page .welcomeBar, .schedule-page .filterBar, .schedule-page .parsha,
+    .schedule-page .welcome-bar, .schedule-page .filterBar, .schedule-page .parsha,
     .content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
         width: calc(100% - 20px);
         margin-left: 20px;
@@ -5051,7 +5053,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     .navbar-account-actions {
         flex-shrink: 0;
     }
-    .schedule-page .welcomeBar h4 {
+    .schedule-page .welcome-bar h4 {
         overflow-wrap: anywhere;
     }
     .schedule-page .default-filters > div {
