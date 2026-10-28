@@ -11,7 +11,7 @@
     "test:api": "node --test tests/api.test.mjs",
     "test:auth": "node --test tests/auth.test.mjs",
     "test:messages": "node --test tests/messages.test.mjs tests/demo-messages.test.mjs",
-    "test:email": "node --test tests/notifications.test.mjs",
+    "test:email": "node --test tests/gmail.test.mjs tests/gmailOAuth.test.mjs tests/notifications.test.mjs",
     "test:dev": "node --test tests/dev.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",
@@ -29,6 +29,7 @@
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "nodemailer": "^10.2.1",
     "react": "^19.2.6",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.6"

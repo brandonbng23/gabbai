@@ -1,6 +1,7 @@
 import express from "express";
 import { installAuthentication } from './authentication.mjs';
 import { installMessaging } from './messages.mjs';
+import { createGmailMailer } from './gmail.mjs';
 import { createNotificationService, installNotificationRoutes } from './notifications.mjs';
 import { fileURLToPath } from "node:url";
 import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
@@ -21,8 +22,7 @@ export function createApp(database, {
     const fallbackUserId = preview ? ensureDemoUser(database).id : development ? devUserId : undefined;
     const app = express();
     app.locals.database = database;
-    // No email provider is configured; platform inbox notifications remain active.
-    app.locals.mailer = { enabled: false };
+    app.locals.mailer = createGmailMailer(preview ? { env: {} } : undefined);
 
     app.use(express.json({ limit: '2mb' }));
     installAuthentication(app, database, { development, preview, fallbackUserId });

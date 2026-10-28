@@ -23,9 +23,9 @@ Actively, the scheduling engine codebase is being converted to TypeScript from J
 
 ## Notifications and email
 
-Outgoing email is currently disabled because no email provider is configured.
-Platform inbox notifications remain active; the email rules below are retained
-for a future provider.
+Outgoing email uses Gmail when configured and explicitly enabled. See
+[Gmail setup](backend/EMAIL.md#gmail-setup). Platform inbox notifications remain
+active when email is disabled or unavailable.
 
 Every registration gets a system confirmation in the platform inbox, even when no
 email is requested or email cannot be sent.

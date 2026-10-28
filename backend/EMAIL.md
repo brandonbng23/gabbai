@@ -31,14 +31,95 @@ Each shul’s timezone, per-admin daily report switches, and instant-alert admin
 Settings → Communication Settings**. New shuls default to `America/New_York`
 until an admin changes the timezone.
 
-## Current delivery status
+## Gmail setup
 
-No email provider is configured, so outgoing email is disabled. Registration
-confirmations, scheduled summaries, and instant alerts still appear in platform
-inboxes. The registration form reports email as unavailable.
+Gmail supports OAuth through its send-only API, or SMTP with an app password.
+Use a dedicated Gmail account so notification sending stays separate from personal email.
 
-The provider-independent queue, quotas, and notification settings are retained
-for a future email provider. Tests use a fake mailer without real recipients.
+### OAuth (no app password required)
+
+1. Create or select a project in [Google Cloud Console](https://console.cloud.google.com/)
+   and enable the **Gmail API** under APIs & Services → Library.
+2. Configure **Google Auth Platform**: set the app name to Gabbai, choose an
+   External audience, and add `teamgabbai@gmail.com` as a test user while Testing.
+   Under Data Access add `https://www.googleapis.com/auth/gmail.send`, `openid`,
+   and the email identity scope (`https://www.googleapis.com/auth/userinfo.email`).
+3. Under Clients, create an OAuth client with application type **Desktop app**.
+   This type supports the local loopback callback; do not choose Web application.
+4. Add its client ID and client secret to the project-root `.env`:
+
+   ```dotenv
+   GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GMAIL_CLIENT_SECRET=your-client-secret
+   ```
+
+5. From the project root, run:
+
+   ```sh
+   node --env-file=.env scripts/authorize-gmail.mjs teamgabbai@gmail.com
+   ```
+
+   Open the printed Google URL, select that account, and approve sending access.
+   The helper listens only on `127.0.0.1`, validates OAuth state and PKCE, and
+   confirms the authorized email address. It saves the refresh token privately
+   to `.env`, switches `GMAIL_USER` and `GMAIL_AUTH_MODE=oauth2`, enables sending,
+   and clears any previous app password only after successful authorization.
+   It sends no email. Failed or cancelled authorization leaves `.env` unchanged.
+
+Google's External apps in **Testing** issue refresh tokens that expire after
+seven days for this scope. Reauthorize when needed during testing. Before relying
+on unattended delivery, review Google's Production publishing and verification
+requirements; publishing status and verification are separate. Only the sender
+authorizes Google access; notification recipients do not need to sign in to Google.
+
+References: [Google desktop OAuth](https://developers.google.com/identity/protocols/oauth2/native-app),
+[token expiration](https://developers.google.com/identity/protocols/oauth2),
+[Gmail send-only scope](https://developers.google.com/workspace/gmail/api/auth/scopes).
+
+### App password alternative
+
+For SMTP through Nodemailer,
+enable [2-Step Verification](https://support.google.com/accounts/answer/185833),
+then create an [app password](https://myaccount.google.com/apppasswords) named
+Gabbai. Some managed or protected accounts do not offer app passwords.
+
+Copy `.env.example` to `.env` in the project root and set:
+
+```dotenv
+GMAIL_ENABLED=true
+GMAIL_USER=your-dedicated-account@gmail.com
+GMAIL_AUTH_MODE=app_password
+GMAIL_APP_PASSWORD=your-16-character-app-password
+GMAIL_FROM_NAME=Gabbai
+```
+
+Use the generated app password, not the normal Google password. Spaces in the
+app password are stripped. Keep these values server-side, outside Git and any
+`VITE_` variables. The sender address is always the authenticated Gmail address.
+
+### Verify and start
+
+For either method, check authentication without sending a message:
+
+```sh
+node --env-file=.env scripts/verify-email.mjs
+```
+
+Then start development with `node --env-file=.env scripts/dev.mjs` (or production
+with `node --env-file=.env index.js`). The usual npm scripts do not load `.env`
+automatically. In hosting, set the same environment variables and restart.
+The server must stay running for scheduled summaries.
+
+For a delivery test, register for a reading with an email address you control
+and request a confirmation. Verify that it arrives, including checking spam.
+Provider acceptance is not confirmed inbox delivery. Gmail also applies its own
+sending limits; the app's shared 100-email UTC-day cap remains in place.
+
+Email is disabled unless explicitly enabled, and always disabled in preview.
+Platform inbox messages remain active without Gmail. Tests use fake transports
+and do not send email.
+
+Reference: [Nodemailer Gmail setup](https://nodemailer.com/guides/using-gmail).
 
 ## Persistence, scheduling, and failure behavior
 
