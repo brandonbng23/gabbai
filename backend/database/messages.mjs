@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { validateKeys } from './settings.mjs';
+import { formatCommunicationDate } from '../communicationDate.mjs';
 
 function fail(status, message) {
     throw Object.assign(new Error(message), { status });
@@ -301,7 +302,7 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
         recordReadingConfirmation(shulId, { dateString, desc, aliyah, recipientIds }) {
             return insert({ shulId, senderType: 'system', kind: 'confirmation', recipientIds: [...new Set(recipientIds)],
                 subject: 'Reading registration confirmed',
-                body: `Your registration at ${getShul(shulId).name} for ${desc} on ${dateString}, aliyah ${aliyah}, is confirmed.` });
+                body: `Your registration at ${getShul(shulId).name} for ${desc} on ${formatCommunicationDate(dateString)}, aliyah ${aliyah}, is confirmed.` });
         },
     };
 }

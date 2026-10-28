@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { request as httpRequest } from 'node:http';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -55,6 +56,29 @@ test('combined startup proxies saved profiles and stops both servers', { timeout
         await delay(100);
     }
     assert.ok(ready, output);
+    for (const path of ['/schedule', '/schedule/', '/messages', '/shulSettings', '/userReadings', '/signin', '/signup']) {
+        assert.equal((await fetch(`${base}${path}`)).status, 200, `The ${path} interface must load`);
+    }
+    const repoPath = fileURLToPath(new URL('../', import.meta.url));
+    for (const path of ['.env', 'data/gabbai.dev.sqlite', 'backend/app.mjs']) {
+        const response = await fetch(`${base}/@fs/${repoPath}${path}`);
+        assert.ok(response.status === 403 || response.status === 404, `${path} must not be served by Vite`);
+    }
+    const sharedModule = await fetch(`${base}/@fs/${repoPath}interfaces/titles.mts`);
+    assert.equal(sharedModule.status, 200, 'The frontend must still load shared interface modules');
+    const rebound = await new Promise((resolve, reject) => {
+        const request = httpRequest(`http://127.0.0.1:${backendPort}/api/me`, { headers: { Host: 'attacker.example' } }, response => {
+            response.resume();
+            resolve(response.statusCode);
+        });
+        request.on('error', reject);
+        request.end();
+    });
+    assert.equal(rebound, 403, 'Host spoofing must not expose the development identity');
+    const crossSite = await fetch(`${base}/api/auth/password`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.example', 'Sec-Fetch-Site': 'cross-site' },
+        body: JSON.stringify({ password: 'Attacker supplied password!' }) });
+    assert.equal(crossSite.status, 403, 'Cross-site writes must fail through the dev proxy');
     assert.equal((await (await fetch(`${base}/api/me`)).json()).id, user.id);
     const passwordSetup = await fetch(`${base}/api/auth/password`, { method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: base }, body: JSON.stringify({ password: 'Development test password!' }) });

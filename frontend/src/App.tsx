@@ -2,8 +2,7 @@ import { AuthPage } from "./Pages/auth.tsx"
 import Navbar from "./Components/navbar.tsx"
 import Aside from "./Components/aside.tsx"
 import Footer from "./Components/footer.tsx"
-import WelcomeBar from "./Components/welcomeBar.tsx"
-import Schedule from "./Components/schedule.tsx"
+import SchedulePage from "./Pages/schedule.tsx"
 import AliyahRegistration from "./Pages/aliyahRegistration.tsx"
 import type { ParshaObj } from "./Components/parsha.tsx"
 import { useEffect, useState } from "react"
@@ -36,7 +35,11 @@ function App() {
     const isMessagesPage = window.location.pathname.replace(/\/$/, '') === '/messages';
     const authPath = window.location.pathname.replace(/\/$/, '');
     const isAuthPage = authPath === '/signin' || authPath === '/signup';
-    const isSchedulePage = !isRegistrationPage && !isShulPage && !isShulSettingsPage && !isUserSettingsPage && !isUserViewPage && !isUserReadingsPage && !isMessagesPage && !isAuthPage;
+    const isDefaultPage = authPath === '' || authPath === '/index.html';
+    const isSchedulePage = authPath === '/schedule' || isDefaultPage;
+    useEffect(() => {
+        if (isDefaultPage) window.location.replace(`/schedule${window.location.search}${window.location.hash}`);
+    }, [isDefaultPage]);
     const viewedUserId = new URLSearchParams(window.location.search).get('user') || '';
 
     useEffect(() => {
@@ -69,7 +72,7 @@ function App() {
     const shulId = shul?.id;
     const scheduleSettings = shul?.settings;
     useEffect(() => {
-        if (!shulId || !scheduleSettings) return;
+        if (!shulId || !scheduleSettings || (!isSchedulePage && !isRegistrationPage && !isShulSettingsPage)) return;
         const controller = new AbortController();
         const path = `/api/schedule?${new URLSearchParams({ shul: shulId })}`;
         async function loadSchedule() {
@@ -91,7 +94,7 @@ function App() {
         }
         void loadSchedule();
         return () => controller.abort();
-    }, [shulId, scheduleSettings]);
+    }, [shulId, scheduleSettings, isSchedulePage, isRegistrationPage, isShulSettingsPage]);
 
     function handleReadingCancelled(dateString: string, desc: string, aliyah: number): void {
         const keepReading = (reading: { dateString: string; desc: string; aliyah: number }) =>
@@ -131,22 +134,18 @@ function App() {
                 user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser}
                     onReadingCancelled={handleReadingCancelled} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
               )
-              : error ? <div className="shul-context" role="alert">{error} <a href="/">Back to schedule</a></div>
+              : error ? <div className="shul-context" role="alert">{error} <a href="/schedule">Back to schedule</a></div>
               : !shul ? <p className="shul-context">Your account is not associated with a shul. Contact your shul administrator.</p>
               : isShulSettingsPage ? (
                 user?.role === 'admin' ? <ShulSettings shul={shul} currentUserId={user.id} schedule={schedule} scheduleLoading={scheduleLoading} scheduleError={scheduleError} onSaved={setShul}
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
-              ) : isShulPage ? <MyShul shul={shul} /> : <main className="schedule-page">
-              <WelcomeBar fName={user?.firstName}></WelcomeBar>
-              {scheduleLoading ? <LoadingSkeleton variant="schedule" />
-              : scheduleError ? <p className="shul-context" role="alert">{scheduleError}</p>
-              : <Schedule
-                shulId={shulId} parshiyot = {schedule}
-                currentUserId={user?.id} onReadingCancelled={handleReadingCancelled}>
-              </Schedule>}
-              </main>}
+              ) : isShulPage ? <MyShul shul={shul} /> : isSchedulePage ? <SchedulePage
+                  firstName={user?.firstName} shulId={shulId} readings={schedule}
+                  loading={scheduleLoading} error={scheduleError}
+                  currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} />
+              : <main className="shul-context"><h1>Page not found</h1><a href="/">Go home</a></main>}
             </div>
         </div>
           <Footer></Footer>

@@ -8,6 +8,7 @@ import MessageComposer from '../Components/messageComposer.tsx';
 import MessageThread from '../Components/messageThread.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { MessageDraft } from '../Components/messageComposer.tsx';
+import { useMessageTrashConfirmation } from '../Components/useMessageTrashConfirmation.tsx';
 
 const pageSize = 50;
 
@@ -28,6 +29,7 @@ export default function Messages({ user }: { user: User }) {
     const [compose, setCompose] = useState<boolean>(false);
     const [draft, setDraft] = useState<MessageDraft>({ destination: user.role === 'admin' ? 'members' : 'shul', subject: '', body: '', recipientIds: [] });
     const [composeNotice, setComposeNotice] = useState('');
+    const { confirmTrash, confirmationDialog } = useMessageTrashConfirmation();
 
     async function updatedSelectedMsg(message: Message) {
         const readAt = message.readAt ?? new Date().toISOString();
@@ -57,6 +59,9 @@ export default function Messages({ user }: { user: User }) {
 
     async function updateSelectedMessage(action: 'unread' | 'trash') {
         if (!selectedMsg || actionBusy) return;
+        if (action === 'trash' && folder !== 'trash') {
+            if (!await confirmTrash(selectedMsg)) return;
+        }
         setActionBusy(true);
         setReadError('');
         try {
@@ -139,6 +144,7 @@ export default function Messages({ user }: { user: User }) {
     }, [offset, folder, sort, unreadOnly, actionBusy, loading]);
 
     return <main className="messages-page" aria-label="My messages" aria-busy={loading}>
+        {confirmationDialog}
         <header className="inbox-header">
             <div>
                 <h1>My Messages</h1>
@@ -225,12 +231,9 @@ export default function Messages({ user }: { user: User }) {
                                 </button>
                                 <button type="button" className={folder === 'trash' ? '' : 'msg-delete'} disabled={actionBusy} title={folder === 'trash' ? 'Restore before the 30-day deadline' : selectedMsg.replyRestoresInbox ? 'Move to your Trash only. A new reply will bring it back.' : 'Move to Trash. Permanently deleted after 30 days.'} onClick={() => void updateSelectedMessage('trash')}>{folder === 'trash' ? 'Restore' : 'Delete'}</button>
                             </div>
-                            <p className="message-trash-policy">{selectedMsg.trashExpiresAt
-                                ? selectedMsg.replyRestoresInbox
+                            {selectedMsg.trashExpiresAt && <p className="message-trash-policy">{selectedMsg.replyRestoresInbox
                                     ? `Removed from your Trash on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. A new reply will still return it to your inbox.`
-                                    : `Will be permanently deleted on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. Restore before then to keep it.`
-                                : selectedMsg.replyRestoresInbox ? 'Deleting only hides this conversation from your inbox. Any new reply brings it back, even after Trash expires.'
-                                    : 'Messages moved to Trash are permanently deleted after 30 days.'}</p>
+                                    : `Will be permanently deleted on ${new Date(selectedMsg.trashExpiresAt).toLocaleString()}. Restore before then to keep it.`}</p>}
 
                             <h2>{selectedMsg.subject}</h2>
                             {(selectedMsg.recipient || selectedMsg.sharedInbox) && <div className="message-shul-recipient">

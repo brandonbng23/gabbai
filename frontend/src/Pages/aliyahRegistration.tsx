@@ -29,7 +29,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     const [emailPolicy, setEmailPolicy] = useState<NotificationPolicy | null>(null);
     const [policyError, setPolicyError] = useState('');
     const useProfile = mode === 'profile' && Boolean(user);
-    const backUrl = shulId ? `/?${new URLSearchParams({ shul: shulId })}` : '/';
+    const backUrl = shulId ? `/schedule?${new URLSearchParams({ shul: shulId })}` : '/schedule';
 
     const params = new URLSearchParams(window.location.search);
     const parshaId = Number(params.get('parsha'));

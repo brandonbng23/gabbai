@@ -289,7 +289,7 @@ test('registration confirmations commit atomically and include signed-in guest b
     const slot = { dateString: '2026-10-31', desc: 'Vayera', aliyah: 1 };
     db.registerReading(shul.id, { ...slot, readerId: member.id }, () => {});
     assert.equal(db.listUserMessages(member.id)[0].kind, 'confirmation');
-    assert.match(db.listUserMessages(member.id)[0].body, /Vayera.*2026-10-31/);
+    assert.match(db.listUserMessages(member.id)[0].body, /Vayera.*Saturday, October 31, 2026/);
     assert.throws(() => db.registerReading(shul.id, { ...slot, readerId: member.id }, () => {}));
     assert.equal(db.listUserMessages(member.id).length, 1);
     const guestSlot = { ...slot, aliyah: 2, readerId: outsider.id,

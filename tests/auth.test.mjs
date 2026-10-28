@@ -32,11 +32,21 @@ async function setup(t, options = {}) {
 
 test('app documents disable HTTP caching so history navigation revalidates sessions', async t => {
     const { request } = await setup(t);
-    for (const path of ['/', '/index.html', '/signin', '/userSettings', '/userView?user=example', '/userReadings', '/userReadings/']) {
+    for (const path of ['/', '/index.html', '/schedule', '/schedule/', '/signin', '/userSettings', '/userView?user=example', '/userReadings', '/userReadings/']) {
         const response = await request(path);
         assert.equal(response.status, 200, path);
         assert.equal(response.headers.get('cache-control'), 'no-store', path);
         assert.match(response.headers.get('content-type'), /text\/html/);
+    }
+});
+
+test('the main URL defaults to the standalone schedule and preserves the selected shul', async t => {
+    const { request } = await setup(t);
+    for (const path of ['/', '/index.html']) {
+        const response = await request(`${path}?shul=example`, { redirect: 'manual' });
+        assert.equal(response.status, 302);
+        assert.equal(response.headers.get('location'), '/schedule?shul=example');
+        assert.equal(response.headers.get('cache-control'), 'no-store');
     }
 });
 

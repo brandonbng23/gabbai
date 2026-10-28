@@ -104,6 +104,11 @@ attempts are rate-limited with persistent 15-minute buckets; application permiss
 always use the current database role and membership for the session user.
 
 The normal development Vite proxy preserves same-origin auth requests and cookies.
+The frontend and backend bind to loopback by default. The backend rejects
+unexpected Host headers in development, and Vite only serves frontend code,
+shared modules, and dependencies. Environment files, SQLite databases, and backend
+source are excluded from Vite's file serving. These controls are covered by
+`npm run test:dev`.
 `npm run dev` keeps its opt-in seed identity for requests without a session cookie;
 real sessions override it, including for newly registered members. Production has
 no demo fallback unless `GABBAI_PREVIEW_MODE=true` is explicitly configured.

@@ -9,6 +9,16 @@ const digest = value => createHash('sha256').update(value).digest('hex');
 
 export function installAuthentication(app, database, { development, preview, fallbackUserId }) {
     if (process.env.GABBAI_TRUST_PROXY?.trim().toLowerCase() === 'true') app.set('trust proxy', 1);
+    if (development) {
+        // Loopback binding alone does not prevent a hostile hostname from
+        // resolving to localhost and accessing the development identity.
+        app.use((req, res, next) => {
+            if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(req.get('host') ?? '')) {
+                return res.status(403).json({ error: 'The development server only accepts localhost requests.' });
+            }
+            next();
+        });
+    }
     app.use('/api', (req, res, next) => {
         const token = (req.headers.cookie ?? '').split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
         req.sessionToken = token;

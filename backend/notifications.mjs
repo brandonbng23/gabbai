@@ -2,6 +2,7 @@ import { HDate } from '@hebcal/core';
 import { getShulSchedule } from './schedule.mjs';
 import { localClock, notificationPolicy, reportWindow, isReportDue } from './notificationPolicy.mjs';
 import { validateKeys } from './database/settings.mjs';
+import { formatCommunicationDate } from './communicationDate.mjs';
 
 export function buildReadingRoundup(database, shulId, now, timezone, window = '12weeks') {
     const shul = database.getShul(shulId);
@@ -12,7 +13,7 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
     };
     const startYear = hebrewYear(range.start);
     const endYear = hebrewYear(range.end);
-    const lines = [`${shul.name} — registration summary`, `Upcoming readings: ${range.start} through ${range.end} (${timezone})`, ''];
+    const lines = [`${shul.name} — registration summary`, `Upcoming readings: ${formatCommunicationDate(range.start)} through ${formatCommunicationDate(range.end)} (${timezone})`, ''];
     let registrations = 0;
     let vacancies = 0;
     for (let year = startYear; year <= endYear; year++) {
@@ -23,12 +24,12 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
                 const reader = reading.readers[index];
                 if (reader) {
                     registrations++;
-                    lines.push(`${reading.dateString} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
+                    lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
                 } else if (!reading.locked && !reading.lockedArr[index]) open.push(index + 1);
             }
             if (open.length) {
                 vacancies += open.length;
-                lines.push(`${reading.dateString} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
+                lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
             }
         }
     }

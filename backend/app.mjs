@@ -420,6 +420,10 @@ export function createApp(database, {
         return res.json(getSchedule(year));
     });
 
+    app.get(['/', '/index.html'], (req, res) => {
+        const queryStart = req.originalUrl.indexOf('?');
+        res.set('Cache-Control', 'no-store').redirect(`/schedule${queryStart >= 0 ? req.originalUrl.slice(queryStart) : ''}`);
+    });
     app.get(['/login', '/login.html'], (_req, res) => res.redirect('/signin'));
     app.get(['/messages', '/messages/'], (_req, res) => {
         res.sendFile(fileURLToPath(new URL('../frontend/dist/index.html', import.meta.url)), {
@@ -434,7 +438,7 @@ export function createApp(database, {
     }));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/userReadings", "/userReadings/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
+    app.get(["/schedule", "/schedule/", "/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/userReadings", "/userReadings/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)), {
             headers: { 'Cache-Control': 'no-store' },
         });

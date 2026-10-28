@@ -11,6 +11,7 @@ import { createApp } from '../backend/app.mjs';
 import { createNotificationService, buildReadingRoundup } from '../backend/notifications.mjs';
 import { localClock, threeMonthWindow, reportWindow, isReportDue } from '../backend/notificationPolicy.mjs';
 import { getShulSchedule } from '../backend/schedule.mjs';
+import { formatCommunicationDate } from '../backend/communicationDate.mjs';
 
 function fixture(t, path = ':memory:') {
     const db = openDatabase(path);
@@ -36,6 +37,7 @@ test('member confirmation emails are opt-in, limited to five per local day, and 
     assert.equal(book(state).emailConfirmation.status, 'daily_limit');
     assert.equal(state.db.listUserMessages(state.member.id).length, 7);
     assert.ok(state.db.listUserMessages(state.member.id).every(message => message.sender.type === 'system'));
+    assert.ok(state.db.listUserMessages(state.member.id).every(message => message.body.includes('Saturday, November 7, 2026')));
     assert.equal(book(state, { now: new Date('2026-10-28T04:10:00Z') }).emailConfirmation.status, 'queued', 'New York local midnight resets the quota');
 });
 
@@ -78,6 +80,7 @@ test('only the selected current admin gets instant alerts, and inbox alerts surv
     assert.equal(alert.sender.type, 'system');
     assert.match(alert.body, /Member Test/);
     assert.match(alert.body, /Aliyah: 1/);
+    assert.match(alert.body, /Date: Saturday, November 7, 2026/);
     state.db.updateUser(state.admin2.id, { role: 'member' });
     book(state, { emailConfirmation: false });
     assert.equal(state.db.listUserMessages(state.admin2.id).length, 1, 'Demoted selected admin receives no new registration details');
@@ -317,10 +320,10 @@ test('roundup includes detailed registrations and compact vacancies from the rea
     const reading = getShulSchedule(state.db, state.shul.id).find(item => item.dateString >= '2026-10-27' && item.dateString <= '2027-01-27' && item.psukim[0] && item.psukim[0] !== 'null');
     state.db.registerReading(state.shul.id, { dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: state.member.id }, () => {});
     const report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York');
-    assert.ok(report.includes(`${reading.dateString} · ${reading.desc} · Aliyah 1: Member Test`));
+    assert.ok(report.includes(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah 1: Member Test`));
     assert.ok(report.includes(reading.psukim[0]));
     assert.match(report, /\d+ open \([\d, ]+\)/);
-    assert.ok(report.includes('2027-01-19'));
+    assert.ok(report.includes('Tuesday, January 19, 2027'));
 });
 
 test('queue and confirmation quota roll back atomically if notification persistence fails', t => {

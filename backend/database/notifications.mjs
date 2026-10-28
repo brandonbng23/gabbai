@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { validateKeys } from './settings.mjs';
+import { formatCommunicationDate } from '../communicationDate.mjs';
 import { localClock, notificationPolicy, reportRanges, reportFrequencies } from '../notificationPolicy.mjs';
 
 export function createNotificationRepository(db, { transaction, getUser, getShul, recordSystemNotification }) {
@@ -85,7 +86,7 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
             const selected = config.instantAdminUserId ? getUser(config.instantAdminUserId) : null;
             if (selected?.role === 'admin' && selected.shulId === shulId) {
                 const subject = 'New reading registration';
-                const body = `${reader.title} ${reader.firstName} ${reader.lastName}${isGuest ? ' (guest)' : ''} registered at ${getShul(shulId).name}.\n\nDate: ${dateString}\nReading: ${desc}\nAliyah: ${aliyah}`;
+                const body = `${reader.title} ${reader.firstName} ${reader.lastName}${isGuest ? ' (guest)' : ''} registered at ${getShul(shulId).name}.\n\nDate: ${formatCommunicationDate(dateString)}\nReading: ${desc}\nAliyah: ${aliyah}`;
                 const key = `registration-alert:${confirmation.id}:${selected.id}`;
                 const message = system(shulId, selected.id, subject, body, key);
                 if (emailEnabled) queue({ key, shulId, recipientId: selected.id, messageId: message.id, category: 'instant', subject, body, now });
@@ -108,7 +109,7 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
                 for (const recipient of admins) {
                     const created = db.prepare('INSERT OR IGNORE INTO notification_roundups (shul_id, user_id, local_day, created_at) VALUES (?, ?, ?, ?)').run(shulId, recipient.id, localDay, now.toISOString());
                     if (!created.changes) continue;
-                    const subject = `Registration summary — ${localDay}`;
+                    const subject = `Registration summary — ${formatCommunicationDate(localDay)}`;
                     let firstMessage;
                     for (const [index, text] of parts.entries()) {
                         const message = system(shulId, recipient.id, parts.length > 1 ? `${subject} (${index + 1}/${parts.length})` : subject, text,
