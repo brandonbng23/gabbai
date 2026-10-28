@@ -73,6 +73,9 @@ test('OAuth refreshes credentials and verifies identity without sending, then se
         assert.match(mime, /To: reader@example.com/);
         assert.match(mime, /Subject: Registration/);
         assert.match(mime, /Your reading is registered/);
+        assert.match(mime, /multipart\/alternative/);
+        assert.match(mime, /Content-Type: text\/plain/);
+        assert.match(mime, /Content-Type: text\/html/);
         sends++;
         return Response.json({ id: `gmail-${sends}` });
     } });

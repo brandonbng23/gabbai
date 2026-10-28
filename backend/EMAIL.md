@@ -123,6 +123,25 @@ Reference: [Nodemailer Gmail setup](https://nodemailer.com/guides/using-gmail).
 
 ## Persistence, scheduling, and failure behavior
 
+### Email appearance
+
+Edit `backend/emailTemplate.html` for the shared email layout and inline styles.
+It is loaded by `backend/emailTemplate.mjs` at send time for both SMTP and OAuth,
+so HTML edits apply to the next email without a server restart. No JSX compiler
+is required. Placeholders are `{{title}}`, `{{preheader}}`, `{{content}}`,
+`{{footer}}`, and `{{inboxUrl}}`. The `IF_INBOX` / `END_IF_INBOX` comments surround
+the optional button; keep those markers to hide it when no public URL is set.
+The JavaScript wrapper handles escaped message content and the plain-text
+fallback. Platform inbox messages retain their original content.
+
+Set `GABBAI_PUBLIC_URL` to the app's public origin (for example,
+`https://your-gabbai-site.example`) to include an **Open Gabbai** inbox button.
+Without a configured URL, the button is omitted. Restart the server after editing
+environment variables. The footer asks recipients to respond through Gabbai;
+it does not technically prevent replies.
+
+### Notification storage and delivery
+
 Migration 22 creates shul notification preferences, daily confirmation request
 quotas, per-admin roundup markers, the email outbox, and the global UTC sending
 budget. Booking, inbox confirmation, instant admin alert, quota reservation, and

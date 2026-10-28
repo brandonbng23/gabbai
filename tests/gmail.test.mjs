@@ -27,7 +27,13 @@ test('Gmail uses secure service settings, normalizes the app password, and verif
 
 test('Gmail sends to one recipient from the authenticated account and reports acceptance', async () => {
     const mailer = createGmailMailer({ env, createTransport: () => ({ async sendMail(message) {
-        assert.deepEqual(message, { ...email, from: { name: 'Gabbai', address: env.GMAIL_USER } });
+        assert.deepEqual(message.from, { name: 'Gabbai', address: env.GMAIL_USER });
+        assert.equal(message.to, email.to);
+        assert.equal(message.subject, email.subject);
+        assert.ok(message.text.startsWith(email.text));
+        assert.match(message.text, /automated notification/);
+        assert.match(message.html, /<!doctype html>/);
+        assert.ok(message.html.includes(email.text));
         return { accepted: [email.to], messageId: 'message-id' };
     } }) });
     assert.deepEqual(await mailer.send(email), { status: 'accepted', id: 'message-id' });

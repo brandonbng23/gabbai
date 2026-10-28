@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { createGmailOAuthTransport } from './gmailOAuth.mjs';
+import { emailTemplate, emailText } from './emailTemplate.mjs';
 
 export function createGmailMailer({ env = process.env, createTransport = nodemailer.createTransport, fetchImpl = globalThis.fetch } = {}) {
     if (env.GMAIL_ENABLED?.trim().toLowerCase() !== 'true') return { enabled: false };
@@ -37,7 +38,12 @@ export function createGmailMailer({ env = process.env, createTransport = nodemai
             if (typeof subject !== 'string' || !subject.trim() || subject.length > 200 || /[\r\n]/.test(subject)) throw new TypeError('Provide a subject of 1–200 characters without newlines.');
             if (typeof text !== 'string' || !text.trim() || text.length > 2000000) throw new TypeError('Provide email text of 1–2000000 characters.');
             let result;
-            try { result = await transport.sendMail({ from: { name, address: user }, to, subject: subject.trim(), text }); }
+            const templateOptions = { publicUrl: env.GABBAI_PUBLIC_URL };
+            const message = {
+                from: { name, address: user }, to, subject: subject.trim(),
+                text: emailText(text, templateOptions), html: emailTemplate(subject.trim(), text, templateOptions),
+            };
+            try { result = await transport.sendMail(message); }
             catch (error) { throw deliveryError(error); }
             if (!result.accepted?.some(address => typeof address === 'string' && address.toLowerCase() === to.toLowerCase()) || !result.messageId) {
                 throw new Error('Gmail returned an unexpected response; delivery status is unknown.');
