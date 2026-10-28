@@ -1,12 +1,15 @@
 # Backend messaging
 
 Messages are persisted in SQLite by migration 16, which runs on startup. This
-implements in-app messaging; it does not send email, SMS, or push notifications.
+implements in-app messaging. Registration-related emails use the separate
+[notification worker](EMAIL.md); ordinary composed messages and replies remain
+in-app only. SMS and push notifications are not implemented.
 Migration 17 adds per-recipient trash status without removing message content.
 Migration 18 adds trash status for shared shul inbox messages.
 Migration 19 adds persistent replies associated with the original message.
 Migration 20 adds permanent trash expiration records and cleanup indexes.
 Migration 21 makes shared-conversation trash and expiration personal to each admin.
+Migration 22 adds registration notification settings, email quotas, and the outbox.
 Message subjects and bodies are plain text. Clients should render them as text,
 never as HTML.
 
@@ -168,9 +171,9 @@ System sends require current member/admin recipients from that shul. Keys are
 scoped to the shul and must contain 1–200 characters. Retry the same key, content,
 kind, and recipients to return the existing message without duplicate delivery.
 Reusing a key with different content/recipients returns a conflict. Use a new key
-for each intended campaign. Automatic invitation scheduling, recipient selection,
-and notification preferences are not implemented; this interface supplies the
-durable sending infrastructure for that work.
+for each intended campaign. Registration confirmations, daily admin roundups,
+and the selected admin’s registration alerts use the notification rules in
+[EMAIL.md](EMAIL.md). Other invitation campaigns are not scheduled automatically.
 
 Run `npm run test:messages`, `npm run test:db`, `npm run test:api`, and
 `npm run test:auth` to verify messaging and the surrounding backend behavior.

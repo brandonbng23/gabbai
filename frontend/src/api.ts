@@ -317,16 +317,48 @@ export interface GuestRegistration {
     email: string;
 }
 
-export async function registerForReading(shulId: string, reading: ParshaObj, aliyah: number, guest?: GuestRegistration): Promise<void> {
+export interface NotificationPolicy {
+    timezone: string;
+    emailAvailable: boolean;
+    memberDailyLimit: number;
+    guestDailyLimit: number;
+    globalDailyLimit: number;
+    globalResetTimezone: string;
+    roundupHour: number;
+}
+export interface NotificationSettings { timezone: string; instantAdminUserId: string | null }
+export async function getNotificationPolicy(shulId: string, signal: AbortSignal): Promise<NotificationPolicy> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notification-policy`, { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load email availability.');
+    return response.json();
+}
+export async function getNotificationSettings(shulId: string, signal: AbortSignal): Promise<NotificationSettings> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notifications`, { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load notification settings.');
+    return response.json();
+}
+export async function updateNotificationSettings(shulId: string, settings: NotificationSettings): Promise<NotificationSettings> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notifications`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save notification settings.');
+    }
+    return response.json();
+}
+export interface RegistrationResult { registered: boolean; emailConfirmation?: { status: 'queued' | 'daily_limit' | 'unavailable' | 'not_requested'; timezone: string } }
+export async function registerForReading(shulId: string, reading: ParshaObj, aliyah: number, guest?: GuestRegistration, emailConfirmation = false): Promise<RegistrationResult> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, aliyah, ...(guest ? { guest } : {}) }),
+        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, aliyah, ...(guest ? { guest } : {}), emailConfirmation }),
     });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to register. Please try again.');
     }
+    return response.json();
 }
 
 export async function cancelReading(shulId: string, dateString: string, desc: string, aliyah: number): Promise<void> {

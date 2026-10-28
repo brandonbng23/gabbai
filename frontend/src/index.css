@@ -5064,6 +5064,19 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     }
 }
 
+.registration-email-options { --settings-accent: var(--registration-accent, #8bc8ff); margin-top: 20px; padding: 18px; border-radius: 10px; background: #ffffff05; }
+.registration-email-options h3 { margin: 0 0 12px; font-size: 16px; color: #f6f5f7; }
+.registration-email-options .settings-check-options { display: block; width: auto; }
+.registration-email-options label { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #e5e4e9; }
+.registration-email-options p { margin: 12px 0 0; color: #bdbcc4; font-size: 12px; line-height: 1.6; }
+.registration-notification-policy { margin-top: 12px; }
+.registration-notification-policy summary { color: #a6d5ff; font-size: 12px; cursor: pointer; }
+.notification-settings > h2 { display: block; height: auto; margin: 0 0 12px; padding: 0; border: none; font-size: 23px; font-weight: 600; color: #f6f5f7; }
+.notification-settings p { margin: 10px 0 18px; color: #bdbcc4; font-size: 13px; line-height: 1.6; }
+.notification-settings form { display: flex; flex-direction: column; gap: 10px; }
+.notification-settings form > label { font-size: 14px; color: #e5e4e9; }
+.notification-settings form > :is(input, select) { width: 100%; padding: 10px 12px; border: 1px solid #646167; border-radius: 8px; background: #383739; color: #f6f5f7; font: inherit; color-scheme: dark; }
+.notification-settings form > :is(input, select):focus-visible { outline: 2px solid #8bc8ff; outline-offset: 2px; }
 .messages-page {
     --inbox-accent: #8bc8ff;
     display: grid;

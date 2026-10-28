@@ -131,7 +131,7 @@ test('legacy shared trash migrates to durable admin-specific state and old expir
     const expired = db.sendUserMessage(member.id, shul.id, { ...message, subject: 'Previously expired' });
     db.close();
     const raw = new DatabaseSync(path);
-    raw.exec('DROP TABLE shul_message_admin_states; DELETE FROM schema_migrations WHERE version = 21;');
+    raw.exec('DROP TABLE shul_message_admin_states; DELETE FROM schema_migrations WHERE version >= 21;');
     raw.prepare('UPDATE shul_message_receipts SET deleted_at = ? WHERE message_id = ?').run(new Date(Date.now() - 5 * 86400000).toISOString(), trashed.id);
     raw.prepare('DELETE FROM shul_message_receipts WHERE message_id = ?').run(expired.id);
     raw.prepare("INSERT INTO message_delivery_expirations (message_id, owner_type, owner_id, purged_at) VALUES (?, 'shul', ?, ?)").run(expired.id, shul.id, new Date().toISOString());

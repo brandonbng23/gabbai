@@ -153,6 +153,9 @@ export function createMessagingRepository(db, { transaction, getUser, getShul })
             ...(isAdmin ? { participants: participants.map(person => ({ id: person.id, name: `${person.firstName} ${person.lastName}` })) } : {}) };
     }
     return {
+        recordSystemNotification({ shulId, recipientIds, subject, body, kind, idempotencyKey }) {
+            return insert({ shulId, recipientIds, subject, body, kind, idempotencyKey, senderType: 'system' });
+        },
         purgeExpiredMessages(now = new Date()) {
             if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError('Choose a valid cleanup time.');
             const cutoff = new Date(now.getTime() - 30 * 86400000).toISOString();

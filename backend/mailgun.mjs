@@ -1,4 +1,4 @@
-// Transport only. Which in-app messages should be emailed is deliberately TBD.
+// Transport only. The notification worker owns selection, quotas, and delivery jobs.
 export function createMailgunMailer({ env = process.env, fetchImpl = globalThis.fetch } = {}) {
     const enabled = env.MAILGUN_ENABLED?.trim().toLowerCase() === 'true';
     if (!enabled) return { enabled: false, async send() { return { status: 'disabled' }; } };
@@ -18,7 +18,7 @@ export function createMailgunMailer({ env = process.env, fetchImpl = globalThis.
             // Send separately to each recipient; never expose a broadcast address list.
             if (typeof to !== 'string' || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) throw new TypeError('Provide one recipient email address.');
             if (typeof subject !== 'string' || !subject.trim() || subject.length > 200 || /[\r\n]/.test(subject)) throw new TypeError('Provide a subject of 1–200 characters without newlines.');
-            if (typeof text !== 'string' || !text.trim() || text.length > 20000) throw new TypeError('Provide email text of 1–20000 characters.');
+            if (typeof text !== 'string' || !text.trim() || text.length > 2000000) throw new TypeError('Provide email text of 1–2000000 characters.');
             const form = new FormData();
             form.set('from', from);
             form.set('to', to);

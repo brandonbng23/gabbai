@@ -11,7 +11,7 @@
     "test:api": "node --test tests/api.test.mjs",
     "test:auth": "node --test tests/auth.test.mjs",
     "test:messages": "node --test tests/messages.test.mjs tests/demo-messages.test.mjs",
-    "test:email": "node --test tests/mailgun.test.mjs",
+    "test:email": "node --test tests/mailgun.test.mjs tests/notifications.test.mjs",
     "test:dev": "node --test tests/dev.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",

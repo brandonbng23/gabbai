@@ -7,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defaultShulSettings, mergeShulSettings, serializeUserSettings, validateKeys } from './settings.mjs';
 import { createMessagingRepository } from './messages.mjs';
+import { createNotificationRepository } from './notifications.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
 const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
@@ -109,7 +110,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 21) throw new Error('Database schema is newer than this application');
+            if (version > 22) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -202,6 +203,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 21) {
                 db.exec(readFileSync(new URL('./migrations/021_admin_message_trash.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(21);
+            }
+            if (version < 22) {
+                db.exec(readFileSync(new URL('./migrations/022_registration_notifications.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(22);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -312,10 +317,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         });
     }
 
-    const { recordReadingConfirmation, ...messaging } = createMessagingRepository(db, { transaction, getUser, getShul });
+    const { recordReadingConfirmation, recordSystemNotification, ...messaging } = createMessagingRepository(db, { transaction, getUser, getShul });
+    const { recordRegistrationNotifications, ...notifications } = createNotificationRepository(db, { transaction, getUser, getShul, recordSystemNotification });
     messaging.purgeExpiredMessages();
     return {
         ...messaging,
+        ...notifications,
         path,
         close: () => db.close(),
         getShul,
@@ -574,7 +581,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ? AND user_id = ?`)
                 .run(shulId, dateString, desc, aliyah, userId).changes > 0;
         },
-        registerReading(shulId, { dateString, desc, aliyah, readerId, guest }, validateReading) {
+        registerReading(shulId, { dateString, desc, aliyah, readerId, guest, emailConfirmation = false, emailEnabled = false, now = new Date() }, validateReading) {
+            if (typeof emailConfirmation !== 'boolean') throw new TypeError('Email confirmation must be true or false.');
             return transaction(() => {
                 // Validate availability while holding the write lock, before creating a guest.
                 validateReading();
@@ -612,8 +620,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 }
                 db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
-                recordReadingConfirmation(shulId, { dateString, desc, aliyah,
+                const confirmation = recordReadingConfirmation(shulId, { dateString, desc, aliyah,
                     recipientIds: guest && readerId ? [id, readerId] : [id] });
+                return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, guest: Boolean(guest), dateString, desc, aliyah,
+                    confirmation, emailConfirmation, emailEnabled, now }) };
             });
         },
         createUser(input) {

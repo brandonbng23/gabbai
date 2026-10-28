@@ -21,6 +21,26 @@ Actively, the scheduling engine codebase is being converted to TypeScript from J
 4. Beta
     > Optimize frontend with CSS
 
+## Notifications and email
+
+Every registration gets a system confirmation in the platform inbox, even when no
+email is requested or email cannot be sent.
+
+- **Optional confirmation email:** members/admins can request 5 per day; guest
+  registrations can request 1 per email address per day. These limits reset at
+  midnight in the shul’s configured timezone. A guest email address is not a
+  verified identity, so the guest limit is not a reliable per-person limit.
+- **Daily admin roundup:** every admin receives a system inbox roundup at 4 PM in
+  the shul’s timezone, covering registrations and vacancies over the next three
+  months. It is also emailed when available.
+- **Instant registration alerts:** a shul may select one admin to receive a system
+  message and email for each new registration.
+- **App-wide email cap:** all email types share 100 outgoing emails per UTC day,
+  resetting at midnight UTC. Once the cap is reached, inbox messages continue.
+
+Admins manage the timezone and instant-alert recipient in **Administration Settings
+→ Notifications and email**. See [email setup and delivery rules](backend/EMAIL.md).
+
 ## Gloassary
 
 #### Psukim
