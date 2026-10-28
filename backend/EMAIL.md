@@ -5,9 +5,10 @@
 - Registration confirmations are always saved as system messages in the reader’s
   platform inbox. A signed-in guest booker also gets the guest confirmation.
 - Emailing a confirmation is optional, unchecked by default. Members and admins
-  can request five per shul-local day. Guest registrations can request one per
-  normalized email address per shul-local day. This also applies when using a
-  guest profile without the guest form. Guest identity is not verified, so this
+  can request five per shul-local day across their own and guest bookings.
+  Registrations without a signed-in member/admin use a limit of one per
+  normalized guest email address per shul-local day. This also applies when
+  using a guest profile without the guest form. Guest identity is not verified, so this
   is an email-address limit, not a reliable per-person limit.
 - Every current admin gets a daily system inbox roundup at 4 PM in the shul’s
   configured IANA timezone. It covers the upcoming three calendar months,

@@ -42,16 +42,18 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
             });
         },
         // Called inside the booking transaction: inbox records and email reservations commit with the booking.
-        recordRegistrationNotifications({ shulId, readerId, guest, dateString, desc, aliyah, confirmation, emailConfirmation = false, emailEnabled = false, now = new Date() }) {
+        recordRegistrationNotifications({ shulId, readerId, bookerId, guest, dateString, desc, aliyah, confirmation, emailConfirmation = false, emailEnabled = false, now = new Date() }) {
             const config = settings(shulId);
             const reader = getUser(readerId);
             const isGuest = guest || reader.role === 'guest';
+            const booker = bookerId ? getUser(bookerId) : null;
+            const memberBooker = booker && booker.shulId === shulId && ['member', 'admin'].includes(booker.role);
             let status = emailConfirmation ? 'unavailable' : 'not_requested';
             if (emailConfirmation && emailEnabled) {
-                const identityType = isGuest ? 'guest' : 'member';
-                const identity = isGuest ? reader.email.trim().toLowerCase() : reader.id;
+                const identityType = memberBooker ? 'member' : 'guest';
+                const identity = memberBooker ? booker.id : reader.email.trim().toLowerCase();
                 const day = localClock(now, config.timezone).day;
-                const limit = isGuest ? notificationPolicy.guestDailyLimit : notificationPolicy.memberDailyLimit;
+                const limit = memberBooker ? notificationPolicy.memberDailyLimit : notificationPolicy.guestDailyLimit;
                 db.prepare(`INSERT OR IGNORE INTO confirmation_email_quotas (shul_id, identity_type, identity, local_day) VALUES (?, ?, ?, ?)`).run(shulId, identityType, identity, day);
                 const result = db.prepare(`UPDATE confirmation_email_quotas SET requested = requested + 1 WHERE shul_id = ? AND identity_type = ? AND identity = ? AND local_day = ? AND requested < ?`)
                     .run(shulId, identityType, identity, day, limit);

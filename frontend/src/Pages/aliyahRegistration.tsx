@@ -219,12 +219,9 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                                     onChange={event => setEmailConfirmation(event.target.checked)} aria-describedby="confirmation-email-rules" />
                                 Email me a registration confirmation
                             </label></div>
-                            <p id="confirmation-email-rules">Members and admins can request {emailPolicy?.memberDailyLimit ?? 5} confirmation emails per day. Guest registrations can request {emailPolicy?.guestDailyLimit ?? 1} per email address per day; this does not verify a guest’s identity.
-                                {' '}Daily limits reset at midnight in {emailPolicy?.timezone ?? 'the shul’s configured timezone'}. All email types share an app-wide limit of {emailPolicy?.globalDailyLimit ?? 100} emails per day, resetting at midnight UTC.
-                                {' '}A system inbox confirmation is always saved, whether or not an email is requested or sent.</p>
-                            <details className="registration-notification-policy"><summary>How admin notifications work</summary>
-                                <p>Every admin gets a daily system inbox roundup at 4 PM in the shul’s timezone, covering registrations and vacancies for the next three months. One admin may also be selected to receive a system message with every registration. These notifications are also emailed when email is available and the app-wide daily cap has not been reached.</p>
-                            </details>
+                            <p id="confirmation-email-rules">You are limited to {user && ['member', 'admin'].includes(user.role)
+                                ? emailPolicy?.memberDailyLimit ?? 5
+                                : emailPolicy?.guestDailyLimit ?? 1} confirmation {user && ['member', 'admin'].includes(user.role) ? 'emails' : 'email'} per day.</p>
                             {policyError ? <p role="status">{policyError}</p> : emailPolicy && !emailPolicy.emailAvailable && <p>Email is currently unavailable. Registration and inbox confirmations still work.</p>}
                         </section>
                         <div className="registration-actions">

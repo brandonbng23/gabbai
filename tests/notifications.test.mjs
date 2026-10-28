@@ -39,16 +39,25 @@ test('member confirmation emails are opt-in, limited to five per local day, and 
     assert.equal(book(state, { now: new Date('2026-10-28T04:10:00Z') }).emailConfirmation.status, 'queued', 'New York local midnight resets the quota');
 });
 
-test('guest confirmations are limited by normalized guest email, even without an account or across bookers', t => {
+test('anonymous guest confirmations use the guest email limit while member guest bookings use the member limit', t => {
     const state = fixture(t);
     const guest = { title: 'Mr.', firstName: 'Visitor', lastName: 'Test', email: 'visitor@example.com' };
     assert.equal(book(state, { guest, readerId: undefined }).emailConfirmation.status, 'queued');
-    assert.equal(book(state, { guest: { ...guest, email: 'VISITOR@example.com' }, readerId: state.member.id }).emailConfirmation.status, 'daily_limit');
+    assert.equal(book(state, { guest: { ...guest, email: 'VISITOR@example.com' }, readerId: state.member.id }).emailConfirmation.status, 'queued');
     const profile = state.db.getUserByEmail(guest.email);
     assert.equal(book(state, { readerId: profile.id }).emailConfirmation.status, 'daily_limit', 'Using a guest profile does not grant the five-email member limit');
     assert.equal(state.db.listUserMessages(profile.id).length, 3);
     assert.equal(state.db.listUserMessages(state.member.id).length, 1, 'Signed-in guest booker also gets the in-app confirmation');
     assert.equal(book(state, { guest, readerId: undefined, now: new Date('2026-10-28T04:10:00Z') }).emailConfirmation.status, 'queued');
+});
+
+test('a member shares five confirmation requests across self and guest bookings', t => {
+    const state = fixture(t);
+    for (let i = 0; i < 4; i++) assert.equal(book(state).emailConfirmation.status, 'queued');
+    const guest = { title: 'Mr.', firstName: 'Visitor', lastName: 'Test', email: 'booked-guest@example.com' };
+    assert.equal(book(state, { guest }).emailConfirmation.status, 'queued');
+    assert.equal(book(state, { guest: { ...guest, email: 'another-guest@example.com' } }).emailConfirmation.status, 'daily_limit');
+    assert.equal(book(state).emailConfirmation.status, 'daily_limit');
 });
 
 test('disabled email and failed bookings do not consume confirmation quota', t => {

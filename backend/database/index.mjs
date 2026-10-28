@@ -622,7 +622,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
                 const confirmation = recordReadingConfirmation(shulId, { dateString, desc, aliyah,
                     recipientIds: guest && readerId ? [id, readerId] : [id] });
-                return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, guest: Boolean(guest), dateString, desc, aliyah,
+                return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, bookerId: readerId, guest: Boolean(guest), dateString, desc, aliyah,
                     confirmation, emailConfirmation, emailEnabled, now }) };
             });
         },

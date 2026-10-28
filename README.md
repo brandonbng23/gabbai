@@ -26,8 +26,9 @@ Actively, the scheduling engine codebase is being converted to TypeScript from J
 Every registration gets a system confirmation in the platform inbox, even when no
 email is requested or email cannot be sent.
 
-- **Optional confirmation email:** members/admins can request 5 per day; guest
-  registrations can request 1 per email address per day. These limits reset at
+- **Optional confirmation email:** members/admins can request 5 per day across their
+  own and guest bookings. Registrations without a signed-in member/admin can
+  request 1 per email address per day. These limits reset at
   midnight in the shul’s configured timezone. A guest email address is not a
   verified identity, so the guest limit is not a reliable per-person limit.
 - **Daily admin roundup:** every admin receives a system inbox roundup at 4 PM in
