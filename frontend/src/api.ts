@@ -3,6 +3,130 @@ import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
 import type { ParshaObj } from './Components/parsha.tsx';
 
+export type MessageSender =
+    | { type: 'system'; name: string; pictureUrl: string }
+    | (Shul & { type: 'shul' })
+    | (ShulUser & { type: 'user'; name: string });
+
+export interface Message {
+    id: string;
+    shulId: string;
+    kind: 'message' | 'confirmation' | 'reading_invitation';
+    sender: MessageSender;
+    recipient?: { type: 'shul'; id: string; name: string };
+    sharedInbox?: { id: string; name: string };
+    subject: string;
+    body: string;
+    sendAt: string;
+    readAt: string | null;
+    replyCount?: number;
+    lastReplyAt?: string | null;
+    trashExpiresAt?: string;
+    replyRestoresInbox?: boolean;
+    recipientIds?: string[];
+    recipientCount?: number;
+}
+
+export async function getCurrentUserMessages(signal: AbortSignal, {
+    limit = 50, offset = 0, folder = 'inbox', sort = 'newest', unread = false,
+}: { limit?: number; offset?: number; folder?: 'inbox' | 'sent' | 'trash'; sort?: 'newest' | 'oldest'; unread?: boolean } = {}): Promise<Message[]> {
+    const query = new URLSearchParams({ limit: String(limit), offset: String(offset), folder, sort, unread: String(unread) });
+    const response = await fetch(`/api/me/messages?${query}`, { signal, cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load your messages. Please try again.');
+    }
+    return response.json();
+}
+
+export interface MessageThread {
+    message: Message;
+    replies: Array<{ id: string; body: string; sendAt: string; sender: { type: 'user' | 'shul'; name: string }; authorName?: string; participantId?: string; participantName?: string }>;
+    canReply: boolean;
+    replyUnavailableReason?: string;
+    replyAs: string;
+    participants?: Array<{ id: string; name: string }>;
+}
+
+export async function getMessageThread(messageId: string, signal: AbortSignal): Promise<MessageThread> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/thread`, { signal, cache: 'no-store' });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to load the conversation.');
+    }
+    return response.json();
+}
+
+export async function replyToMessage(messageId: string, body: string, participantId?: string): Promise<MessageThread> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/replies`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, ...(participantId ? { participantId } : {}) }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to send the reply.');
+    }
+    return response.json();
+}
+
+export async function sendMessage(user: User, subject: string, body: string, recipientIds: string[], destination: 'shul' | 'members'): Promise<Message> {
+    const fromShul = user.role === 'admin' && destination === 'members';
+    const response = await fetch(fromShul
+        ? `/api/shuls/${encodeURIComponent(user.shulId ?? '')}/messages`
+        : '/api/me/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, ...(fromShul ? { recipientIds } : {}) }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to send your message. Please try again.');
+    }
+    return response.json();
+}
+
+export interface MessageCounts {
+    all: number;
+    unread: number;
+    trash: number;
+}
+
+export async function getMessageCounts(signal: AbortSignal): Promise<MessageCounts> {
+    const response = await fetch('/api/me/messages/counts', { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load message totals. Please try again.');
+    return response.json();
+}
+
+export async function markMessageRead(messageId: string): Promise<void> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to mark the message as read. Please try again.');
+    }
+}
+
+export async function markMessageUnread(messageId: string): Promise<void> {
+    await updateMessageStatus(messageId, 'unread', {});
+}
+
+export async function setMessageTrash(messageId: string, trashed: boolean): Promise<void> {
+    await updateMessageStatus(messageId, 'trash', { trashed });
+}
+
+async function updateMessageStatus(messageId: string, action: 'unread' | 'trash', body: object): Promise<void> {
+    const response = await fetch(`/api/me/messages/${encodeURIComponent(messageId)}/${action}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to update the message. Please try again.');
+    }
+}
+
 export interface ReadingCountChange {
     dateString: string;
     desc: string;
@@ -193,16 +317,58 @@ export interface GuestRegistration {
     email: string;
 }
 
-export async function registerForReading(shulId: string, reading: ParshaObj, aliyah: number, guest?: GuestRegistration): Promise<void> {
+export interface NotificationPolicy {
+    timezone: string;
+    emailAvailable: boolean;
+    memberDailyLimit: number;
+    guestDailyLimit: number;
+    globalDailyLimit: number;
+    globalResetTimezone: string;
+    roundupHour: number;
+    reportTime: string;
+    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
+}
+export interface NotificationSettings {
+    timezone: string;
+    instantAdminUserId: string | null;
+    dailyReports: Array<{ userId: string; enabled: boolean }>;
+    reportTime: string;
+    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
+}
+export async function getNotificationPolicy(shulId: string, signal: AbortSignal): Promise<NotificationPolicy> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notification-policy`, { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load email availability.');
+    return response.json();
+}
+export async function getNotificationSettings(shulId: string, signal: AbortSignal): Promise<NotificationSettings> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notifications`, { signal, cache: 'no-store' });
+    if (!response.ok) throw new Error('Unable to load notification settings.');
+    return response.json();
+}
+export async function updateNotificationSettings(shulId: string, settings: NotificationSettings): Promise<NotificationSettings> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notifications`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save notification settings.');
+    }
+    return response.json();
+}
+export interface RegistrationResult { registered: boolean; emailConfirmation?: { status: 'queued' | 'daily_limit' | 'unavailable' | 'not_requested'; timezone: string } }
+export async function registerForReading(shulId: string, reading: ParshaObj, aliyah: number, guest?: GuestRegistration, emailConfirmation = false): Promise<RegistrationResult> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, aliyah, ...(guest ? { guest } : {}) }),
+        body: JSON.stringify({ dateString: reading.dateString, desc: reading.desc, aliyah, ...(guest ? { guest } : {}), emailConfirmation }),
     });
     if (!response.ok) {
         const failure = await response.json().catch(() => null);
         throw new Error(failure?.error || 'Unable to register. Please try again.');
     }
+    return response.json();
 }
 
 export async function cancelReading(shulId: string, dateString: string, desc: string, aliyah: number): Promise<void> {

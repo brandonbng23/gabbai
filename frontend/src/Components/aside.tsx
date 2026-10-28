@@ -10,8 +10,8 @@ function Aside({ user }: { user: User | null }): React.JSX.Element {
          icon: (
             <svg className="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M224 64C241.7 64 256 78.3 256 96L256 128L384 128L384 96C384 78.3 398.3 64 416 64C433.7 64 448 78.3 448 96L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 96C192 78.3 206.3 64 224 64zM224 320C206.3 320 192 334.3 192 352L192 416C192 433.7 206.3 448 224 448L288 448C305.7 448 320 433.7 320 416L320 352C320 334.3 305.7 320 288 320L224 320z"/></svg>
          ),
-         link: '/',
-         active: window.location.pathname === '/',
+         link: '/schedule',
+         active: window.location.pathname.replace(/\/$/, '') === '/schedule',
         },
         {text: "My Shul",
          icon: (
@@ -31,8 +31,8 @@ function Aside({ user }: { user: User | null }): React.JSX.Element {
          icon: (
             <svg className="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M112 128C85.5 128 64 149.5 64 176C64 191.1 71.1 205.3 83.2 214.4L291.2 370.4C308.3 383.2 331.7 383.2 348.8 370.4L556.8 214.4C568.9 205.3 576 191.1 576 176C576 149.5 554.5 128 528 128L112 128zM64 260L64 448C64 483.3 92.7 512 128 512L512 512C547.3 512 576 483.3 576 448L576 260L377.6 408.8C343.5 434.4 296.5 434.4 262.4 408.8L64 260z"/></svg>
          ),
-         link: "#",
-         active: false,
+         link: "/messages",
+         active: window.location.pathname.replace(/\/$/, '') === '/messages',
         }
     ]
 

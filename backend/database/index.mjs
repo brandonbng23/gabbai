@@ -6,6 +6,8 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defaultShulSettings, mergeShulSettings, serializeUserSettings, validateKeys } from './settings.mjs';
+import { createMessagingRepository } from './messages.mjs';
+import { createNotificationRepository } from './notifications.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
 const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
@@ -108,7 +110,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 15) throw new Error('Database schema is newer than this application');
+            if (version > 25) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -175,6 +177,49 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(reading_readers)').all().some(column => column.name === 'registered_by_user_id'))
                     db.exec(readFileSync(new URL('./migrations/015_guest_registration_owners.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(15);
+            }
+            if (version < 16) {
+                db.exec(readFileSync(new URL('./migrations/016_messages.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(16);
+            }
+            if (version < 17) {
+                if (!db.prepare('PRAGMA table_info(message_recipients)').all().some(column => column.name === 'deleted_at'))
+                    db.exec(readFileSync(new URL('./migrations/017_message_trash.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(17);
+            }
+            if (version < 18) {
+                if (!db.prepare('PRAGMA table_info(shul_message_receipts)').all().some(column => column.name === 'deleted_at'))
+                    db.exec(readFileSync(new URL('./migrations/018_shul_message_trash.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(18);
+            }
+            if (version < 19) {
+                db.exec(readFileSync(new URL('./migrations/019_message_replies.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(19);
+            }
+            if (version < 20) {
+                db.exec(readFileSync(new URL('./migrations/020_message_trash_expiration.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(20);
+            }
+            if (version < 21) {
+                db.exec(readFileSync(new URL('./migrations/021_admin_message_trash.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(21);
+            }
+            if (version < 22) {
+                db.exec(readFileSync(new URL('./migrations/022_registration_notifications.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(22);
+            }
+            if (version < 23) {
+                db.exec(readFileSync(new URL('./migrations/023_admin_daily_reports.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(23);
+            }
+            if (version < 24) {
+                if (!db.prepare('PRAGMA table_info(shul_notification_settings)').all().some(column => column.name === 'report_time'))
+                    db.exec(readFileSync(new URL('./migrations/024_report_schedule.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(24);
+            }
+            if (version < 25) {
+                db.exec(readFileSync(new URL('./migrations/025_summary_windows.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(25);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -285,7 +330,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         });
     }
 
+    const { recordReadingConfirmation, recordSystemNotification, ...messaging } = createMessagingRepository(db, { transaction, getUser, getShul });
+    const { recordRegistrationNotifications, ...notifications } = createNotificationRepository(db, { transaction, getUser, getShul, recordSystemNotification });
+    messaging.purgeExpiredMessages();
     return {
+        ...messaging,
+        ...notifications,
         path,
         close: () => db.close(),
         getShul,
@@ -544,7 +594,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ? AND user_id = ?`)
                 .run(shulId, dateString, desc, aliyah, userId).changes > 0;
         },
-        registerReading(shulId, { dateString, desc, aliyah, readerId, guest }, validateReading) {
+        registerReading(shulId, { dateString, desc, aliyah, readerId, guest, emailConfirmation = false, emailEnabled = false, now = new Date() }, validateReading) {
+            if (typeof emailConfirmation !== 'boolean') throw new TypeError('Email confirmation must be true or false.');
             return transaction(() => {
                 // Validate availability while holding the write lock, before creating a guest.
                 validateReading();
@@ -582,6 +633,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 }
                 db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
+                const confirmation = recordReadingConfirmation(shulId, { dateString, desc, aliyah,
+                    recipientIds: guest && readerId ? [id, readerId] : [id] });
+                return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, bookerId: readerId, guest: Boolean(guest), dateString, desc, aliyah,
+                    confirmation, emailConfirmation, emailEnabled, now }) };
             });
         },
         createUser(input) {

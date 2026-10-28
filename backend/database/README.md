@@ -8,6 +8,7 @@ npm run db:init
 npm run test:db
 npm run test:api
 npm run test:auth
+npm run test:messages
 npm run test:dev
 ```
 
@@ -103,6 +104,11 @@ attempts are rate-limited with persistent 15-minute buckets; application permiss
 always use the current database role and membership for the session user.
 
 The normal development Vite proxy preserves same-origin auth requests and cookies.
+The frontend and backend bind to loopback by default. The backend rejects
+unexpected Host headers in development, and Vite only serves frontend code,
+shared modules, and dependencies. Environment files, SQLite databases, and backend
+source are excluded from Vite's file serving. These controls are covered by
+`npm run test:dev`.
 `npm run dev` keeps its opt-in seed identity for requests without a session cookie;
 real sessions override it, including for newly registered members. Production has
 no demo fallback unless `GABBAI_PREVIEW_MODE=true` is explicitly configured.
@@ -135,6 +141,7 @@ Render terminates HTTPS at its reverse proxy. `GABBAI_TRUST_PROXY=true`
 lets the API recognize the browser's HTTPS origin; without it, sign-in and other
 writes can fail with "This request must come from Gabbai."
 `GABBAI_PREVIEW_MODE=true` enables **Sign in to demo** on the sign-in page.
+Both flags accept `true` regardless of capitalization or surrounding whitespace.
 For a manually configured service, add these variables in Render's Environment
 settings and save and deploy; deploying updated source alone does not apply
 the repository's Blueprint configuration. After deployment,
@@ -170,6 +177,13 @@ NODE_ENV=production GABBAI_PREVIEW_MODE=true npm start
 
 Open `http://localhost:3000`. Render supplies its own `PORT`, which the server
 already uses while binding to `0.0.0.0`.
+
+## Messaging
+
+Version 16 adds persistent system, shul, and member messaging, private deliveries,
+read receipts, and automatic registration confirmations. See
+[the messaging API and permissions](../MESSAGING.md) for routes, system invitation
+sending, and delivery scope.
 
 ## Relationships
 

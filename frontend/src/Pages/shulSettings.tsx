@@ -14,6 +14,7 @@ import { UserCard } from "../Components/userCard.tsx";
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
+import NotificationSettings from '../Components/notificationSettings.tsx';
 
 type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -656,7 +657,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                 <div>
                     <span className="settings-eyebrow">SHUL MANAGEMENT</span>
                     <h1>Administration Settings</h1>
-                    <p>Manage your shul’s details and shape your congregation’s reading schedule.</p>
+                    <p>Manage your shul’s details, set your schedule settings, and control permissions.</p>
                 </div>
                 <div className="settings-page-actions">
                     <span className="settings-admin-badge"><span aria-hidden="true" />Administrator access</span>
@@ -669,7 +670,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         <div className="settings-summary-heading shul-profile-heading">
                             <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
                             <div>
-                                <span className="settings-eyebrow">YOUR CONGREGATION</span>
                                 <h2>{shul.name}</h2>
                             </div>
                             <span className="settings-published-badge">Published details</span>
@@ -1360,6 +1360,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                             </div>
                         </div>
                     </section>
+                    <NotificationSettings shulId={shul.id} />
                 </div>
             </main>
         </div>

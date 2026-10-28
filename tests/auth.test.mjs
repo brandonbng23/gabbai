@@ -20,7 +20,8 @@ async function setup(t, options = {}) {
     let actor;
     if (options.demo) actor = ensureDemoUser(db);
     else if (options.fallback) actor = db.createUser({ shulId: shul.id, firstName: 'Existing', lastName: 'Admin', email: 'existing@example.com', role: 'admin' });
-    const app = createApp(db, { development: options.production ? false : true, preview: options.preview ?? false, devUserId: actor?.id ?? '' });
+    const app = createApp(db, { development: options.production ? false : true,
+        preview: options.previewFromEnvironment ? undefined : options.preview ?? false, devUserId: actor?.id ?? '' });
     const server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     t.after(async () => { await new Promise(resolve => server.close(resolve)); db.close(); });
@@ -31,11 +32,21 @@ async function setup(t, options = {}) {
 
 test('app documents disable HTTP caching so history navigation revalidates sessions', async t => {
     const { request } = await setup(t);
-    for (const path of ['/', '/index.html', '/signin', '/userSettings', '/userView?user=example', '/userReadings', '/userReadings/']) {
+    for (const path of ['/', '/index.html', '/schedule', '/schedule/', '/signin', '/userSettings', '/userView?user=example', '/userReadings', '/userReadings/']) {
         const response = await request(path);
         assert.equal(response.status, 200, path);
         assert.equal(response.headers.get('cache-control'), 'no-store', path);
         assert.match(response.headers.get('content-type'), /text\/html/);
+    }
+});
+
+test('the main URL defaults to the standalone schedule and preserves the selected shul', async t => {
+    const { request } = await setup(t);
+    for (const path of ['/', '/index.html']) {
+        const response = await request(`${path}?shul=example`, { redirect: 'manual' });
+        assert.equal(response.status, 302);
+        assert.equal(response.headers.get('location'), '/schedule?shul=example');
+        assert.equal(response.headers.get('cache-control'), 'no-store');
     }
 });
 
@@ -84,10 +95,13 @@ test('demo sign-in is unavailable for ordinary deployments and unrelated develop
 
 test('HTTPS proxy sign-in requires proxy trust and still rejects cross-site writes', async t => {
     const previous = process.env.GABBAI_TRUST_PROXY;
+    const previousPreview = process.env.GABBAI_PREVIEW_MODE;
     try {
-        for (const trusted of [false, true]) {
-            process.env.GABBAI_TRUST_PROXY = String(trusted);
-            const { request, db } = await setup(t, { production: true, preview: true });
+        for (const value of ['false', 'true', 'TRUE', ' True ']) {
+            const trusted = value !== 'false';
+            process.env.GABBAI_TRUST_PROXY = value;
+            process.env.GABBAI_PREVIEW_MODE = trusted ? value : 'true';
+            const { request, db } = await setup(t, { production: true, previewFromEnvironment: true });
             const demo = db.getUserByEmail('demo@example.com');
             db.setPasswordHash(demo.id, await hashPassword(password));
             const headers = {
@@ -110,9 +124,18 @@ test('HTTPS proxy sign-in requires proxy trust and still rejects cross-site writ
                     { ...headers, 'Sec-Fetch-Site': 'cross-site' }))).status, 403);
             }
         }
+        for (const value of ['false', 'FALSE', '', 'yes']) {
+            process.env.GABBAI_PREVIEW_MODE = value;
+            const { request } = await setup(t, { production: true, previewFromEnvironment: true });
+            assert.deepEqual(await (await request('/api/auth/options')).json(), { demoAvailable: false });
+            assert.equal((await request('/api/auth/demo', json({}))).status, 404);
+            assert.equal((await request('/api/me')).status, 401);
+        }
     } finally {
         if (previous === undefined) delete process.env.GABBAI_TRUST_PROXY;
         else process.env.GABBAI_TRUST_PROXY = previous;
+        if (previousPreview === undefined) delete process.env.GABBAI_PREVIEW_MODE;
+        else process.env.GABBAI_PREVIEW_MODE = previousPreview;
     }
 });
 

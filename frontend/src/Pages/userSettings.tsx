@@ -101,7 +101,6 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                         <div className="settings-summary-heading user-profile-heading">
                             <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} />
                             <div>
-                                <span className="settings-eyebrow">YOUR PROFILE</span>
                                 <h2 id="user-profile-heading">{`${getGreeting()}, ${user.firstName}`}</h2>
                             </div>
                             <span className="settings-published-badge">Profile details</span>

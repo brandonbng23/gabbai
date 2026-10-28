@@ -1,5 +1,8 @@
 import express from "express";
 import { installAuthentication } from './authentication.mjs';
+import { installMessaging } from './messages.mjs';
+import { createGmailMailer } from './gmail.mjs';
+import { createNotificationService, installNotificationRoutes } from './notifications.mjs';
 import { fileURLToPath } from "node:url";
 import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
@@ -11,7 +14,7 @@ import { userTitles } from '../interfaces/titles.mts';
 export function createApp(database, {
     development = process.env.NODE_ENV === "development",
     devUserId = process.env.GABBAI_DEV_USER_ID,
-    preview = process.env.GABBAI_PREVIEW_MODE === "true",
+    preview = process.env.GABBAI_PREVIEW_MODE?.trim().toLowerCase() === "true",
 } = {}) {
     database ??= openDatabase(process.env.GABBAI_DATABASE_PATH || (preview
         ? fileURLToPath(new URL('../data/gabbai.preview.sqlite', import.meta.url))
@@ -19,9 +22,19 @@ export function createApp(database, {
     const fallbackUserId = preview ? ensureDemoUser(database).id : development ? devUserId : undefined;
     const app = express();
     app.locals.database = database;
+    app.locals.mailer = createGmailMailer(preview ? { env: {} } : undefined);
 
     app.use(express.json({ limit: '2mb' }));
     installAuthentication(app, database, { development, preview, fallbackUserId });
+    installMessaging(app, database);
+    installNotificationRoutes(app, database, { emailEnabled: () => app.locals.mailer.enabled && !preview });
+    app.locals.notifications = createNotificationService({ database, mailer: app.locals.mailer, preview });
+
+    app.get('/api/system/picture', (_req, res) => {
+        res.sendFile(fileURLToPath(new URL('../frontend/src/Assets/favicon.png', import.meta.url)), {
+            headers: { 'Cache-Control': 'public, max-age=3600' },
+        });
+    });
 
     function savePicture(req, res, next, kind) {
         res.set('Cache-Control', 'no-store');
@@ -90,8 +103,9 @@ export function createApp(database, {
     app.post("/api/shuls/:id/readings/register", (req, res, next) => {
         res.set('Cache-Control', 'no-store');
         try {
-            validateKeys(req.body, ['dateString', 'desc', 'aliyah', 'guest'], 'registration');
-            const { dateString, desc, aliyah, guest } = req.body;
+            validateKeys(req.body, ['dateString', 'desc', 'aliyah', 'guest', 'emailConfirmation'], 'registration');
+            const { dateString, desc, aliyah, guest, emailConfirmation = false } = req.body;
+            if (typeof emailConfirmation !== 'boolean') throw new TypeError('Email confirmation must be true or false.');
             if (typeof dateString !== 'string' || typeof desc !== 'string'
                 || !Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9)
                 return res.status(400).json({ error: 'Choose a reading and aliyah from 1 to 9.' });
@@ -106,7 +120,8 @@ export function createApp(database, {
             const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
             if (!('guest' in req.body) && !user)
                 return res.status(401).json({ error: 'Sign in or register as a guest.' });
-            database.registerReading(req.params.id, { dateString, desc, aliyah, guest,
+            const result = database.registerReading(req.params.id, { dateString, desc, aliyah, guest, emailConfirmation,
+                emailEnabled: app.locals.mailer.enabled && !preview,
                 readerId: guest ? req.sessionUserId ?? undefined : user?.id }, () => {
                 const reading = getShulSchedule(database, req.params.id)
                     .find(item => item.dateString === dateString && item.desc === desc);
@@ -118,7 +133,8 @@ export function createApp(database, {
                 if (reading.readers[aliyah - 1]) fail(409, 'Another reader has already registered for this aliyah.');
             });
             // Registration clients only need confirmation, not other readers' profiles.
-            return res.status(201).json({ registered: true });
+            res.status(201).json({ registered: true, ...('emailConfirmation' in req.body ? result : {}) });
+            app.locals.notifications.wake();
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             if (error.status) return res.status(error.status).json({ error: error.message });
@@ -404,7 +420,16 @@ export function createApp(database, {
         return res.json(getSchedule(year));
     });
 
+    app.get(['/', '/index.html'], (req, res) => {
+        const queryStart = req.originalUrl.indexOf('?');
+        res.set('Cache-Control', 'no-store').redirect(`/schedule${queryStart >= 0 ? req.originalUrl.slice(queryStart) : ''}`);
+    });
     app.get(['/login', '/login.html'], (_req, res) => res.redirect('/signin'));
+    app.get(['/messages', '/messages/'], (_req, res) => {
+        res.sendFile(fileURLToPath(new URL('../frontend/dist/index.html', import.meta.url)), {
+            headers: { 'Cache-Control': 'no-store' },
+        });
+    });
     app.get('/registration.html', (_req, res) => res.redirect('/signup'));
     app.use(express.static(fileURLToPath(new URL("../frontend/dist/", import.meta.url)), {
         setHeaders(res, path) {
@@ -413,7 +438,7 @@ export function createApp(database, {
     }));
 
     // The registration URL renders a page in the React app, including on refresh.
-    app.get(["/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/userReadings", "/userReadings/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
+    app.get(["/schedule", "/schedule/", "/registration", "/registration/", "/shul", "/shul/", "/shulSettings", "/shulSettings/", "/userSettings", "/userSettings/", "/userView", "/userView/", "/userReadings", "/userReadings/", "/signin", "/signin/", "/signup", "/signup/"], (req, res) => {
         res.sendFile(fileURLToPath(new URL("../frontend/dist/index.html", import.meta.url)), {
             headers: { 'Cache-Control': 'no-store' },
         });

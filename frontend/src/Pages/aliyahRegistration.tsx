@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
-import { registerForReading } from '../api.js';
-import type { GuestRegistration, User } from '../api.js';
+import { getNotificationPolicy, registerForReading } from '../api.js';
+import type { GuestRegistration, User, NotificationPolicy } from '../api.js';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import InfoIcon from '../Components/infoTip.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
@@ -24,8 +24,12 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     const [submitting, setSubmitting] = useState(false);
     const [registered, setRegistered] = useState(false);
     const [registrationError, setRegistrationError] = useState('');
+    const [emailConfirmation, setEmailConfirmation] = useState(false);
+    const [emailNotice, setEmailNotice] = useState('');
+    const [emailPolicy, setEmailPolicy] = useState<NotificationPolicy | null>(null);
+    const [policyError, setPolicyError] = useState('');
     const useProfile = mode === 'profile' && Boolean(user);
-    const backUrl = shulId ? `/?${new URLSearchParams({ shul: shulId })}` : '/';
+    const backUrl = shulId ? `/schedule?${new URLSearchParams({ shul: shulId })}` : '/schedule';
 
     const params = new URLSearchParams(window.location.search);
     const parshaId = Number(params.get('parsha'));
@@ -41,6 +45,15 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     const locked = Boolean(parsha?.locked || parsha?.lockedArr[aliyah - 1]);
     const unavailable = Boolean(parsha?.readers[aliyah - 1]);
     const canRegister = Boolean(validSelection && shulId && !locked && !unavailable && !loading && !error);
+
+    useEffect(() => {
+        if (!shulId) return;
+        const controller = new AbortController();
+        getNotificationPolicy(shulId, controller.signal)
+            .then(policy => { if (!controller.signal.aborted) { setEmailPolicy(policy); setPolicyError(''); } })
+            .catch(() => { if (!controller.signal.aborted) setPolicyError('Email availability could not be checked. You can still register and receive an inbox confirmation.'); });
+        return () => controller.abort();
+    }, [shulId]);
 
     useEffect(() => {
         const previousTitle = document.title;
@@ -59,7 +72,12 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
         setSubmitting(true);
         setRegistrationError('');
         try {
-            await registerForReading(shulId, parsha, aliyah, details);
+            const result = await registerForReading(shulId, parsha, aliyah, details, emailConfirmation);
+            const status = result.emailConfirmation?.status;
+            setEmailNotice(status === 'queued' ? 'Confirmation email requested. Delivery is subject to the app-wide daily limit.'
+                : status === 'daily_limit' ? 'Your daily confirmation email limit has been reached. Your registration and inbox confirmation are saved.'
+                : status === 'unavailable' ? 'Email is currently unavailable. Your registration and inbox confirmation are saved.'
+                : 'Your system confirmation has been saved to the platform inbox.');
             setRegistered(true);
         } catch (failure) {
             setRegistrationError(failure instanceof Error ? failure.message : 'Unable to register. Please try again.');
@@ -108,6 +126,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
             {registered ? (
                 <section className="registration-details registration-success" aria-label="Registration complete">
                     <p role="status">You’re registered for {aliyahLabels[aliyah - 1]} of {parsha?.desc} on {parsha?.gregDate}.</p>
+                    <p>{emailNotice}</p>
                     <a className="registration-back" href={backUrl}>← Return to schedule</a>
                 </section>
             ) : loading ? (
@@ -193,6 +212,18 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                                 </div>
                             </fieldset>
                         </section>}
+                        <section className="registration-email-options" aria-labelledby="confirmation-email-heading">
+                            <h3 id="confirmation-email-heading">Confirmation</h3>
+                            <div className="settings-check-options"><label>
+                                <input type="checkbox" checked={emailConfirmation} disabled={submitting || !canRegister || !emailPolicy?.emailAvailable}
+                                    onChange={event => setEmailConfirmation(event.target.checked)} aria-describedby="confirmation-email-rules" />
+                                Email me a registration confirmation
+                            </label></div>
+                            <p id="confirmation-email-rules">You are limited to {user && ['member', 'admin'].includes(user.role)
+                                ? emailPolicy?.memberDailyLimit ?? 5
+                                : emailPolicy?.guestDailyLimit ?? 1} confirmation {user && ['member', 'admin'].includes(user.role) ? 'emails' : 'email'} per day.</p>
+                            {policyError ? <p role="status">{policyError}</p> : emailPolicy && !emailPolicy.emailAvailable && <p>Email is currently unavailable. Registration and inbox confirmations still work.</p>}
+                        </section>
                         <div className="registration-actions">
                           <p id="registration-status" role="status">
                             {locked ? 'Your shul has locked this aliyah. Choose another aliyah from the schedule.'

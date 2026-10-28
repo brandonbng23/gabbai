@@ -24,7 +24,7 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
                         <span className="my-shul-code">Shul code <strong>{shul.code}</strong></span>
                     </div>
                 </div>
-                <a className="my-shul-schedule-link" href={`/?${new URLSearchParams({ shul: shul.id })}`}>← View reading schedule</a>
+                <a className="my-shul-schedule-link" href={`/schedule?${new URLSearchParams({ shul: shul.id })}`}>← View reading schedule</a>
             </header>
             <div className="my-shul-sections">
               <section className="my-shul-card" aria-labelledby="shul-contact-heading">
