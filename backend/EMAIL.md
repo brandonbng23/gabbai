@@ -1,4 +1,4 @@
-# Registration notifications and Mailgun
+# Registration notifications and email
 
 ## Public rules
 
@@ -31,25 +31,21 @@ Each shul’s timezone, per-admin daily report switches, and instant-alert admin
 Settings → Communication Settings**. New shuls default to `America/New_York`
 until an admin changes the timezone.
 
-## Configuration
+## Current delivery status
 
-Copy `.env.example` to `.env` locally, fill in `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`,
-`MAILGUN_FROM`, and `MAILGUN_REGION` (`us` or `eu`), then set `MAILGUN_ENABLED=true`
-when ready to send. On hosted environments use server environment variables.
-Never use `VITE_` variables for these values or commit the API key.
+No email provider is configured, so outgoing email is disabled. Registration
+confirmations, scheduled summaries, and instant alerts still appear in platform
+inboxes. The registration form reports email as unavailable.
 
-The existing npm scripts read the process environment; they do not automatically
-load `.env`. Run `node --env-file=.env index.js` to explicitly load it locally,
-or use `node --env-file=.env scripts/dev.mjs` for the development server.
-Email is disabled by default and in preview mode. Tests mock Mailgun; no live
-credentials or real recipients are needed.
+The provider-independent queue, quotas, and notification settings are retained
+for a future email provider. Tests use a fake mailer without real recipients.
 
 ## Persistence, scheduling, and failure behavior
 
 Migration 22 creates shul notification preferences, daily confirmation request
 quotas, per-admin roundup markers, the email outbox, and the global UTC sending
 budget. Booking, inbox confirmation, instant admin alert, quota reservation, and
-outbox entries commit in one SQLite transaction. Mailgun is called separately;
+outbox entries commit in one SQLite transaction. Email delivery runs separately;
 a provider failure cannot roll back a successful registration.
 
 The server checks for due roundups every minute, starting at the configured local time on the selected weekdays, and
@@ -62,7 +58,7 @@ complete email per admin.
 
 Workers claim queued jobs and reserve the global budget atomically. Emailing
 stops at 100 reserved/accepted submissions per UTC day; capped jobs are terminal
-rather than spilling stale notifications into tomorrow. Mailgun acceptance means
+rather than spilling stale notifications into tomorrow. Provider acceptance means
 queued by the provider, not confirmed delivery. Definite 4xx rejections release
 the reserved sending slot. Timeout, network, 5xx, malformed-success, or interrupted
 worker outcomes remain `unknown` and keep their reservation to avoid exceeding
@@ -77,8 +73,6 @@ Guest confirmations are stored in guest profiles; anonymous guests do not yet
 have an account-claim flow to open that inbox.
 
 Run `npm run test:email`, `npm run test:messages`, and `npm run test:api` to verify.
-
-Reference: [Mailgun HTTP sending documentation](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-http).
 
 Migration 23 adds per-admin summary preferences, enabled by default to preserve
 existing behavior. Switching off stops future inbox reports and queued report
