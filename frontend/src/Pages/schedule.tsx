@@ -11,7 +11,10 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
     error: string | null;
 } & ReadingActions) {
     return <main className="schedule-page">
-        <WelcomeBar fName={firstName} />
+        <section className="quick-start">
+             <WelcomeBar fName={firstName} />
+        </section>
+
         {loading ? <LoadingSkeleton variant="schedule" />
             : error ? <p className="shul-context" role="alert">{error}</p>
             : <Schedule shulId={shulId} parshiyot={readings}
