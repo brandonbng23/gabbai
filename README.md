@@ -31,16 +31,17 @@ email is requested or email cannot be sent.
   request 1 per email address per day. These limits reset at
   midnight in the shul’s configured timezone. A guest email address is not a
   verified identity, so the guest limit is not a reliable per-person limit.
-- **Daily admin roundup:** every admin receives a system inbox roundup at 4 PM in
-  the shul’s timezone, covering registrations and vacancies over the next three
-  months. It is also emailed when available.
+- **Registration summaries:** enabled admins receive a system inbox report at
+  the shul’s chosen local time, sent daily, Monday/Thursday, or Monday/Wednesday/Friday.
+  Summaries cover 2–12 weeks ahead in two-week steps (up to about 3 months) and are also emailed
+  when available. Choose a send time before sundown.
 - **Instant registration alerts:** a shul may select one admin to receive a system
   message and email for each new registration.
 - **App-wide email cap:** all email types share 100 outgoing emails per UTC day,
   resetting at midnight UTC. Once the cap is reached, inbox messages continue.
 
 Admins manage the timezone and instant-alert recipient in **Administration Settings
-→ Notifications and email**. See [email setup and delivery rules](backend/EMAIL.md).
+→ Communication Settings**. See [email setup and delivery rules](backend/EMAIL.md).
 
 ## Gloassary
 

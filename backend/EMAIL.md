@@ -10,14 +10,15 @@
   normalized guest email address per shul-local day. This also applies when
   using a guest profile without the guest form. Guest identity is not verified, so this
   is an email-address limit, not a reliable per-person limit.
-- Every current admin gets a daily system inbox roundup at 4 PM in the shul’s
-  configured IANA timezone. It covers the upcoming three calendar months,
+- Admins enabled for daily reports get a system inbox roundup at the shul’s chosen time in its
+  configured IANA timezone. Schedules can be daily, Monday/Thursday (M/R), or
+  Monday/Wednesday/Friday (M/W/F). Summaries cover 2–12 weeks in two-week steps (up to about three months),
   including today, with reader names, dates, aliyot, and passages for assigned
   readings. Vacancies have only date, reading name, count, and aliyah numbers;
   locked/unavailable slots are not advertised as vacancies.
 - One current admin per shul can be selected for a system message with every
   successful self-service reading registration. The same alert is queued for
-  email when available. Daily roundups go to every admin, regardless of this
+  email when available. Daily report switches are independent of the instant-alert
   selection. Admin-assigned slots are included in the roundup.
 - **All email types share a limit of 100 outgoing emails across the entire app
   per UTC day**, resetting at midnight UTC. This includes confirmations, instant
@@ -26,8 +27,8 @@
 
 These rules appear publicly on the registration form and in the README. They are
 also available without signing in at `GET /api/shuls/:id/notification-policy`.
-Each shul’s timezone and instant-alert admin are editable under **Administration
-Settings → Notifications and email**. New shuls default to `America/New_York`
+Each shul’s timezone, per-admin daily report switches, and instant-alert admin are editable under **Administration
+Settings → Communication Settings**. New shuls default to `America/New_York`
 until an admin changes the timezone.
 
 ## Configuration
@@ -51,10 +52,10 @@ budget. Booking, inbox confirmation, instant admin alert, quota reservation, and
 outbox entries commit in one SQLite transaction. Mailgun is called separately;
 a provider failure cannot roll back a successful registration.
 
-The server checks for due roundups every minute, starting at 4 PM local time, and
+The server checks for due roundups every minute, starting at the configured local time on the selected weekdays, and
 catches up for the current local day if it starts later. A marker per admin/day
 prevents duplicates across restarts and workers. The server must be running;
-an always-on server is required for the 4 PM schedule. It does not backfill prior
+an always-on server is required for the chosen schedule. It does not backfill prior
 days. New registrations wake the queue worker after the response is sent.
 A long roundup is split into numbered platform messages while retaining one
 complete email per admin.
@@ -78,3 +79,21 @@ have an account-claim flow to open that inbox.
 Run `npm run test:email`, `npm run test:messages`, and `npm run test:api` to verify.
 
 Reference: [Mailgun HTTP sending documentation](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-http).
+
+Migration 23 adds per-admin summary preferences, enabled by default to preserve
+existing behavior. Switching off stops future inbox reports and queued report
+emails; past inbox reports remain. New admins default to enabled.
+
+Migration 24 stores `reportTime` (24-hour HH:mm), `reportFrequency` (`daily`,
+`mon_thu`, `mon_wed_fri`), and `reportRange` (`2weeks`, `1month`, `2months`,
+`3months`). Defaults preserve 4 PM daily reports covering three months. Weekdays
+use the shul-local civil calendar, assuming the selected send time is before
+sundown. Sunset is not calculated automatically. At most one roundup is generated
+per enabled admin per scheduled local date, including same-day startup catch-up.
+
+Migration 25 adds the two-week summary slider: `2weeks`, `4weeks`, `6weeks`,
+`8weeks`, `10weeks`, `12weeks`. Twelve weeks is approximately three months,
+not three exact calendar months. Legacy one-, two-, and three-month selections
+migrate to 4, 8, and 12 weeks respectively, preserving the other settings.
+New inbox and email subjects call these Registration Summaries. Internal report
+field names and outbox categories remain unchanged for compatibility.

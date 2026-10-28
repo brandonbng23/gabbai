@@ -110,7 +110,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 22) throw new Error('Database schema is newer than this application');
+            if (version > 25) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -207,6 +207,19 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 22) {
                 db.exec(readFileSync(new URL('./migrations/022_registration_notifications.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(22);
+            }
+            if (version < 23) {
+                db.exec(readFileSync(new URL('./migrations/023_admin_daily_reports.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(23);
+            }
+            if (version < 24) {
+                if (!db.prepare('PRAGMA table_info(shul_notification_settings)').all().some(column => column.name === 'report_time'))
+                    db.exec(readFileSync(new URL('./migrations/024_report_schedule.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(24);
+            }
+            if (version < 25) {
+                db.exec(readFileSync(new URL('./migrations/025_summary_windows.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(25);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');

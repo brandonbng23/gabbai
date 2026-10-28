@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { validateKeys } from './settings.mjs';
-import { localClock, notificationPolicy } from '../notificationPolicy.mjs';
+import { localClock, notificationPolicy, reportRanges, reportFrequencies } from '../notificationPolicy.mjs';
 
 export function createNotificationRepository(db, { transaction, getUser, getShul, recordSystemNotification }) {
     function settings(shulId) {
         if (!getShul(shulId)) throw Object.assign(new Error('Shul not found.'), { status: 404 });
         const row = db.prepare('SELECT * FROM shul_notification_settings WHERE shul_id = ?').get(shulId);
-        return { timezone: row?.timezone ?? 'America/New_York', instantAdminUserId: row?.instant_admin_user_id ?? null };
+        const dailyReports = db.prepare(`SELECT u.id AS userId, COALESCE(p.enabled, 1) AS enabled FROM users u
+            LEFT JOIN admin_daily_report_preferences p ON p.user_id = u.id AND p.shul_id = u.shul_id
+            WHERE u.shul_id = ? AND u.role = 'admin' ORDER BY u.id`).all(shulId).map(item => ({ ...item, enabled: Boolean(item.enabled) }));
+        return { timezone: row?.timezone ?? 'America/New_York', instantAdminUserId: row?.instant_admin_user_id ?? null, dailyReports,
+            reportTime: row?.report_time ?? '16:00', reportFrequency: row?.report_frequency ?? 'daily', reportRange: row?.report_range ?? '12weeks' };
     }
     function admin(actorId, shulId) {
         const actor = getUser(actorId);
@@ -25,20 +29,37 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
         getNotificationSettings: settings,
         updateNotificationSettings(actorId, shulId, input) {
             admin(actorId, shulId);
-            validateKeys(input, ['timezone', 'instantAdminUserId'], 'notification settings');
+            validateKeys(input, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
             return transaction(() => {
                 const next = { ...settings(shulId), ...input };
                 if (typeof next.timezone !== 'string') throw new TypeError('Choose a valid IANA timezone.');
                 try { new Intl.DateTimeFormat('en', { timeZone: next.timezone }).format(); }
                 catch { throw new TypeError('Choose a valid IANA timezone.'); }
+                if (typeof next.reportTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(next.reportTime)) throw new TypeError('Choose a valid report time.');
+                if (!reportFrequencies.includes(next.reportFrequency)) throw new TypeError('Choose Daily, Monday/Thursday, or Monday/Wednesday/Friday.');
+                if (!reportRanges.includes(next.reportRange)) throw new TypeError('Choose a summary window from 2 to 12 weeks.');
                 if (next.instantAdminUserId !== null) {
                     const selected = typeof next.instantAdminUserId === 'string' ? getUser(next.instantAdminUserId) : null;
                     if (!selected || selected.role !== 'admin' || selected.shulId !== shulId) throw new TypeError('Choose a current admin of this shul.');
                 }
-                db.prepare(`INSERT INTO shul_notification_settings (shul_id, timezone, instant_admin_user_id) VALUES (?, ?, ?)
-                    ON CONFLICT(shul_id) DO UPDATE SET timezone = excluded.timezone, instant_admin_user_id = excluded.instant_admin_user_id`)
-                    .run(shulId, next.timezone, next.instantAdminUserId);
-                return next;
+                if ('dailyReports' in input) {
+                    if (!Array.isArray(input.dailyReports)) throw new TypeError('Provide daily report preferences as a list.');
+                    const seen = new Set();
+                    for (const preference of input.dailyReports) {
+                        validateKeys(preference, ['userId', 'enabled'], 'daily report preference');
+                        const selected = typeof preference.userId === 'string' ? getUser(preference.userId) : null;
+                        if (!selected || selected.role !== 'admin' || selected.shulId !== shulId || typeof preference.enabled !== 'boolean' || seen.has(preference.userId))
+                            throw new TypeError('Choose each current shul admin once, with an on/off daily report preference.');
+                        seen.add(preference.userId);
+                    }
+                    for (const preference of input.dailyReports) db.prepare(`INSERT INTO admin_daily_report_preferences (shul_id, user_id, enabled) VALUES (?, ?, ?)
+                        ON CONFLICT(shul_id, user_id) DO UPDATE SET enabled = excluded.enabled`).run(shulId, preference.userId, Number(preference.enabled));
+                }
+                db.prepare(`INSERT INTO shul_notification_settings (shul_id, timezone, instant_admin_user_id, report_time, report_frequency, report_range) VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(shul_id) DO UPDATE SET timezone = excluded.timezone, instant_admin_user_id = excluded.instant_admin_user_id,
+                    report_time = excluded.report_time, report_frequency = excluded.report_frequency, report_range = excluded.report_range`)
+                    .run(shulId, next.timezone, next.instantAdminUserId, next.reportTime, next.reportFrequency, next.reportRange);
+                return settings(shulId);
             });
         },
         // Called inside the booking transaction: inbox records and email reservations commit with the booking.
@@ -72,20 +93,22 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
             return { status, timezone: config.timezone };
         },
         needsDailyRoundup(shulId, localDay) {
-            return db.prepare(`SELECT 1 FROM users u WHERE u.shul_id = ? AND u.role = 'admin' AND NOT EXISTS
+            return db.prepare(`SELECT 1 FROM users u LEFT JOIN admin_daily_report_preferences p ON p.user_id = u.id AND p.shul_id = u.shul_id
+                WHERE u.shul_id = ? AND u.role = 'admin' AND COALESCE(p.enabled, 1) = 1 AND NOT EXISTS
                 (SELECT 1 FROM notification_roundups r WHERE r.shul_id = ? AND r.user_id = u.id AND r.local_day = ?) LIMIT 1`).get(shulId, shulId, localDay) !== undefined;
         },
         recordDailyRoundup(shulId, localDay, body, { now = new Date(), emailEnabled = false } = {}) {
             if (typeof body !== 'string' || body.length > 2000000 || !body.trim()) throw new TypeError('Invalid roundup content.');
             return transaction(() => {
                 let added = 0;
-                const admins = db.prepare("SELECT id FROM users WHERE shul_id = ? AND role = 'admin'").all(shulId);
+                const admins = db.prepare(`SELECT u.id FROM users u LEFT JOIN admin_daily_report_preferences p ON p.user_id = u.id AND p.shul_id = u.shul_id
+                    WHERE u.shul_id = ? AND u.role = 'admin' AND COALESCE(p.enabled, 1) = 1`).all(shulId);
                 // Platform messages have a 10,000-character limit; preserve the entire report in numbered parts.
                 const parts = body.match(/[\s\S]{1,9500}/g);
                 for (const recipient of admins) {
                     const created = db.prepare('INSERT OR IGNORE INTO notification_roundups (shul_id, user_id, local_day, created_at) VALUES (?, ?, ?, ?)').run(shulId, recipient.id, localDay, now.toISOString());
                     if (!created.changes) continue;
-                    const subject = `Daily reading roundup — ${localDay}`;
+                    const subject = `Registration summary — ${localDay}`;
                     let firstMessage;
                     for (const [index, text] of parts.entries()) {
                         const message = system(shulId, recipient.id, parts.length > 1 ? `${subject} (${index + 1}/${parts.length})` : subject, text,
@@ -106,7 +129,8 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
                 const job = db.prepare("SELECT * FROM notification_email_outbox WHERE status = 'queued' ORDER BY created_at, rowid LIMIT 1").get();
                 if (!job) return null;
                 const recipient = getUser(job.recipient_user_id);
-                if (!recipient || (job.category !== 'confirmation' && (recipient.role !== 'admin' || recipient.shulId !== job.shul_id))) {
+                const reportDisabled = job.category === 'roundup' && db.prepare('SELECT enabled FROM admin_daily_report_preferences WHERE shul_id = ? AND user_id = ?').get(job.shul_id, job.recipient_user_id)?.enabled === 0;
+                if (!recipient || reportDisabled || (job.category !== 'confirmation' && (recipient.role !== 'admin' || recipient.shulId !== job.shul_id))) {
                     db.prepare("UPDATE notification_email_outbox SET status = 'skipped', error_code = 'recipient-no-longer-eligible' WHERE id = ?").run(job.id);
                     return { skipped: true };
                 }

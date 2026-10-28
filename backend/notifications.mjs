@@ -1,18 +1,18 @@
 import { HDate } from '@hebcal/core';
 import { getShulSchedule } from './schedule.mjs';
-import { localClock, notificationPolicy, threeMonthWindow } from './notificationPolicy.mjs';
+import { localClock, notificationPolicy, reportWindow, isReportDue } from './notificationPolicy.mjs';
 import { validateKeys } from './database/settings.mjs';
 
-export function buildReadingRoundup(database, shulId, now, timezone) {
+export function buildReadingRoundup(database, shulId, now, timezone, window = '12weeks') {
     const shul = database.getShul(shulId);
-    const range = threeMonthWindow(now, timezone);
+    const range = reportWindow(now, timezone, window);
     const hebrewYear = day => {
         const [year, month, date] = day.split('-').map(Number);
         return new HDate(new Date(year, month - 1, date, 12)).getFullYear();
     };
     const startYear = hebrewYear(range.start);
     const endYear = hebrewYear(range.end);
-    const lines = [`${shul.name} — daily reading roundup`, `Upcoming three months: ${range.start} through ${range.end} (${timezone})`, ''];
+    const lines = [`${shul.name} — registration summary`, `Upcoming readings: ${range.start} through ${range.end} (${timezone})`, ''];
     let registrations = 0;
     let vacancies = 0;
     for (let year = startYear; year <= endYear; year++) {
@@ -51,8 +51,8 @@ export function createNotificationService({ database, mailer, preview = false, c
             try {
                 const config = database.getNotificationSettings(shul.id);
                 const local = localClock(now, config.timezone);
-                if (local.hour < notificationPolicy.roundupHour || !database.needsDailyRoundup(shul.id, local.day)) continue;
-                const body = roundupBuilder(database, shul.id, now, config.timezone);
+                if (!isReportDue(now, config) || !database.needsDailyRoundup(shul.id, local.day)) continue;
+                const body = roundupBuilder(database, shul.id, now, config.timezone, config.reportRange);
                 database.recordDailyRoundup(shul.id, local.day, body, { now, emailEnabled });
             } catch {
                 console.error('A shul roundup could not be generated; it will be retried on the next tick.');
@@ -103,7 +103,11 @@ export function createNotificationService({ database, mailer, preview = false, c
 
 export function installNotificationRoutes(app, database, { emailEnabled }) {
     app.get('/api/shuls/:id/notification-policy', (req, res, next) => {
-        try { res.set('Cache-Control', 'no-store').json({ ...notificationPolicy, timezone: database.getNotificationSettings(req.params.id).timezone, emailAvailable: emailEnabled() }); }
+        try {
+            const config = database.getNotificationSettings(req.params.id);
+            res.set('Cache-Control', 'no-store').json({ ...notificationPolicy, timezone: config.timezone, roundupHour: Number(config.reportTime.split(':')[0]),
+                reportTime: config.reportTime, reportFrequency: config.reportFrequency, reportRange: config.reportRange, emailAvailable: emailEnabled() });
+        }
         catch (error) { if (error.status) res.status(error.status).json({ error: error.message }); else next(error); }
     });
     app.get('/api/shuls/:id/notifications', (req, res, next) => {
@@ -115,7 +119,7 @@ export function installNotificationRoutes(app, database, { emailEnabled }) {
     });
     app.patch('/api/shuls/:id/notifications', (req, res, next) => {
         try {
-            validateKeys(req.body, ['timezone', 'instantAdminUserId'], 'notification settings');
+            validateKeys(req.body, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
             res.set('Cache-Control', 'no-store').json(database.updateNotificationSettings(req.currentUserId, req.params.id, req.body));
         } catch (error) {
             if (error instanceof TypeError) res.status(400).json({ error: error.message });

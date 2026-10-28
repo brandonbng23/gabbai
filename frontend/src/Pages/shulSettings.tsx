@@ -666,7 +666,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
 
             <main className="shul-settings">
                 <div className="settings-view">
-                    <NotificationSettings shulId={shul.id} />
                     <aside className="shul-card" aria-label="Published shul information">
                         <div className="settings-summary-heading shul-profile-heading">
                             <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
@@ -1361,6 +1360,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                             </div>
                         </div>
                     </section>
+                    <NotificationSettings shulId={shul.id} />
                 </div>
             </main>
         </div>

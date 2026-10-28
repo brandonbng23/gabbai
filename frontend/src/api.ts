@@ -325,8 +325,18 @@ export interface NotificationPolicy {
     globalDailyLimit: number;
     globalResetTimezone: string;
     roundupHour: number;
+    reportTime: string;
+    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
 }
-export interface NotificationSettings { timezone: string; instantAdminUserId: string | null }
+export interface NotificationSettings {
+    timezone: string;
+    instantAdminUserId: string | null;
+    dailyReports: Array<{ userId: string; enabled: boolean }>;
+    reportTime: string;
+    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
+}
 export async function getNotificationPolicy(shulId: string, signal: AbortSignal): Promise<NotificationPolicy> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notification-policy`, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error('Unable to load email availability.');
