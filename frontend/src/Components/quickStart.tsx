@@ -4,6 +4,9 @@ import WelcomeBar from './welcomeBar.tsx';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from './parsha.tsx';
 import { readingAnchor } from '../readingAnchor.ts';
+import { availableAliyot, upcomingAvailableReadings } from '../quickStartReadings.ts';
+
+const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', "Revi’i", 'Chamishi', 'Shishi', "Shvi’i", 'Maftir', 'Haftarah'];
 
 function QuickStartResult({ reading, onSelect }: {
     reading: ParshaObj;
@@ -11,7 +14,7 @@ function QuickStartResult({ reading, onSelect }: {
 }) {
     const slots = reading.psukim.map((verses, index) => ({ verses, index })).filter(slot => slot.verses && slot.verses !== 'null');
     const assigned = slots.filter(slot => reading.readers[slot.index]).length;
-    const available = slots.filter(slot => !reading.locked && !reading.lockedArr[slot.index] && !reading.readers[slot.index]).length;
+    const available = availableAliyot(reading).length;
 
     return <a className="quick-start-result" href={`#${encodeURIComponent(readingAnchor(reading))}`} onClick={event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -44,6 +47,9 @@ export function QuickStart({ firstName, readings, loading, error, onSelectReadin
     const query = search.trim().toLowerCase();
     const results = query ? readings.filter(reading => reading.searchTerms.some(term => term.toLowerCase().includes(query))) : [];
     const showResults = open && Boolean(query);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const upcoming = upcomingAvailableReadings(readings, today);
     return (
         <section className="quick-start">
             <WelcomeBar fName={firstName} />
@@ -78,6 +84,27 @@ export function QuickStart({ firstName, readings, loading, error, onSelectReadin
                         </> : <p className="quick-start-search-status" role="status">No readings found. Try another Parsha or Yontif name.</p>}
                 </div>}
             </form>
+            <section className="quick-start-upcoming" aria-label="Upcoming readings with open aliyot" aria-busy={loading}>
+                {loading ? <p className="quick-start-preview-status" role="status">Finding upcoming readings…</p>
+                    : error ? <p className="quick-start-preview-status" role="alert">Upcoming readings are unavailable right now.</p>
+                    : upcoming.length ? <div className="quick-start-preview-grid">
+                        {upcoming.map(reading => {
+                            const available = availableAliyot(reading);
+                            return <a key={`${reading.dateString}-${reading.desc}`} className="quick-start-preview"
+                                href={`#${encodeURIComponent(readingAnchor(reading))}`} onClick={event => {
+                                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                                    event.preventDefault();
+                                    setOpen(false);
+                                    onSelectReading(reading);
+                                }}>
+                                <span className="quick-start-preview-date">{reading.gregDate}</span>
+                                <h3>{reading.desc}</h3>
+                                <span className="quick-start-preview-availability">{available.length} {available.length === 1 ? 'aliyah' : 'aliyot'} available</span>
+                                <span className="quick-start-preview-slots">{available.map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(' · ')}</span>
+                            </a>;
+                        })}
+                    </div> : <p className="quick-start-preview-status" role="status">No upcoming readings have open aliyot right now.</p>}
+            </section>
             <a className="quick-start-reveal" href="#full-schedule" onClick={event => {
                 const schedule = document.getElementById('full-schedule');
                 if (!schedule) return;
