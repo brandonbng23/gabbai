@@ -1120,18 +1120,41 @@ h4 {
 }
 
 .quick-start {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 24px;
     width: 100%;
-    min-height: 500px;
+    min-height: 560px;
     margin: 0;
     padding: 48px max(24px, 3vw);
     background: radial-gradient(ellipse at top, #263b4c, #161616 65%);
     text-align: center;
 }
+
+.quick-start-reveal {
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    color: #b0bac5;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: 6px;
+}
+.quick-start-reveal svg { transform: rotate(180deg); }
+.quick-start-reveal:hover { color: #dcefff; }
+.quick-start-reveal:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
+.schedule-content { scroll-margin-top: 85px; }
 
 .welcome-bar {
     margin-left: var(--parsha-left-gap);
@@ -2866,7 +2889,7 @@ input[type="number"] {
 .quick-start-search .reading-search-icon { right: 18px; }
 .quick-start-search input:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
 @media (max-width: 620px) {
-    .quick-start { min-height: 360px; padding: 36px 20px; }
+    .quick-start { min-height: 400px; padding: 36px 20px; }
 }
 
 .reading-search input,
@@ -4701,8 +4724,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 @media (max-width: 715px) {
     .content-window-schedule { --content-offset: 80px; }
 }
-.schedule-page > .schedule,
-.schedule-page > .skeleton-state { width: min(calc(100% - 50px), 77.5vw); }
+.schedule-page > .schedule-content { width: min(calc(100% - 50px), 77.5vw); }
 .schedule-page .quick-start .welcome-bar { width: 100%; margin: 0; padding: 0; border-radius: 0; transform: translateY(-48px); }
 .schedule-page .quick-start .welcome-bar h4 { margin: 0; }
 .schedule-page {
@@ -5051,8 +5073,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 /* Keep the original desktop column; allow controls to wrap on smaller screens. */
 @media (max-width: 1000px) {
-    .schedule-page > .schedule,
-    .schedule-page > .skeleton-state { width: calc(100% - 20px); }
+    .schedule-page > .schedule-content { width: calc(100% - 20px); }
     .schedule-page .welcome-bar, .schedule-page .filterBar, .schedule-page .parsha,
     .content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
         width: calc(100% - 20px);

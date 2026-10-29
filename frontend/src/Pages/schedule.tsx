@@ -15,10 +15,12 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
     return <main className="schedule-page">
         <QuickStart firstName={firstName} search={search} onSearchChange={setSearch} />
 
+        <div id="full-schedule" className="schedule-content" tabIndex={-1} aria-label="Full schedule">
         {loading ? <LoadingSkeleton variant="schedule" />
             : error ? <p className="shul-context" role="alert">{error}</p>
             : <Schedule shulId={shulId} parshiyot={readings}
                 nameFilter={search} setNameFilter={setSearch}
                 currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />}
+        </div>
     </main>;
 }
