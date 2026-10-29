@@ -4669,6 +4669,15 @@ body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-
 .skeleton-reading-tag { height: 14px; border-radius: 4px; }
 .skeleton-label { height: 11px; }
 .skeleton-input { height: 40px; }
+.skeleton-welcome { display: flex; justify-content: center; }
+.skeleton-welcome .skeleton-title { height: 48px; }
+.skeleton-quick-start-search { display: grid; gap: 12px; }
+.skeleton-quick-start-search .skeleton-input { height: 56px; }
+.skeleton-state-quick-start .quick-start-preview,
+.quick-start-upcoming .quick-start-preview:has(.skeleton-block) { min-height: 142px; gap: 12px; }
+.skeleton-reading-filters { flex-wrap: wrap; }
+.skeleton-reading-search { display: grid; gap: 8px; }
+.skeleton-shul-picture { border-radius: 12px; }
 .skeleton-avatar { height: 80px; border-radius: 50%; }
 .skeleton-avatar-small { height: 32px; }
 .skeleton-profile-name { flex: 1; display: grid; gap: 12px; }

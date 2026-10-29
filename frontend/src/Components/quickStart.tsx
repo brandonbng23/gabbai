@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import type { JSX } from 'react';
+import { LoadingSkeleton } from './loadingSkeleton.tsx';
 import WelcomeBar from './welcomeBar.tsx';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from './parsha.tsx';
@@ -85,7 +86,7 @@ export function QuickStart({ firstName, readings, loading, error, onSelectReadin
                 </div>}
             </form>
             <section className="quick-start-upcoming" aria-label="Upcoming readings with open aliyot" aria-busy={loading}>
-                {loading ? <p className="quick-start-preview-status" role="status">Finding upcoming readings…</p>
+                {loading ? <LoadingSkeleton variant="quick-start" />
                     : error ? <p className="quick-start-preview-status" role="alert">Upcoming readings are unavailable right now.</p>
                     : upcoming.length ? <div className="quick-start-preview-grid">
                         {upcoming.map(reading => {
