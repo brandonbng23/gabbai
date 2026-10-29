@@ -19,6 +19,17 @@ import { installSessionHistoryGuard } from './sessionHistory.ts';
 
 function App() {
     useEffect(() => installSessionHistoryGuard(window, document.body), []);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        try {
+            const saved = window.localStorage.getItem('gabbai-sidebar-collapsed');
+            if (saved !== null) return saved === 'true';
+        } catch { /* Navigation still works when browser storage is unavailable. */ }
+        return window.matchMedia('(max-width: 715px)').matches;
+    });
+    useEffect(() => {
+        try { window.localStorage.setItem('gabbai-sidebar-collapsed', String(sidebarCollapsed)); }
+        catch { /* Keep the preference for this page even without browser storage. */ }
+    }, [sidebarCollapsed]);
     const [schedule, setSchedule] = useState<ParshaObj[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -115,10 +126,10 @@ function App() {
         && (!shul || isUserSettingsPage || isShulSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage)) return <AuthPage mode="signin" />;
 
     return (
-        <div>
+        <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed}>
             <div className="app-layout">
               <Navbar user={user}></Navbar>
-              <Aside user={user}></Aside>
+              <Aside user={user} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(value => !value)} />
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : loading ? <LoadingSkeleton page variant="messages" /> : error ? <p className="shul-context" role="alert">{error}</p> : null) : isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />

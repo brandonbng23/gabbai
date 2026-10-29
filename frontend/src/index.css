@@ -182,14 +182,23 @@ body {
     background-color: #262626;
 
     position: fixed;
-    width: 250px;
+    top: 77px;
+    bottom: 12px;
+    left: 12px;
+    width: 226px;
     flex-shrink: 0;
 
     display: flex;
     flex-direction: column;
 
-    height: calc(100vh - 65px);
-    margin-top: 65px;
+    height: auto;
+    margin: 0;
+    padding: 8px 0;
+    border: 1px solid #ffffff12;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px #0004;
+    overflow-y: auto;
+    scrollbar-width: thin;
     z-index: 100;
 }
 
@@ -199,7 +208,7 @@ body {
     display: flex;
     flex-direction: column;
 
-    flex: 1;
+    flex: 1 0 auto;
     justify-content: flex-start;
 
     min-height: 0;
@@ -317,7 +326,7 @@ body {
     }
 
     .sidebar {
-        width: 150px;
+        width: 126px;
     }
 }
 
@@ -331,7 +340,15 @@ body {
     }
 
     .sidebar {
-        width: 80px;
+        left: 8px;
+        width: 64px;
+        border-radius: 14px;
+    }
+
+    .sidebar-link,
+    .sidebar-bottom-link {
+        justify-content: center;
+        padding: 10px 6px;
     }
 
     .siderbar-bottom-link {
@@ -1126,11 +1143,12 @@ h4 {
     align-items: center;
     justify-content: flex-start;
     gap: 24px;
-    width: 100%;
+    width: calc(100% + var(--content-offset, 0px));
     min-height: 640px;
     height: auto;
-    margin: 0;
+    margin: 0 0 0 calc(-1 * var(--content-offset, 0px));
     padding: 144px max(24px, 3vw) 8px;
+    padding-left: calc(var(--content-offset, 0px) + max(24px, 3vw));
     background: radial-gradient(ellipse at top, #263b4c, #161616 65%);
     text-align: center;
 }
@@ -2951,7 +2969,7 @@ input[type="number"] {
 .schedule-page .parsha { scroll-margin-top: 85px; }
 .schedule-page .parsha:focus { outline: 2px solid #8bc8ff; outline-offset: 3px; }
 @media (max-width: 620px) {
-    .quick-start { min-height: 560px; padding: 88px 20px 8px; }
+    .quick-start { min-height: 560px; padding: 88px 20px 8px; padding-left: calc(var(--content-offset, 0px) + 20px); }
     .quick-start-result { gap: 10px; padding: 12px; }
     .quick-start-result-counts { flex-direction: column; }
 }
@@ -6040,3 +6058,56 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .account-password-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .account-password-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
 .account-password-footer > span { color: var(--settings-muted); font-size: 12px; }
+
+/* Keep the floating navigation, content, and footer on the same width setting. */
+.app-shell {
+    --app-sidebar-space: 250px;
+    --app-sidebar-panel: 226px;
+    --app-sidebar-inset: 12px;
+}
+.app-shell .sidebar { left: var(--app-sidebar-inset); width: var(--app-sidebar-panel); }
+.app-shell .content-window {
+    --content-offset: var(--app-sidebar-space);
+    --settings-sidebar-width: var(--app-sidebar-space);
+    --parsha-left-gap: max(16px, 1.5vw);
+    margin-left: var(--app-sidebar-space);
+    width: calc(100% - var(--app-sidebar-space));
+}
+.app-shell .footer { --footer-sidebar-width: var(--app-sidebar-space); }
+.sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-height: 40px;
+    margin: 0 8px 8px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #bdbcc4;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.sidebar-toggle:hover { background: #ffffff0d; color: #dcefff; }
+.sidebar-toggle:focus-visible { outline: 2px solid #8bc8ff; outline-offset: -2px; }
+.sidebar-toggle svg { flex-shrink: 0; transform: rotate(-90deg); }
+.app-shell[data-sidebar-collapsed="false"] .sidebar-text { display: inline; }
+@media (max-width: 1200px) {
+    .app-shell { --app-sidebar-space: 150px; --app-sidebar-panel: 126px; }
+    .app-shell[data-sidebar-collapsed="false"] .sidebar-icon { display: none; }
+}
+.app-shell[data-sidebar-collapsed="true"] {
+    --app-sidebar-space: 80px;
+    --app-sidebar-panel: 64px;
+    --app-sidebar-inset: 8px;
+}
+.app-shell[data-sidebar-collapsed="true"] .sidebar-text { display: none; }
+.app-shell[data-sidebar-collapsed="true"] .sidebar-icon { display: block; }
+.app-shell[data-sidebar-collapsed="true"] :is(.sidebar-link, .sidebar-bottom-link, .sidebar-toggle) {
+    display: flex;
+    justify-content: center;
+    padding: 10px 6px;
+}
+.app-shell[data-sidebar-collapsed="true"] .sidebar-toggle svg { transform: rotate(90deg); }
