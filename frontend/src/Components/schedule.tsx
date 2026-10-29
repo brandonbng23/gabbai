@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { JSX } from 'react';
+import { useImperativeHandle, useState } from 'react';
+import type { JSX, Ref } from 'react';
+import { flushSync } from 'react-dom';
+import { readingAnchor } from '../readingAnchor.ts';
 import Filter from './filter.tsx';
 import Parsha from './parsha.tsx';
 import type { ParshaObj, ReadingActions } from './parsha.tsx';
@@ -15,16 +17,40 @@ function toDate(value: string): Date {
     return new Date(year, month - 1, day);
 }
 
-export default function Schedule({ parshiyot, shulId, nameFilter, setNameFilter, currentUserId, onReadingCancelled }: {
+export interface ScheduleHandle {
+    revealReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
+}
+
+export default function Schedule({ ref, parshiyot, shulId, currentUserId, onReadingCancelled }: {
+    ref?: Ref<ScheduleHandle>;
     parshiyot: ParshaObj[];
     shulId?: string;
-    nameFilter: string;
-    setNameFilter: (name: string) => void;
 } & ReadingActions): JSX.Element {
+    const [nameFilter, setNameFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [bookFilter, setBookFilter] = useState<string[]>([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    useImperativeHandle(ref, () => ({
+        revealReading(reading) {
+            const id = readingAnchor(reading);
+            if (!document.getElementById(id)) {
+                // Commit cleared filters before looking up a previously hidden card.
+                flushSync(() => {
+                    setNameFilter('');
+                    setDateFilter('');
+                    setBookFilter([]);
+                    setStartDate('');
+                    setEndDate('');
+                });
+            }
+            const card = document.getElementById(id);
+            if (!card) return;
+            card.scrollIntoView({ behavior: 'instant', block: 'start' });
+            card.focus({ preventScroll: true });
+        },
+    }), []);
 
     const searchTerm = nameFilter.trim().toLowerCase();
     const hasDateRange = Boolean(startDate || endDate);

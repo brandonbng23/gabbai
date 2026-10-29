@@ -4,6 +4,7 @@ import InfoIcon from "./infoTip.tsx";
 import AssignedReader from "./assignedReader.tsx";
 import { cancelReading } from '../api.ts';
 import { useReadingRemovalConfirmation } from './useReadingRemovalConfirmation.tsx';
+import { readingAnchor } from '../readingAnchor.ts';
 
 export type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
 import type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
@@ -134,7 +135,7 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
         return o;
     }
     return (
-        <div className="parsha">
+        <div className="parsha" id={readingAnchor(props)} tabIndex={-1}>
 
             <div className="notices">
                 {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
