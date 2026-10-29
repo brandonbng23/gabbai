@@ -1155,6 +1155,26 @@ h4 {
 .quick-start-reveal:hover { color: #dcefff; }
 .quick-start-reveal:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
 .schedule-content { scroll-margin-top: 85px; }
+.schedule-back-to-top {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 90;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid #71889c;
+    border-radius: 24px;
+    background: #263544;
+    color: #dcefff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px #0005;
+}
+.schedule-back-to-top:hover { background: #30465c; border-color: #8bc8ff; }
 
 .welcome-bar {
     margin-left: var(--parsha-left-gap);
