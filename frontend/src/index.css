@@ -1120,12 +1120,17 @@ h4 {
 }
 
 .quick-start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
     width: 100%;
-    height: 500px;
-    border: 1px solid red;
+    min-height: 500px;
     margin: 0;
-    padding: 24px max(20px, 1.5vw);
+    padding: 48px max(24px, 3vw);
     background: radial-gradient(ellipse at top, #263b4c, #161616 65%);
+    text-align: center;
 }
 
 .welcome-bar {
@@ -2844,6 +2849,24 @@ input[type="number"] {
 
 .reading-search-control {
     position: relative;
+}
+
+.quick-start-search { width: 100%; max-width: 800px; margin: 0 auto; }
+.quick-start-search > label { margin-bottom: 12px; color: #d2d0d9; font-size: 14px; font-weight: 500; }
+.quick-start .quick-start-search input {
+    min-height: 56px;
+    padding: 15px 50px 15px 18px;
+    border: 1px solid #71889c;
+    border-radius: 12px;
+    background: #222d38;
+    font-size: 16px;
+    text-align: left;
+}
+.quick-start-search input::placeholder { color: #b0bac5; }
+.quick-start-search .reading-search-icon { right: 18px; }
+.quick-start-search input:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
+@media (max-width: 620px) {
+    .quick-start { min-height: 360px; padding: 36px 20px; }
 }
 
 .reading-search input,
@@ -4663,6 +4686,7 @@ body:has(.content-window-settings, .content-window-schedule) .footer-link:focus-
 /* Original schedule layout, with the shared dark palette. */
 html:has(.content-window-schedule), body:has(.content-window-schedule) {
     background: #464545;
+    overscroll-behavior-y: none;
 }
 .content-window-schedule {
     --content-offset: 250px;
@@ -4679,7 +4703,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .schedule-page > .schedule,
 .schedule-page > .skeleton-state { width: min(calc(100% - 50px), 77.5vw); }
-.schedule-page .quick-start .welcome-bar { width: 100%; margin: 0; padding: 0; border-radius: 0; }
+.schedule-page .quick-start .welcome-bar { width: 100%; margin: 0; padding: 0; border-radius: 0; transform: translateY(-48px); }
 .schedule-page .quick-start .welcome-bar h4 { margin: 0; }
 .schedule-page {
     display: flex;

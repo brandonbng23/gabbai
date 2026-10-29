@@ -15,17 +15,18 @@ function toDate(value: string): Date {
     return new Date(year, month - 1, day);
 }
 
-export default function Schedule({ parshiyot, shulId, currentUserId, onReadingCancelled }: {
+export default function Schedule({ parshiyot, shulId, nameFilter, setNameFilter, currentUserId, onReadingCancelled }: {
     parshiyot: ParshaObj[];
     shulId?: string;
+    nameFilter: string;
+    setNameFilter: (name: string) => void;
 } & ReadingActions): JSX.Element {
-    const [nameFilter, setNameFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [bookFilter, setBookFilter] = useState<string[]>([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    const searchTerm = nameFilter.toLowerCase();
+    const searchTerm = nameFilter.trim().toLowerCase();
     const hasDateRange = Boolean(startDate || endDate);
     const today = new Date();
     const rangeStart = toDate(startDate || formatDateString(today, 0));

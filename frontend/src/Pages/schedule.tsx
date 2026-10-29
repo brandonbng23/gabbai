@@ -1,5 +1,6 @@
 import Schedule from '../Components/schedule.tsx';
-import WelcomeBar from '../Components/welcomeBar.tsx';
+import { useState } from 'react';
+import { QuickStart } from '../Components/quickStart.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { ParshaObj, ReadingActions } from '../Components/parsha.tsx';
 
@@ -10,14 +11,14 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
     loading: boolean;
     error: string | null;
 } & ReadingActions) {
+    const [search, setSearch] = useState('');
     return <main className="schedule-page">
-        <section className="quick-start">
-             <WelcomeBar fName={firstName} />
-        </section>
+        <QuickStart firstName={firstName} search={search} onSearchChange={setSearch} />
 
         {loading ? <LoadingSkeleton variant="schedule" />
             : error ? <p className="shul-context" role="alert">{error}</p>
             : <Schedule shulId={shulId} parshiyot={readings}
+                nameFilter={search} setNameFilter={setSearch}
                 currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />}
     </main>;
 }
