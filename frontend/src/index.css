@@ -6111,3 +6111,20 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     padding: 10px 6px;
 }
 .app-shell[data-sidebar-collapsed="true"] .sidebar-toggle svg { transform: rotate(90deg); }
+
+.app-shell[data-sidebar-collapsed="true"] .content-window > :is(main, .skeleton-state) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+}
+.app-shell[data-sidebar-collapsed="true"] :is(
+    .settings-page-header,
+    .shul-settings,
+    .my-shul-header,
+    .my-shul-sections,
+    .user-readings-search
+) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+}
