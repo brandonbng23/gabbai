@@ -4724,7 +4724,11 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 @media (max-width: 715px) {
     .content-window-schedule { --content-offset: 80px; }
 }
-.schedule-page > .schedule-content { width: min(calc(100% - 50px), 77.5vw); }
+.schedule-page > .schedule-content {
+    width: 100%;
+    min-width: 0;
+    padding: 0 clamp(16px, 2vw, 28px) 24px;
+}
 .schedule-page .quick-start .welcome-bar { width: 100%; margin: 0; padding: 0; border-radius: 0; transform: translateY(-48px); }
 .schedule-page .quick-start .welcome-bar h4 { margin: 0; }
 .schedule-page {
@@ -4736,6 +4740,9 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .schedule-page .filterBar, .schedule-page .parsha,
 .content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
     border: 1px solid #504f52;
     background: #302f30;
 }
@@ -5070,15 +5077,6 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .content-window-schedule .skeleton-state {
     --skeleton-base: #45464a;
     --skeleton-shine: #56585d;
-}
-/* Keep the original desktop column; allow controls to wrap on smaller screens. */
-@media (max-width: 1000px) {
-    .schedule-page > .schedule-content { width: calc(100% - 20px); }
-    .schedule-page .welcome-bar, .schedule-page .filterBar, .schedule-page .parsha,
-    .content-window-schedule .skeleton-state .filterBar, .content-window-schedule .skeleton-state .parsha {
-        width: calc(100% - 20px);
-        margin-left: 20px;
-    }
 }
 @media (max-width: 620px) {
     .navbar .dashboard-label, .navbar .vert-divider, .navbar .navbar-toggler {
