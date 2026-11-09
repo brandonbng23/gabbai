@@ -4,7 +4,7 @@ export function getGreeting(): string {
     if (hour < 12) {
         return "Boker Tov";
     } else if (hour < 18) {
-        return "Tazaharayim Tovim";
+        return "Tzaharayim Tovim";
     } else {
         return "Erev Tov";
     }

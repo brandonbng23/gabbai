@@ -14,6 +14,7 @@ export interface Aliyah {
     parshaId: number;
     a: number;
     psukim: string;
+    verseCount: number;
     available: boolean;
     locked: boolean;
     reader: ShulUser | null;
@@ -111,6 +112,7 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                     )}
                 </div>
                 <div className={`psukim-text${suffix}`}>{props.psukim}</div>
+                <div className={"psukim-count"}>{`${props.verseCount} verses`}</div>
             </div>
             {cancelError && <p className="schedule-cancel-error" role="alert">{cancelError}</p>}
             {confirmationDialog}
@@ -182,6 +184,7 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
                                 desc={props.desc}
                                 a={index + 1}
                                 psukim={psukim}
+                                verseCount={props.verseCounts[index] ?? 0}
                                 locked={props.locked || props.lockedArr[index]}
                                 available={!props.locked && !props.readers[index]}
                                 reader={props.readers[index]}

@@ -177,7 +177,7 @@ body {
 }
 
 .sidebar {
-    font-family: Inter;
+    font-family: Fustat;
     color: #d9d9d9;
     background-color: #262626;
 
@@ -240,7 +240,7 @@ body {
 .sidebar-link {
     color: #d9d9d9;
     fill: #d9d9d9;
-    font-family: Inter;
+    font-family: Fustat;
     font-size: medium;
     font-weight: 300;
     text-decoration: none;
