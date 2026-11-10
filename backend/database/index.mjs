@@ -11,7 +11,7 @@ import { createMessagingRepository } from './messages.mjs';
 import { createNotificationRepository } from './notifications.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
-const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
+const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime'];
 const userFields = ['shulId', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'role', 'title'];
 
 function normalizeShulCode(value) {
@@ -54,7 +54,13 @@ function email(value) {
 }
 
 function shulValues(input) {
-    return shulFields.map(key => text(input[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
+    const day = input.torahServiceDay ?? 'Saturday';
+    const time = input.torahServiceTime ?? '';
+    if (!['Friday', 'Saturday'].includes(day)) throw new TypeError('Torah service day must be Friday or Saturday.');
+    if (typeof time !== 'string' || (time !== '' && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)))
+        throw new TypeError('Choose a valid Torah service time.');
+    const normalized = { ...input, torahServiceDay: day, torahServiceTime: time };
+    return shulFields.map(key => text(normalized[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
 }
 
 function userValues(input) {
@@ -73,6 +79,7 @@ function decodeShul(row) {
     if (!row) return null;
     return { id: row.id, code: row.join_code, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
         email: row.email, phone: row.phone, address: row.address,
+        torahServiceDay: row.torah_service_day, torahServiceTime: row.torah_service_time,
         ...(row.picture_version ? { pictureUrl: pictureUrl('shuls', row.id, row.picture_version) } : {}),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
 }
@@ -111,7 +118,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 28) throw new Error('Database schema is newer than this application');
+            if (version > 30) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -233,6 +240,16 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 28) {
                 db.exec(readFileSync(new URL('./migrations/028_longer_aliyah_notes.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(28);
+            }
+            if (version < 29) {
+                if (!db.prepare('PRAGMA table_info(shul_notification_settings)').all().some(column => column.name === 'report_days'))
+                    db.exec(readFileSync(new URL('./migrations/029_summary_delivery_days.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(29);
+            }
+            if (version < 30) {
+                if (!db.prepare('PRAGMA table_info(shuls)').all().some(column => column.name === 'torah_service_day'))
+                    db.exec(readFileSync(new URL('./migrations/030_torah_service_time.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(30);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -440,7 +457,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         },
         getInitialShulVersion(id) {
             const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
-            return row ? { info: JSON.parse(row.info_json), settings: JSON.parse(row.settings_json),
+            return row ? { info: { torahServiceDay: 'Saturday', torahServiceTime: '', ...JSON.parse(row.info_json) }, settings: JSON.parse(row.settings_json),
                 source: row.source, capturedAt: row.captured_at } : null;
         },
         getUser,
@@ -622,8 +639,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const settings = mergeShulSettings(defaultShulSettings(input.settings?.hebYear), input.settings ?? {});
             const id = randomUUID();
             return transaction(() => {
-                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address, torah_service_day, torah_service_time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
                 assignShulCode(db, id);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
                 const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
@@ -712,7 +729,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return transaction(() => {
                 const current = requireRecord(getShul(id), 'Shul');
                 const values = shulValues({ ...current, ...patch });
-                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?,
+                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?, torah_service_day = ?, torah_service_time = ?,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
                 if ('picture' in patch) writePicture('shuls', id, patch.picture);
                 return getShul(id);

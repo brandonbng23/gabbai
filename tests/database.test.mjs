@@ -20,6 +20,45 @@ function setup(t) {
 
 const guest = shulId => ({ shulId, firstName: 'Josh', lastName: 'Cohen', email: 'josh@example.com' });
 
+test('Torah service day and time persist, support clearing, and retain their original version', t => {
+    const directory = mkdtempSync(join(tmpdir(), 'gabbai-service-time-'));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const path = join(directory, 'shuls.sqlite');
+    let db = openDatabase(path);
+    let id;
+    try {
+        const shul = db.createShul({ name: 'Friday Shul', torahServiceDay: 'Friday', torahServiceTime: '18:30', settings: { hebYear: 5787 } });
+        id = shul.id;
+        assert.equal(shul.torahServiceDay, 'Friday');
+        assert.equal(shul.torahServiceTime, '18:30');
+        db.updateShul(id, { torahServiceDay: 'Saturday', torahServiceTime: '09:15' });
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try {
+        assert.equal(db.getShul(id).torahServiceDay, 'Saturday');
+        assert.equal(db.getShul(id).torahServiceTime, '09:15');
+        assert.equal(db.getInitialShulVersion(id).info.torahServiceTime, '18:30');
+        assert.equal(db.getInitialShulVersion(id).info.torahServiceDay, 'Friday');
+        assert.equal(db.updateShul(id, { torahServiceTime: '' }).torahServiceTime, '');
+    } finally { db.close(); }
+});
+
+test('Torah service validation permits only Friday/Saturday and valid 24-hour times', t => {
+    const { db, shul } = setup(t);
+    assert.equal(shul.torahServiceDay, 'Saturday');
+    assert.equal(shul.torahServiceTime, '');
+    for (const day of ['Sunday', 'friday', '', 5]) {
+        assert.throws(() => db.updateShul(shul.id, { torahServiceDay: day }), /Friday or Saturday/);
+    }
+    for (const time of ['24:00', '09:60', '9:30', '12:00 PM', '09:30:00', 930]) {
+        assert.throws(() => db.updateShul(shul.id, { torahServiceDay: 'Friday', torahServiceTime: time }), /valid Torah service time/);
+        assert.equal(db.getShul(shul.id).torahServiceDay, 'Saturday', 'Invalid changes are atomic');
+    }
+    for (const time of ['00:00', '09:30', '23:59']) {
+        assert.equal(db.updateShul(shul.id, { torahServiceTime: time }).torahServiceTime, time);
+    }
+});
+
 test('guest email unifies reading registrations across dates and survives reopening', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-guest-email-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -337,6 +376,9 @@ test('legacy shuls retain their earliest available version without inventing his
         code = db.getShul('legacy').code;
         assert.match(code, /^[A-Z]{4}$/);
         initial = db.getInitialShulVersion('legacy');
+        assert.equal(db.getShul('legacy').torahServiceTime, '');
+        assert.equal(initial.info.torahServiceDay, 'Saturday');
+        assert.equal(initial.info.torahServiceTime, '');
         assert.equal(initial.source, 'migration');
         assert.equal(initial.info.name, 'Earliest available');
         db.updateShul('legacy', { name: 'Later change' });

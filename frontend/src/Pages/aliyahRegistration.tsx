@@ -241,7 +241,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                             </fieldset>
                         </section>}
                         <section className="registration-email-options" aria-labelledby="confirmation-email-heading">
-                            <h3 id="confirmation-email-heading">Confirmation</h3>
+                            <h3 id="confirmation-email-heading">Communication</h3>
                             <div className="settings-check-options"><label>
                                 <input type="checkbox" checked={requestConfirmationEmail}
                                     disabled={submitting || !canRegister || !emailPolicy?.emailAvailable || quotaPending || quotaReached || Boolean(quotaError)}

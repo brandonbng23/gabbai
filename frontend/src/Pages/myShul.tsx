@@ -1,5 +1,6 @@
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul } from '../api.js';
+import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
 function publicLink(value: string): string | undefined {
     try {
@@ -30,6 +31,7 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
               <section className="my-shul-card" aria-labelledby="shul-contact-heading">
                 <h2 id="shul-contact-heading">Shul information</h2>
                 <dl>
+                {shul.torahServiceTime && <div><dt>Torah Service Time</dt><dd>{formatTorahServiceTime(shul.torahServiceDay, shul.torahServiceTime)}</dd></div>}
                 {shul.address && <div><dt>Address</dt><dd>{shul.address}</dd></div>}
                 {shul.phone && <div><dt>Phone</dt><dd><a href={`tel:${shul.phone}`}>{shul.phone}</a></dd></div>}
                 {shul.email && <div><dt>Email</dt><dd><a href={`mailto:${shul.email}`}>{shul.email}</a></dd></div>}
@@ -46,6 +48,7 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
                 <div><dt>Calendar</dt><dd>{settings.il ? 'Israel' : 'Diaspora'}</dd></div>
                 <div><dt>Aliyot</dt><dd>{settings.a}</dd></div>
                 <div><dt>Reading Cycle</dt><dd>{settings.triennial.tri ? 'Triennial' : 'Annual'}</dd></div>
+                {settings.triennial.tri && <div><dt>Triennial Year</dt><dd>{['First', 'Second', 'Third'][(settings.hebYear + 1) % 3]}</dd></div>}
                 <div><dt>Maftir</dt><dd>{settings.triennial.triMaftir ? 'Triennial' : settings.triennial.tradMaftir ? 'Traditional' : 'Disabled'}</dd></div>
                 </dl>
               </section>

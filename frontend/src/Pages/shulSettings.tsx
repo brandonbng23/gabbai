@@ -15,6 +15,7 @@ import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 import NotificationSettings from '../Components/notificationSettings.tsx';
+import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
 type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -170,6 +171,9 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [email, setEmail] = useState<string>(shul.email);
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
+    const [torahServiceDay, setTorahServiceDay] = useState(shul.torahServiceDay);
+    const [torahServiceTime, setTorahServiceTime] = useState(shul.torahServiceTime);
+    const serviceTimeChanged = torahServiceDay !== shul.torahServiceDay || torahServiceTime !== shul.torahServiceTime;
     const [saving, setSaving] = useState(false);
     const [pictureBusy, setPictureBusy] = useState(false);
     const [pictureDraft, setPictureDraft] = useState<string | null | undefined>();
@@ -216,6 +220,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${field.value ? `“${field.value}”` : '(empty)'}.`);
 
+    if (serviceTimeChanged) contactChangeLog.push(`Changed Torah Service Time to ${torahServiceTime ? formatTorahServiceTime(torahServiceDay, torahServiceTime) : '(empty)'}.`);
     if (pictureDraft !== undefined) contactChangeLog.push(pictureDraft === null ? 'Remove shul picture.' : 'Change shul picture.');
 
     const scheduleChanges = [
@@ -526,6 +531,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         setEmail(values.email);
         setWebsite(values.websiteUrl);
         setDonation(values.donationUrl);
+        setTorahServiceDay(values.torahServiceDay);
+        setTorahServiceTime(values.torahServiceTime);
     }
 
     function applyScheduleValues(values: Settings): void {
@@ -613,6 +620,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         try {
             const updated = await updateShul(shul.id, {
                 name, address, phone, email, websiteUrl: website, donationUrl: donation,
+                torahServiceDay, torahServiceTime,
                 ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}),
             });
             setPictureDraft(undefined);
@@ -622,6 +630,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             setEmail(updated.email);
             setWebsite(updated.websiteUrl);
             setDonation(updated.donationUrl);
+            setTorahServiceDay(updated.torahServiceDay);
+            setTorahServiceTime(updated.torahServiceTime);
             onSaved(updated);
             showFeedback('info', 'success', 'Shul information published.');
         } catch (failure) {
@@ -777,6 +787,30 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                         </div>
                                     </div>
                                 ))}
+                                <div className="settings-field-row">
+                                    <div className="settings-field-edit">
+                                        <span className="settings-field-label" id="torah-service-label">Torah Service Time</span>
+                                        <div className="torah-service-inputs" role="group" aria-labelledby="torah-service-label">
+                                            <label className="visually-hidden" htmlFor="shul-service-day">Service day</label>
+                                            <select id="shul-service-day" value={torahServiceDay}
+                                                onChange={event => setTorahServiceDay(event.target.value as Shul['torahServiceDay'])}>
+                                                <option value="Friday">Friday</option>
+                                                <option value="Saturday">Saturday</option>
+                                            </select>
+                                            <label className="visually-hidden" htmlFor="shul-service-time">Service time</label>
+                                            <input id="shul-service-time" type="time" value={torahServiceTime}
+                                                onChange={event => setTorahServiceTime(event.target.value)} />
+                                        </div>
+                                        <FieldReset label="Torah Service Time" changed={serviceTimeChanged} onReset={() => resetField(() => {
+                                            setTorahServiceDay(shul.torahServiceDay);
+                                            setTorahServiceTime(shul.torahServiceTime);
+                                        }, 'info')} />
+                                    </div>
+                                    <div className="settings-field-preview">
+                                        <span className="settings-field-label">Torah Service Time</span>
+                                        <div className="settings-preview-value">{formatTorahServiceTime(torahServiceDay, torahServiceTime)}</div>
+                                    </div>
+                                </div>
                                 <div className="settings-form-footer">
                                     <ChangeLog changes={contactChangeLog} />
                                     <div className="settings-footer-actions">

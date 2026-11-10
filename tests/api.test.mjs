@@ -325,6 +325,7 @@ test('shul admins can save contact information without changing reading settings
     const changes = {
         name: 'Updated Shul', address: '123 Main St', phone: '555-1234',
         email: 'office@example.com', websiteUrl: 'https://example.com', donationUrl: 'https://example.com/donate',
+        torahServiceDay: 'Friday', torahServiceTime: '18:30',
     };
     const response = await request(`/api/shuls/${shul.id}`, patchShul(changes));
     assert.equal(response.status, 200);
@@ -355,7 +356,8 @@ test('shul updates require a current identity and reject invalid fields atomical
     assert.deepEqual(production.db.getShul(production.shul.id), production.shul);
     const { request, shul, user, db } = await setup(t, true);
     db.updateUser(user.id, { role: 'admin' });
-    for (const body of [{ name: ' ' }, { phone: 123 }, { name: 'Changed', settings: {} }, null, []]) {
+    for (const body of [{ name: ' ' }, { phone: 123 }, { name: 'Changed', settings: {} },
+        { torahServiceDay: 'Sunday' }, { torahServiceDay: 'Friday', torahServiceTime: '24:00' }, null, []]) {
         const response = await request(`/api/shuls/${shul.id}`, patchShul(body));
         assert.equal(response.status, 400);
         assert.deepEqual(db.getShul(shul.id), shul);

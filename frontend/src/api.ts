@@ -186,6 +186,8 @@ export interface Shul extends ShulSummary {
     email: string;
     phone: string;
     address: string;
+    torahServiceDay: 'Friday' | 'Saturday';
+    torahServiceTime: string;
     settings: {
         hebYear: number;
         il: boolean;
@@ -234,7 +236,7 @@ export async function updateCurrentUser(changes: Partial<UserProfile> & { pictur
     return response.json();
 }
 
-export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
+export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl' | 'torahServiceDay' | 'torahServiceTime'>;
 
 export interface InitialShulVersion {
     info: ShulInfo;
@@ -333,7 +335,7 @@ export interface NotificationPolicy {
     globalResetTimezone: string;
     roundupHour: number;
     reportTime: string;
-    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportDays: number[];
     reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
 }
 export interface NotificationSettings {
@@ -341,7 +343,7 @@ export interface NotificationSettings {
     instantAdminUserId: string | null;
     dailyReports: Array<{ userId: string; enabled: boolean }>;
     reportTime: string;
-    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportDays: number[];
     reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
 }
 export async function getNotificationPolicy(shulId: string, signal: AbortSignal): Promise<NotificationPolicy> {

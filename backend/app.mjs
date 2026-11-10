@@ -236,7 +236,7 @@ export function createApp(database, {
             return res.status(404).json({ error: "Shul not found" });
         }
         try {
-            validateKeys(req.body, ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'picture'], 'shul');
+            validateKeys(req.body, ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime', 'picture'], 'shul');
             return res.json(app.locals.database.updateShul(req.params.id, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });

@@ -133,7 +133,7 @@ export function installNotificationRoutes(app, database, { emailEnabled }) {
         try {
             const config = database.getNotificationSettings(req.params.id);
             res.set('Cache-Control', 'no-store').json({ ...notificationPolicy, timezone: config.timezone, roundupHour: Number(config.reportTime.split(':')[0]),
-                reportTime: config.reportTime, reportFrequency: config.reportFrequency, reportRange: config.reportRange, emailAvailable: emailEnabled() });
+                reportTime: config.reportTime, reportDays: config.reportDays, reportRange: config.reportRange, emailAvailable: emailEnabled() });
         }
         catch (error) { if (error.status) res.status(error.status).json({ error: error.message }); else next(error); }
     });
@@ -146,7 +146,7 @@ export function installNotificationRoutes(app, database, { emailEnabled }) {
     });
     app.patch('/api/shuls/:id/notifications', (req, res, next) => {
         try {
-            validateKeys(req.body, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
+            validateKeys(req.body, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportDays', 'reportRange'], 'notification settings');
             res.set('Cache-Control', 'no-store').json(database.updateNotificationSettings(req.currentUserId, req.params.id, req.body));
         } catch (error) {
             if (error instanceof TypeError) res.status(400).json({ error: error.message });

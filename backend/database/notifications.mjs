@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { validateKeys } from './settings.mjs';
 import { formatCommunicationDate } from '../communicationDate.mjs';
-import { localClock, notificationPolicy, reportRanges, reportFrequencies } from '../notificationPolicy.mjs';
+import { isShabbatDeliveryPaused, localClock, notificationPolicy, reportRanges, reportWeekdays } from '../notificationPolicy.mjs';
 
 export function createNotificationRepository(db, { transaction, getUser, getShul, recordSystemNotification }) {
     function settings(shulId) {
@@ -10,8 +10,9 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
         const dailyReports = db.prepare(`SELECT u.id AS userId, COALESCE(p.enabled, 1) AS enabled FROM users u
             LEFT JOIN admin_daily_report_preferences p ON p.user_id = u.id AND p.shul_id = u.shul_id
             WHERE u.shul_id = ? AND u.role = 'admin' ORDER BY u.id`).all(shulId).map(item => ({ ...item, enabled: Boolean(item.enabled) }));
+        // Older multi-day preferences use the first selected weekday.
         return { timezone: row?.timezone ?? 'America/New_York', instantAdminUserId: row?.instant_admin_user_id ?? null, dailyReports,
-            reportTime: row?.report_time ?? '16:00', reportFrequency: row?.report_frequency ?? 'daily', reportRange: row?.report_range ?? '12weeks' };
+            reportTime: row?.report_time ?? '16:00', reportDays: reportWeekdays.filter(day => ((row?.report_days ?? 1) & (1 << day)) !== 0).slice(0, 1), reportRange: row?.report_range ?? '12weeks' };
     }
     function admin(actorId, shulId) {
         const actor = getUser(actorId);
@@ -47,14 +48,17 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
         },
         updateNotificationSettings(actorId, shulId, input) {
             admin(actorId, shulId);
-            validateKeys(input, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
+            validateKeys(input, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportDays', 'reportRange'], 'notification settings');
             return transaction(() => {
                 const next = { ...settings(shulId), ...input };
                 if (typeof next.timezone !== 'string') throw new TypeError('Choose a valid IANA timezone.');
                 try { new Intl.DateTimeFormat('en', { timeZone: next.timezone }).format(); }
                 catch { throw new TypeError('Choose a valid IANA timezone.'); }
                 if (typeof next.reportTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(next.reportTime)) throw new TypeError('Choose a valid report time.');
-                if (!reportFrequencies.includes(next.reportFrequency)) throw new TypeError('Choose Daily, Monday/Thursday, or Monday/Wednesday/Friday.');
+                if (!Array.isArray(next.reportDays) || next.reportDays.length !== 1
+                    || !Number.isInteger(next.reportDays[0]) || !reportWeekdays.includes(next.reportDays[0]))
+                    throw new TypeError('Choose exactly one delivery day, from Sunday through Saturday.');
+                const reportDays = next.reportDays.reduce((mask, day) => mask | (1 << day), 0);
                 if (!reportRanges.includes(next.reportRange)) throw new TypeError('Choose a summary window from 2 to 12 weeks.');
                 if (next.instantAdminUserId !== null) {
                     const selected = typeof next.instantAdminUserId === 'string' ? getUser(next.instantAdminUserId) : null;
@@ -73,10 +77,10 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
                     for (const preference of input.dailyReports) db.prepare(`INSERT INTO admin_daily_report_preferences (shul_id, user_id, enabled) VALUES (?, ?, ?)
                         ON CONFLICT(shul_id, user_id) DO UPDATE SET enabled = excluded.enabled`).run(shulId, preference.userId, Number(preference.enabled));
                 }
-                db.prepare(`INSERT INTO shul_notification_settings (shul_id, timezone, instant_admin_user_id, report_time, report_frequency, report_range) VALUES (?, ?, ?, ?, ?, ?)
+                db.prepare(`INSERT INTO shul_notification_settings (shul_id, timezone, instant_admin_user_id, report_time, report_days, report_range) VALUES (?, ?, ?, ?, ?, ?)
                     ON CONFLICT(shul_id) DO UPDATE SET timezone = excluded.timezone, instant_admin_user_id = excluded.instant_admin_user_id,
-                    report_time = excluded.report_time, report_frequency = excluded.report_frequency, report_range = excluded.report_range`)
-                    .run(shulId, next.timezone, next.instantAdminUserId, next.reportTime, next.reportFrequency, next.reportRange);
+                    report_time = excluded.report_time, report_days = excluded.report_days, report_range = excluded.report_range`)
+                    .run(shulId, next.timezone, next.instantAdminUserId, next.reportTime, reportDays, next.reportRange);
                 return settings(shulId);
             });
         },
@@ -139,7 +143,19 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
             return transaction(() => {
                 db.prepare("UPDATE notification_email_outbox SET status = 'unknown', error_code = 'worker-interrupted' WHERE status = 'sending' AND claimed_at < ?")
                     .run(new Date(now.getTime() - 5 * 60000).toISOString());
-                const job = db.prepare("SELECT * FROM notification_email_outbox WHERE status = 'queued' ORDER BY created_at, rowid LIMIT 1").get();
+                // Keep paused emails queued and look past them so other timezones can deliver.
+                // Check before reserving global quota; deferral consumes no delivery allowance.
+                const pausedTimezones = new Map();
+                let job;
+                for (const candidate of db.prepare(`SELECT o.*, COALESCE(s.timezone, 'America/New_York') AS timezone
+                    FROM notification_email_outbox o LEFT JOIN shul_notification_settings s ON s.shul_id = o.shul_id
+                    WHERE o.status = 'queued' ORDER BY o.created_at, o.rowid`).iterate()) {
+                    if (!pausedTimezones.has(candidate.timezone)) pausedTimezones.set(candidate.timezone, isShabbatDeliveryPaused(now, candidate.timezone));
+                    if (!pausedTimezones.get(candidate.timezone)) {
+                        job = candidate;
+                        break;
+                    }
+                }
                 if (!job) return null;
                 const recipient = getUser(job.recipient_user_id);
                 const reportDisabled = job.category === 'roundup' && db.prepare('SELECT enabled FROM admin_daily_report_preferences WHERE shul_id = ? AND user_id = ?').get(job.shul_id, job.recipient_user_id)?.enabled === 0;

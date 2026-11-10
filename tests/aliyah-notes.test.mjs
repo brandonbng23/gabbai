@@ -91,7 +91,7 @@ test('the longer-note migration preserves existing notes and allows 120 characte
     try {
         legacy.exec('ALTER TABLE reading_aliyah_notes RENAME TO saved_notes');
         legacy.exec(readFileSync(new URL('../backend/database/migrations/027_aliyah_notes.sql', import.meta.url), 'utf8'));
-        legacy.exec('INSERT INTO reading_aliyah_notes SELECT * FROM saved_notes; DROP TABLE saved_notes; DELETE FROM schema_migrations WHERE version = 28');
+        legacy.exec('INSERT INTO reading_aliyah_notes SELECT * FROM saved_notes; DROP TABLE saved_notes; DELETE FROM schema_migrations WHERE version >= 28');
     } finally { legacy.close(); }
     db = openDatabase(path);
     try {

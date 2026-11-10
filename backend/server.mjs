@@ -1,5 +1,7 @@
 import { createApp } from './app.mjs';
+import { loadEnvironment } from './environment.mjs';
 
+loadEnvironment();
 const app = createApp();
 app.locals.notifications.start();
 const trashCleanup = setInterval(() => {
