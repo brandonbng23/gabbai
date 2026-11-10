@@ -26,8 +26,25 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
     function system(shulId, recipientId, subject, body, key, kind = 'confirmation') {
         return recordSystemNotification({ shulId, recipientIds: [recipientId], subject, body, kind, idempotencyKey: key });
     }
+    function confirmationIdentity(shulId, bookerId, readerEmail, timezone, now) {
+        const booker = bookerId ? getUser(bookerId) : null;
+        const memberBooker = booker && booker.shulId === shulId && ['member', 'admin'].includes(booker.role);
+        const identity = memberBooker ? booker.id : (readerEmail ?? booker?.email)?.trim().toLowerCase();
+        if (!identity) throw new TypeError('Provide an email address for the guest.');
+        return { identityType: memberBooker ? 'member' : 'guest', identity,
+            day: localClock(now, timezone).day,
+            limit: memberBooker ? notificationPolicy.memberDailyLimit : notificationPolicy.guestDailyLimit };
+    }
     return {
         getNotificationSettings: settings,
+        getConfirmationEmailQuota(shulId, { bookerId, readerEmail }, now = new Date()) {
+            const { timezone } = settings(shulId);
+            const { identityType, identity, day, limit } = confirmationIdentity(shulId, bookerId, readerEmail, timezone, now);
+            const used = db.prepare(`SELECT requested FROM confirmation_email_quotas
+                WHERE shul_id = ? AND identity_type = ? AND identity = ? AND local_day = ?`)
+                .get(shulId, identityType, identity, day)?.requested ?? 0;
+            return { limit, used, remaining: Math.max(0, limit - used), timezone, localDay: day };
+        },
         updateNotificationSettings(actorId, shulId, input) {
             admin(actorId, shulId);
             validateKeys(input, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
@@ -68,14 +85,9 @@ export function createNotificationRepository(db, { transaction, getUser, getShul
             const config = settings(shulId);
             const reader = getUser(readerId);
             const isGuest = guest || reader.role === 'guest';
-            const booker = bookerId ? getUser(bookerId) : null;
-            const memberBooker = booker && booker.shulId === shulId && ['member', 'admin'].includes(booker.role);
             let status = emailConfirmation ? 'unavailable' : 'not_requested';
             if (emailConfirmation && emailEnabled) {
-                const identityType = memberBooker ? 'member' : 'guest';
-                const identity = memberBooker ? booker.id : reader.email.trim().toLowerCase();
-                const day = localClock(now, config.timezone).day;
-                const limit = memberBooker ? notificationPolicy.memberDailyLimit : notificationPolicy.guestDailyLimit;
+                const { identityType, identity, day, limit } = confirmationIdentity(shulId, bookerId, reader.email, config.timezone, now);
                 db.prepare(`INSERT OR IGNORE INTO confirmation_email_quotas (shul_id, identity_type, identity, local_day) VALUES (?, ?, ?, ?)`).run(shulId, identityType, identity, day);
                 const result = db.prepare(`UPDATE confirmation_email_quotas SET requested = requested + 1 WHERE shul_id = ? AND identity_type = ? AND identity = ? AND local_day = ? AND requested < ?`)
                     .run(shulId, identityType, identity, day, limit);

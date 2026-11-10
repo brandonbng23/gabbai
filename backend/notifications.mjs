@@ -107,6 +107,28 @@ export function createNotificationService({ database, mailer, preview = false, c
 }
 
 export function installNotificationRoutes(app, database, { emailEnabled }) {
+    app.post('/api/shuls/:id/confirmation-email-quota', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        try {
+            validateKeys(req.body, ['registrationType', 'guestEmail'], 'confirmation email quota');
+            const { registrationType, guestEmail } = req.body;
+            if (!['profile', 'guest'].includes(registrationType)) throw new TypeError('Choose a profile or guest registration.');
+            const bookerId = registrationType === 'guest' ? req.sessionUserId : req.currentUserId;
+            const booker = bookerId ? database.getUser(bookerId) : null;
+            if (registrationType === 'profile' && !booker) return res.status(401).json({ error: 'Sign in to check your confirmation email allowance.' });
+            const memberBooker = booker?.shulId === req.params.id && ['member', 'admin'].includes(booker.role);
+            if (registrationType === 'guest' && !memberBooker
+                && (typeof guestEmail !== 'string' || guestEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())))
+                throw new TypeError('Enter a valid guest email address.');
+            return res.json(database.getConfirmationEmailQuota(req.params.id, {
+                bookerId, readerEmail: registrationType === 'guest' ? guestEmail : booker.email,
+            }));
+        } catch (error) {
+            if (error instanceof TypeError) res.status(400).json({ error: error.message });
+            else if (error.status) res.status(error.status).json({ error: error.message });
+            else next(error);
+        }
+    });
     app.get('/api/shuls/:id/notification-policy', (req, res, next) => {
         try {
             const config = database.getNotificationSettings(req.params.id);

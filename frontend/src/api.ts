@@ -349,6 +349,24 @@ export async function getNotificationPolicy(shulId: string, signal: AbortSignal)
     if (!response.ok) throw new Error('Unable to load email availability.');
     return response.json();
 }
+
+export interface ConfirmationEmailQuota {
+    limit: number;
+    used: number;
+    remaining: number;
+    timezone: string;
+    localDay: string;
+}
+
+export async function getConfirmationEmailQuota(shulId: string, registrationType: 'profile' | 'guest', guestEmail: string | undefined, signal: AbortSignal): Promise<ConfirmationEmailQuota> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/confirmation-email-quota`, {
+        method: 'POST', signal, cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationType, ...(guestEmail ? { guestEmail } : {}) }),
+    });
+    if (!response.ok) throw new Error('Your confirmation email allowance could not be checked.');
+    return response.json();
+}
 export async function getNotificationSettings(shulId: string, signal: AbortSignal): Promise<NotificationSettings> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notifications`, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error('Unable to load notification settings.');
