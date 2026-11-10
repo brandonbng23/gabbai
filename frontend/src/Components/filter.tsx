@@ -12,6 +12,10 @@ interface FilterProps {
     setStartDate: (date: string) => void;
     endDate: string;
     setEndDate: (date: string) => void;
+    starredOnly: boolean;
+    setStarredOnly: (starred: boolean) => void;
+    showStarredFilter: boolean;
+    starredFilterDisabled: boolean;
 }
 
 const books = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Yontifs'];
@@ -45,16 +49,17 @@ function FilterField({ id, label, name, type, value, onChange, placeholder }: {
 
 export default function Filter({
     nameFilter, setNameFilter, dateFilter, setDateFilter, bookFilter, setBookFilter,
-    startDate, setStartDate, endDate, setEndDate,
+    startDate, setStartDate, endDate, setEndDate, starredOnly, setStarredOnly, showStarredFilter, starredFilterDisabled,
 }: FilterProps): JSX.Element {
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const hasFilters = Boolean(nameFilter || dateFilter || startDate || endDate || bookFilter.length);
+    const hasFilters = Boolean(nameFilter || dateFilter || startDate || endDate || bookFilter.length || starredOnly);
     const invalidRange = Boolean(startDate && endDate && startDate > endDate);
 
     function clearAdvancedFilters(): void {
         setStartDate('');
         setEndDate('');
         setBookFilter([]);
+        setStarredOnly(false);
     }
 
     function clearFilters(): void {
@@ -116,6 +121,12 @@ export default function Filter({
                             );
                         })}
                     </div>
+                    {showStarredFilter && <label className="schedule-starred-filter" htmlFor="schedule-starred-only">
+                        <input id="schedule-starred-only" name="starredOnly" type="checkbox"
+                            checked={starredOnly} disabled={starredFilterDisabled}
+                            onChange={event => setStarredOnly(event.target.checked)} />
+                        Only parshiyot with starred aliyot
+                    </label>}
                 </div>
             )}
 

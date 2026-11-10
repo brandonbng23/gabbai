@@ -5295,6 +5295,27 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     width: 100%;
     margin: 0;
 }
+.schedule-starred-filter {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    color: #f5efb0;
+    font-size: 14px;
+    cursor: pointer;
+}
+.schedule-starred-filter input {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #f5efb0;
+    cursor: inherit;
+}
+.schedule-starred-filter:has(input:disabled) {
+    opacity: .5;
+    cursor: not-allowed;
+}
 .schedule-page .book-filter {
     display: flex;
     flex-wrap: wrap;

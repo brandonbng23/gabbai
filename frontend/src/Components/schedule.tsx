@@ -2,6 +2,7 @@ import { useImperativeHandle, useState } from 'react';
 import type { JSX, Ref } from 'react';
 import { flushSync } from 'react-dom';
 import { readingAnchor } from '../readingAnchor.ts';
+import { hasStarredAliyah } from '../scheduleFilters.ts';
 import Filter from './filter.tsx';
 import Parsha from './parsha.tsx';
 import type { ParshaObj, ReadingActions } from './parsha.tsx';
@@ -31,6 +32,7 @@ export default function Schedule({ ref, parshiyot, shulId, currentUserId, onRead
     const [bookFilter, setBookFilter] = useState<string[]>([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [starredOnly, setStarredOnly] = useState(false);
 
     useImperativeHandle(ref, () => ({
         revealReading(reading) {
@@ -43,6 +45,7 @@ export default function Schedule({ ref, parshiyot, shulId, currentUserId, onRead
                     setBookFilter([]);
                     setStartDate('');
                     setEndDate('');
+                    setStarredOnly(false);
                 });
             }
             const card = document.getElementById(id);
@@ -58,6 +61,7 @@ export default function Schedule({ ref, parshiyot, shulId, currentUserId, onRead
     const rangeStart = toDate(startDate || formatDateString(today, 0));
     const rangeEnd = toDate(endDate || formatDateString(today, 1));
     const filteredReadings = parshiyot.filter(reading => {
+        if (starredOnly && !hasStarredAliyah(reading, readingStars.starredReadings, shulId)) return false;
         if (searchTerm && !reading.searchTerms.some(term => term.toLowerCase().includes(searchTerm))) return false;
         if (dateFilter && reading.dateString !== dateFilter) return false;
         if (bookFilter.length && !bookFilter.includes(reading.book)) return false;
@@ -81,6 +85,10 @@ export default function Schedule({ ref, parshiyot, shulId, currentUserId, onRead
                 setStartDate={setStartDate}
                 endDate={endDate}
                 setEndDate={setEndDate}
+                starredOnly={starredOnly}
+                setStarredOnly={setStarredOnly}
+                showStarredFilter={Boolean(currentUserId)}
+                starredFilterDisabled={!readingStars.starredReadings}
             />
             <div className="parshiyot">
                 {filteredReadings.length ? filteredReadings.map(reading => (
