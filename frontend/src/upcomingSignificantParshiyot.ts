@@ -4,7 +4,7 @@ const normalize = (name: string) => name.replace(/^Parash(?:at|a)\s+/i, '').toLo
     .normalize('NFD').replace(/[\u0300-\u036f'’\-–—\s]/g, '');
 
 export function upcomingSignificantParshiyot<T extends { dateString: string; desc: string }>(
-    readings: T[], saved: SignificantPortion[], today: string,
+    readings: T[], saved: SignificantPortion[], today: string, limit = 3,
 ): { reading: T; occasions: string[] }[] {
     const seen = new Set<string>();
     return readings.filter(reading => reading.dateString >= today)
@@ -17,5 +17,5 @@ export function upcomingSignificantParshiyot<T extends { dateString: string; des
             const matches = saved.filter(entry => [entry.portion, ...entry.portion.split(/[-–—]/)]
                 .map(normalize).some(name => name && names.includes(name)));
             return matches.length ? [{ reading, occasions: [...new Set(matches.map(entry => entry.occasion).filter(Boolean))] }] : [];
-        }).slice(0, 3);
+        }).slice(0, limit);
 }

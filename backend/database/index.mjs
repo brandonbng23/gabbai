@@ -1,6 +1,7 @@
 import { validatePicture } from '../pictures.mjs';
 import { validateAliyahNote } from '../../interfaces/readingNote.mts';
 import { validateSignificantPortions } from '../../interfaces/significantPortions.mts';
+import { createEventRepository } from './events.mjs';
 import { parshaForSignificantDate } from '../../core/significantDate.mts';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
@@ -120,7 +121,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 31) throw new Error('Database schema is newer than this application');
+            if (version > 32) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -257,6 +258,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'frozen'))
                     db.exec(readFileSync(new URL('./migrations/031_frozen_accounts.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(31);
+            }
+            if (version < 32) {
+                db.exec(readFileSync(new URL('./migrations/032_shul_events.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(32);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -426,6 +431,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
     return {
         ...messaging,
         ...notifications,
+        ...createEventRepository(db, { getShul, getUser, transaction }),
         path,
         close: () => db.close(),
         listStarredReadings(userId) {

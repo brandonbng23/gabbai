@@ -15,6 +15,8 @@ import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 import NotificationSettings from '../Components/notificationSettings.tsx';
+import { ShulEventsEditor } from '../Components/shulEventsEditor.tsx';
+import type { ShulEvent } from '../../../interfaces/shulEvent.mts';
 import ShulSettingsNavigation from '../Components/shulSettingsNavigation.tsx';
 import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
@@ -74,8 +76,13 @@ function RestoreMenu({ section, disabled, onRestore }: { section: string; disabl
     );
 }
 
-export default function ShulSettings({ shul, currentUserId, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated }: {
+export default function ShulSettings({ shul, currentUserId, onSaved, schedule, scheduleLoading = false, scheduleError = null, onReadingUpdated, events, eventsLoading, eventsError, onEventsChanged, onEventsRetry }: {
     shul: Shul;
+    events: ShulEvent[];
+    eventsLoading: boolean;
+    eventsError: string;
+    onEventsChanged: (events: ShulEvent[]) => void;
+    onEventsRetry: () => void;
     currentUserId: string;
     onSaved: (shul: Shul) => void;
     schedule: ParshaObj[];
@@ -860,6 +867,9 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                             </fieldset>
                         </form>
                     </section>
+
+                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
+                        onChanged={onEventsChanged} onRetry={onEventsRetry} />
 
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">

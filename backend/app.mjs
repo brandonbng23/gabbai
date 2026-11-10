@@ -2,6 +2,7 @@ import express from "express";
 import { installAuthentication } from './authentication.mjs';
 import { installMessaging } from './messages.mjs';
 import { createGmailMailer } from './gmail.mjs';
+import { installEventRoutes } from './events.mjs';
 import { createNotificationService, installNotificationRoutes } from './notifications.mjs';
 import { fileURLToPath } from "node:url";
 import { getAssignedReadingDetails, getGuestReadingDetails, getStarredReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
@@ -26,6 +27,7 @@ export function createApp(database, {
 
     app.use(express.json({ limit: '2mb' }));
     installAuthentication(app, database, { development, preview, fallbackUserId });
+    installEventRoutes(app, database);
     installMessaging(app, database);
     installNotificationRoutes(app, database, { emailEnabled: () => app.locals.mailer.enabled && !preview });
     app.locals.notifications = createNotificationService({ database, mailer: app.locals.mailer, preview });

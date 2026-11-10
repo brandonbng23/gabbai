@@ -1,6 +1,9 @@
 import { ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul } from '../api.js';
 import { formatTorahServiceTime } from '../torahServiceTime.ts';
+import { EventCard } from '../Components/eventCard.tsx';
+import type { ShulEvent } from '../../../interfaces/shulEvent.mts';
+import { localToday } from '../scheduleHighlights.ts';
 
 function publicLink(value: string): string | undefined {
     try {
@@ -11,7 +14,7 @@ function publicLink(value: string): string | undefined {
     }
 }
 
-export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
+export default function MyShul({ shul, events, eventsLoading, eventsError }: { shul: Shul; events: ShulEvent[]; eventsLoading: boolean; eventsError: string }): React.JSX.Element {
     const settings = shul.settings;
     const website = publicLink(shul.websiteUrl);
     const donation = publicLink(shul.donationUrl);
@@ -27,6 +30,14 @@ export default function MyShul({ shul }: { shul: Shul }): React.JSX.Element {
                 </div>
                 <a className="my-shul-schedule-link" href={`/schedule?${new URLSearchParams({ shul: shul.id })}`}>← View reading schedule</a>
             </header>
+            <section className="my-shul-events" aria-labelledby="my-shul-events-heading">
+                <h2 id="my-shul-events-heading">Upcoming events</h2>
+                {eventsLoading ? <div className="event-feedback" role="status">Loading events…</div>
+                    : eventsError ? <div className="event-feedback" role="alert">{eventsError}</div>
+                    : events.some(event => event.date >= localToday()) ? <div className="my-shul-events-grid">
+                        {events.filter(event => event.date >= localToday()).map(event => <EventCard key={event.id} event={event} />)}
+                    </div> : <div className="event-feedback">No upcoming events have been featured yet.</div>}
+            </section>
             <div className="my-shul-sections">
               <section className="my-shul-card" aria-labelledby="shul-contact-heading">
                 <h2 id="shul-contact-heading">Shul information</h2>

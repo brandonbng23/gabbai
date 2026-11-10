@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const sections = [
     { id: 'shul-info-heading', label: 'Shul Info' },
+    { id: 'shul-events-heading', label: 'Events' },
     { id: 'adjustments-heading', label: 'Reading Adjustments' },
     { id: 'schedule-heading', label: 'Schedule' },
     { id: 'permissions-heading', label: 'Users & Permissions' },

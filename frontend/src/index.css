@@ -6041,7 +6041,8 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 
 .my-shul-header,
-.my-shul-sections {
+.my-shul-sections,
+.my-shul-events {
     width: 100%;
     max-width: 1180px;
     margin-inline: auto;
@@ -6484,6 +6485,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     .account-page-content,
     .my-shul-header,
     .my-shul-sections,
+    .my-shul-events,
     .user-readings-search
 ) {
     width: 100%;
@@ -6751,89 +6753,6 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     padding: 8px 12px;
     color: var(--settings-muted);
 }
-.upcoming-significant-parshiyot {
-    margin-bottom: 20px;
-    padding: 18px;
-    border: 1px solid #504f52;
-    border-radius: 12px;
-    background: #302f30;
-    color: #f6f5f7;
-    font-family: Fustat, sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.45;
-}
-
-.upcoming-significant-parshiyot .significant-parshiyot-title {
-    display: block;
-    margin: 0 0 12px;
-    padding: 0;
-    border: 0;
-    height: auto;
-    font-size: 18px;
-    font-family: inherit;
-    font-weight: 600;
-    line-height: 1.35;
-}
-
-.upcoming-significant-parshiyot ul {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.upcoming-significant-parshiyot a {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    height: 100%;
-    padding: 12px 14px;
-    border: 1px solid #8bc8ff26;
-    border-radius: 9px;
-    background: #8bc8ff0a;
-    color: #f6f5f7;
-    text-decoration: none;
-    overflow-wrap: anywhere;
-}
-
-.upcoming-significant-parshiyot a:hover {
-    background: #8bc8ff1a;
-}
-
-.upcoming-significant-parshiyot a:focus-visible {
-    outline: 2px solid #8bc8ff;
-    outline-offset: 2px;
-}
-
-.upcoming-significant-parshiyot .significant-parsha-name {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.35;
-}
-
-.upcoming-significant-parshiyot :is(.significant-parsha-dates, .significant-parsha-availability, .significant-parsha-occasion, .significant-parshiyot-prompt-copy) {
-    color: #bdbcc4;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.5;
-}
-
-.upcoming-significant-parshiyot a .significant-parsha-occasion {
-    color: #8bc8ff;
-}
-
-.upcoming-significant-parshiyot .significant-parsha-availability {
-    align-self: flex-start;
-    padding: 3px 9px;
-    border: 1px solid #8bc8ff33;
-    border-radius: 999px;
-    background: #8bc8ff1a;
-    color: #8bc8ff;
-    font-weight: 600;
-}
 .significant-parsha-entry-mode {
     display: flex;
     flex-wrap: wrap;
@@ -6880,25 +6799,6 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .significant-date-preview .significant-date-error {
     color: #ffb8b8;
 }
-.upcoming-significant-parshiyot .significant-parshiyot-prompt a {
-    justify-content: center;
-    border-style: dashed;
-    background: transparent;
-}
-
-.upcoming-significant-parshiyot .significant-parshiyot-prompt-title {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.4;
-}
-
-.upcoming-significant-parshiyot .significant-parshiyot-prompt-action {
-    margin-top: 4px;
-    color: #8bc8ff;
-    font-weight: 600;
-    font-size: 13px;
-}
-
 #significant-parshiyot-heading {
     scroll-margin-top: 85px;
 }
@@ -6946,4 +6846,192 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 
 .guest-reader-editor {
     margin-inline: 0;
+}
+.schedule-highlights,
+.my-shul-events {
+    margin-bottom: 20px;
+    padding: 18px;
+    border: 1px solid #504f52;
+    border-radius: 12px;
+    background: #302f30;
+    color: #f6f5f7;
+    font: 400 14px/1.45 Fustat, sans-serif;
+    min-width: 0;
+}
+
+.schedule-highlights > h2,
+.my-shul-events > h2 {
+    display: block;
+    margin: 0 0 12px;
+    padding: 0;
+    border: 0;
+    height: auto;
+    color: inherit;
+    font: 600 18px/1.35 Fustat, sans-serif;
+}
+
+.highlight-track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 24px) / 3);
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff40 transparent;
+    margin: 0;
+    padding: 2px 2px 10px;
+    list-style: none;
+}
+
+.highlight-track > li {
+    min-width: 0;
+    scroll-snap-align: start;
+}
+
+.highlight-parsha-card,
+.shul-event-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    height: 100%;
+    padding: 12px 14px;
+    border: 1px solid #8bc8ff26;
+    border-radius: 9px;
+    background: #8bc8ff0a;
+    color: #f6f5f7;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    font: 400 13px/1.5 Fustat, sans-serif;
+    min-width: 0;
+}
+
+.highlight-parsha-card:hover {
+    background: #8bc8ff1a;
+    color: #f6f5f7;
+}
+
+.highlight-parsha-card:focus-visible,
+.highlight-track:focus-visible,
+.schedule-highlights button:focus-visible,
+.shul-event-card a:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 2px;
+}
+
+.highlight-card-name,
+.shul-event-card h3 {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: #f6f5f7;
+    font: 600 16px/1.35 Fustat, sans-serif;
+}
+
+.highlight-parsha-card > span,
+.shul-event-when,
+.shul-event-location {
+    color: #bdbcc4;
+}
+
+.highlight-parsha-card .highlight-availability {
+    padding: 3px 9px;
+    border: 1px solid #8bc8ff33;
+    border-radius: 999px;
+    background: #8bc8ff1a;
+    color: #8bc8ff;
+    font-weight: 600;
+}
+
+.highlight-parsha-card .highlight-occasion,
+.highlight-kind,
+.shul-event-card .shul-event-register {
+    color: #8bc8ff;
+}
+
+.highlight-kind {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.shul-event-card { scroll-margin-top: 85px; }
+.shul-event-card .shul-event-details-link { color: #8bc8ff; }
+.shul-event-card-compact p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+
+.highlight-prompt {
+    justify-content: center;
+    border-style: dashed;
+    background: transparent;
+}
+
+.highlight-prompt .highlight-card-name { font-size: 14px; }
+
+.highlight-scroll-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 0 8px;
+}
+
+.highlight-scroll-controls button,
+.highlights-expand {
+    padding: 5px 12px;
+    border: 1px solid #8bc8ff33;
+    border-radius: 7px;
+    background: #8bc8ff0a;
+    color: #8bc8ff;
+    font: inherit;
+    cursor: pointer;
+}
+
+.highlights-expand { margin: 12px 0; }
+
+.shul-event-card p {
+    margin: 4px 0;
+    color: #d9d9d9;
+    font: inherit;
+    white-space: pre-wrap;
+}
+
+.shul-event-card .shul-event-register {
+    margin-top: auto;
+    font-weight: 600;
+}
+
+.my-shul-events {
+    margin-top: 20px;
+}
+
+.my-shul-events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 12px;
+}
+
+.shul-events-admin-list { margin: 18px 0 0; padding: 0; list-style: none; }
+.shul-events-admin-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--settings-border); }
+.shul-events-admin-list li > div { min-width: 0; overflow-wrap: anywhere; }
+.shul-events-admin-list strong,
+.shul-events-admin-list span { display: block; }
+.shul-events-admin-list span { color: var(--settings-muted); font-size: 13px; margin-top: 3px; }
+.shul-events-admin-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.shul-event-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.shul-event-details-field { grid-column: 1 / -1; }
+.shul-event-editor-legend { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.event-feedback { margin-block: 10px; color: #bdbcc4; font: 400 14px/1.5 Fustat, sans-serif; }
+.event-feedback[role="alert"] { color: #ffb8b8; }
+@media (max-width: 600px) {
+    .shul-event-fields { grid-template-columns: minmax(0, 1fr); }
+    .shul-events-admin-list li { align-items: flex-start; flex-direction: column; }
+}
+.shul-event-edit-form {
+    scroll-margin-top: 150px;
 }

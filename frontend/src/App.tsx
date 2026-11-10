@@ -3,6 +3,7 @@ import Navbar from "./Components/navbar.tsx"
 import Aside from "./Components/aside.tsx"
 import Footer from "./Components/footer.tsx"
 import SchedulePage from "./Pages/schedule.tsx"
+import { useShulEvents } from './shulEvents.ts';
 import AliyahRegistration from "./Pages/aliyahRegistration.tsx"
 import type { ParshaObj } from "./Components/parsha.tsx"
 import { useEffect, useState } from "react"
@@ -50,6 +51,7 @@ function App() {
     const isAuthPage = authPath === '/signin' || authPath === '/signup';
     const isDefaultPage = authPath === '' || authPath === '/index.html';
     const isSchedulePage = authPath === '/schedule' || isDefaultPage;
+    const shulEvents = useShulEvents(isSchedulePage || isShulPage || isShulSettingsPage ? shul?.id : undefined);
     useEffect(() => {
         if (isDefaultPage) window.location.replace(`/schedule${window.location.search}${window.location.hash}`);
     }, [isDefaultPage]);
@@ -152,12 +154,15 @@ function App() {
               : !shul ? <p className="page-message">Your account is not associated with a shul. Contact your shul administrator.</p>
               : isShulSettingsPage ? (
                 user?.role === 'admin' ? <ShulSettings shul={shul} currentUserId={user.id} schedule={schedule} scheduleLoading={scheduleLoading} scheduleError={scheduleError} onSaved={setShul}
+                    events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error}
+                    onEventsChanged={shulEvents.setEvents} onEventsRetry={shulEvents.retry}
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="page-message" role="alert">Only shul administrators can access these settings.</p>
-              ) : isShulPage ? <MyShul shul={shul} /> : isSchedulePage ? <SchedulePage
+              ) : isShulPage ? <MyShul shul={shul} events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error} /> : isSchedulePage ? <SchedulePage
                   firstName={user?.firstName} shulId={shulId} readings={schedule}
                   significantParshiyot={user?.settings.significantPortions}
+                  events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error}
                   loading={scheduleLoading} error={scheduleError}
                   currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
               : <main className="page-message"><h1>Page not found</h1><a href="/">Go home</a></main>}
