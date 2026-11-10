@@ -7147,12 +7147,13 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     .analytics-week-count { grid-column: 2; text-align: left; }
     .analytics-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.analytics-reader-table-wrap { max-width: 100%; overflow-x: auto; }
-.analytics-reader-table { width: 100%; max-width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+.analytics-reader-table-wrap { max-width: 100%; overflow: visible; }
+.analytics-reader-table { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
 .analytics-reader-table th,
-.analytics-reader-table td { padding: 9px 20px 9px 0; border-bottom: 1px solid var(--settings-border); text-align: left; vertical-align: top; }
+.analytics-reader-table td { padding: 9px 20px 9px 0; border-bottom: 1px solid var(--settings-border); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
 .analytics-reader-table thead th { padding-top: 0; color: var(--settings-muted); font-size: 12px; font-weight: 500; }
-.analytics-reader-table tbody th { width: 28%; min-width: 110px; max-width: 200px; font-weight: 500; }
+.analytics-reader-table th:first-child { width: 28%; }
+.analytics-reader-table tbody th { min-width: 0; font-weight: 500; }
 .analytics-reader-table tbody th a { color: #8bc8ff; text-decoration: none; overflow-wrap: anywhere; }
 .analytics-reader-table tbody th a:hover { text-decoration: underline; }
 .analytics-reader-summary { display: block; margin-top: 3px; color: var(--settings-muted); font-size: 11px; font-weight: 400; }
@@ -7175,5 +7176,4 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 @media (max-width: 600px) {
     .analytics-reader-table th,
     .analytics-reader-table td { padding-right: 12px; }
-    .analytics-reader-table tbody th { min-width: 110px; }
 }
