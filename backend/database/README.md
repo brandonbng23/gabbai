@@ -312,6 +312,19 @@ They appear in My Readings but are never added to the booker's `assignedReadings
 or activity statistics. Admin reassignment clears this attribution. Existing
 anonymous bookings remain unlinked; ownership is not inferred from email or name.
 
+Version 26 stores private starred aliyot in `starred_readings`, keyed by user,
+shul, date, reading name, and aliyah. `GET /api/me/starred-readings` returns only
+the current user's shortlist with resolved reading details. `PUT` and `DELETE`
+on the same endpoint accept `{ shulId, dateString, desc, aliyah }` and save or
+remove a star idempotently. Saving requires a real aliyah in the user's shul
+schedule; removing also works after changing shuls or schedule settings. Stars
+appear in the schedule and the My Readings “Starred” filter, never in another
+user's profile, shared schedules, assignments, activity statistics, or
+registration notifications. Starring does not reserve or register a reading.
+Successful profile registration removes the assigned reader's matching star in
+the same transaction. Failed registrations and guest registrations preserve all
+stars, including the reader's and the booker's stars.
+
 Version 10 introduces persistent, unique shul join codes. Version 11 replaces
 numeric codes with four uppercase letters; the demo shul keeps `DEMO`, which is
 reserved from automatic allocation. Existing numeric codes are reassigned once.

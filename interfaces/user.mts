@@ -9,6 +9,11 @@ export interface UserReading {
     verseCount?: number | null;
 }
 
+export interface StarredReading extends UserReading {
+    shulId: string;
+    shulName: string;
+}
+
 export interface User {
     id: string;
     shulId: string | null;

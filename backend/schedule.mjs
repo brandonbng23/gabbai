@@ -106,3 +106,14 @@ export function getGuestReadingDetails(database, userId) {
         });
     });
 }
+
+export function getStarredReadingDetails(database, userId) {
+    const byShul = new Map();
+    for (const reading of database.listStarredReadings(userId)) {
+        if (!byShul.has(reading.shulId)) byShul.set(reading.shulId, []);
+        byShul.get(reading.shulId).push(reading);
+    }
+    return [...byShul].flatMap(([shulId, assignedReadings]) =>
+        getAssignedReadingDetails(database, { shulId, assignedReadings })
+            .map(reading => ({ ...reading, shulName: database.getShul(shulId).name })));
+}

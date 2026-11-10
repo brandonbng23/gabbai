@@ -21,7 +21,7 @@ export interface ScheduleHandle {
     revealReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
 }
 
-export default function Schedule({ ref, parshiyot, shulId, currentUserId, onReadingCancelled }: {
+export default function Schedule({ ref, parshiyot, shulId, currentUserId, onReadingCancelled, ...readingStars }: {
     ref?: Ref<ScheduleHandle>;
     parshiyot: ParshaObj[];
     shulId?: string;
@@ -85,7 +85,7 @@ export default function Schedule({ ref, parshiyot, shulId, currentUserId, onRead
             <div className="parshiyot">
                 {filteredReadings.length ? filteredReadings.map(reading => (
                     <Parsha key={`${reading.dateString}-${reading.desc}`} {...reading} shulId={shulId}
-                        currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />
+                        currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} {...readingStars} />
                 )) : (
                     <div className="no-results" role="status">
                         <h3>Oy Gevalt!</h3>

@@ -110,7 +110,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 25) throw new Error('Database schema is newer than this application');
+            if (version > 26) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -220,6 +220,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 25) {
                 db.exec(readFileSync(new URL('./migrations/025_summary_windows.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(25);
+            }
+            if (version < 26) {
+                db.exec(readFileSync(new URL('./migrations/026_starred_readings.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(26);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -338,6 +342,19 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ...notifications,
         path,
         close: () => db.close(),
+        listStarredReadings(userId) {
+            return db.prepare(`SELECT shul_id AS shulId, reading_date AS dateString,
+                reading_name AS desc, aliyah FROM starred_readings WHERE user_id = ?
+                ORDER BY reading_date, reading_name, aliyah`).all(userId);
+        },
+        setReadingStar(userId, { shulId, dateString, desc, aliyah }, starred) {
+            const values = [userId, shulId, dateString, desc, aliyah];
+            if (starred) db.prepare(`INSERT INTO starred_readings
+                (user_id, shul_id, reading_date, reading_name, aliyah) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT DO NOTHING`).run(...values);
+            else db.prepare(`DELETE FROM starred_readings WHERE user_id = ? AND shul_id = ?
+                AND reading_date = ? AND reading_name = ? AND aliyah = ?`).run(...values);
+        },
         getShul,
         getPicture(kind, id) {
             if (!['users', 'shuls'].includes(kind)) throw new TypeError('Invalid picture owner');
@@ -633,6 +650,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 }
                 db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
+                if (!guest) {
+                    db.prepare(`DELETE FROM starred_readings WHERE user_id = ? AND shul_id = ?
+                        AND reading_date = ? AND reading_name = ? AND aliyah = ?`)
+                        .run(id, shulId, dateString, desc, aliyah);
+                }
                 const confirmation = recordReadingConfirmation(shulId, { dateString, desc, aliyah,
                     recipientIds: guest && readerId ? [id, readerId] : [id] });
                 return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, bookerId: readerId, guest: Boolean(guest), dateString, desc, aliyah,

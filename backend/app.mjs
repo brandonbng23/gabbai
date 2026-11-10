@@ -4,7 +4,7 @@ import { installMessaging } from './messages.mjs';
 import { createGmailMailer } from './gmail.mjs';
 import { createNotificationService, installNotificationRoutes } from './notifications.mjs';
 import { fileURLToPath } from "node:url";
-import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
+import { getAssignedReadingDetails, getGuestReadingDetails, getStarredReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
@@ -362,6 +362,47 @@ export function createApp(database, {
         if (!req.sessionUserId) return res.status(401).json({ error: 'Sign in to view your guest registrations.' });
         return res.json(getGuestReadingDetails(database, req.sessionUserId));
     });
+
+    app.get('/api/me/starred-readings', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to view your starred readings.' });
+        return res.json(getStarredReadingDetails(database, req.currentUserId));
+    });
+
+    function saveReadingStar(req, res, next) {
+        res.set('Cache-Control', 'no-store');
+        const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
+        if (!user) return res.status(401).json({ error: 'Sign in to star a reading.' });
+        try {
+            validateKeys(req.body, ['shulId', 'dateString', 'desc', 'aliyah'], 'starred reading');
+            const { shulId, dateString, desc, aliyah } = req.body;
+            if (typeof shulId !== 'string' || !shulId || typeof dateString !== 'string'
+                || !/^\d{4}-\d{2}-\d{2}$/.test(dateString) || !Number.isFinite(Date.parse(dateString))
+                || new Date(dateString).toISOString().slice(0, 10) !== dateString
+                || typeof desc !== 'string' || !desc.trim() || desc.length > 254
+                || !Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9)
+                return res.status(400).json({ error: 'Choose a valid reading and aliyah from 1 to 9.' });
+            const starred = req.method === 'PUT';
+            let reading;
+            if (starred) {
+                if (shulId !== user.shulId) return res.status(403).json({ error: 'Choose a reading from your shul.' });
+                reading = getShulSchedule(database, shulId)
+                    .find(item => item.dateString === dateString && item.desc === desc);
+                if (!reading) return res.status(404).json({ error: 'Reading not found in your shul’s schedule.' });
+                const psukim = reading.psukim[aliyah - 1];
+                if (!psukim || psukim === 'null') return res.status(400).json({ error: 'This aliyah is not part of the reading.' });
+            }
+            database.setReadingStar(user.id, { shulId, dateString, desc, aliyah }, starred);
+            return res.json(starred ? { shulId, shulName: database.getShul(shulId).name,
+                dateString, desc, aliyah, gregDate: reading.gregDate, hDate: reading.hDate,
+                psukim: reading.psukim[aliyah - 1], verseCount: reading.verseCounts[aliyah - 1] } : { starred: false });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    }
+    app.put('/api/me/starred-readings', saveReadingStar);
+    app.delete('/api/me/starred-readings', saveReadingStar);
 
     // Sessions identify individual users; opt-in previews can supply a sample identity.
     app.get("/api/me", (req, res) => {

@@ -5,16 +5,17 @@ import { ReadingCard } from '../Components/reading.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { isGuestReading, selectUserReadings } from '../userReadings.ts';
 import type { ReadingsView } from '../userReadings.ts';
+import type { ReadingStarActions } from '../starredReadings.ts';
 
-export function UserReadings({ user, userId, onReadingCancelled }: {
+export function UserReadings({ user, userId, onReadingCancelled, starredReadings, starError, onReadingStarred }: {
     user: User;
     userId: string;
     onReadingCancelled: (dateString: string, desc: string, aliyah: number) => void;
-}) {
+} & ReadingStarActions) {
     const ownReadings = userId === user.id;
     const [profile, setProfile] = useState<UserViewProfile | null>(null);
     const [error, setError] = useState('');
-    const [view, setView] = useState<ReadingsView>('all');
+    const [view, setView] = useState<ReadingsView | 'starred'>('all');
     const [query, setQuery] = useState('');
     const [guestReadings, setGuestReadings] = useState<GuestReading[]>([]);
     const [guestLoading, setGuestLoading] = useState(ownReadings);
@@ -44,12 +45,15 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const readings = [...(reader?.assignedReadings ?? []), ...(ownReadings ? guestReadings : [])];
-    const visible = selectUserReadings(readings, view, today, query);
+    const visible = view === 'starred' && ownReadings
+        ? selectUserReadings(starredReadings ?? [], 'all', today, query)
+        : selectUserReadings(readings, view === 'starred' ? 'all' : view, today, query);
     const options = [
         { value: 'all', label: 'All', count: selectUserReadings(readings, 'all', today, query).length },
         { value: 'upcoming', label: 'Upcoming', count: selectUserReadings(readings, 'upcoming', today, query).length },
         { value: 'completed', label: 'Completed', count: selectUserReadings(readings, 'completed', today, query).length },
         ...(ownReadings ? [{ value: 'guest', label: 'Guest registrations', count: selectUserReadings(readings, 'guest', today, query).length }] as const : []),
+        ...(ownReadings ? [{ value: 'starred', label: 'Starred', count: selectUserReadings(starredReadings ?? [], 'all', today, query).length }] as const : []),
     ] as const;
     const fullName = reader ? [reader.firstName, reader.lastName].filter(Boolean).join(' ') : '';
 
@@ -87,15 +91,21 @@ export function UserReadings({ user, userId, onReadingCancelled }: {
                         <a href={`/userView?${new URLSearchParams({ user: reader.id })}`}>View profile →</a>
                     </div>
                     {guestError && <p className="user-readings-error" role="alert">Guest registrations could not be loaded. {guestError}</p>}
-                    <h2 id="readings-list-heading">{view === 'guest' ? 'Guest registrations' : `${options.find(option => option.value === view)?.label} readings`}</h2>
+                    {ownReadings && starError && <p className="user-readings-error" role="alert">Starred readings could not be loaded. {starError}</p>}
+                    <h2 id="readings-list-heading" className="user-readings-list-heading">{view === 'starred' ? 'Starred readings' : view === 'guest' ? 'Guest registrations' : `${options.find(option => option.value === view)?.label} readings`}</h2>
+                    {ownReadings && view === 'starred' && <p className="user-readings-guest-note">Your private short list. A starred reading is not reserved or registered in your name and is not an upcoming or completed reading.</p>}
                     {ownReadings && view === 'guest' && <p className="user-readings-guest-note">Bookings made while signed in using the guest form. These do not count toward your activity or statistics.</p>}
                     <p className="user-readings-notice" role="status">{notice}</p>
-                    {visible.length > 0 ? <div className="user-readings-list">
-                        {visible.map(reading => <ReadingCard key={`${isGuestReading(reading) ? `guest-${reading.shulId}` : 'profile'}-${reading.dateString}-${reading.desc}-${reading.aliyah}`}
+                    {ownReadings && view === 'starred' && !starredReadings && !starError ? <p role="status">Loading starred readings…</p>
+                    : ownReadings && view === 'starred' && starError ? null
+                    : visible.length > 0 ? <div className="user-readings-list">
+                        {visible.map(reading => <ReadingCard key={`${'shulId' in reading ? reading.shulId : 'profile'}-${reading.dateString}-${reading.desc}-${reading.aliyah}`}
                             user={isGuestReading(reading) ? reading.reader : reader} reading={reading}
-                            onCancelReading={ownReadings && !isGuestReading(reading) && user.shulId && reading.dateString >= today ? removeReading : undefined} />)}
+                            starred={ownReadings && view === 'starred'}
+                            onReadingStarred={ownReadings && view === 'starred' ? onReadingStarred : undefined}
+                            onCancelReading={ownReadings && view !== 'starred' && !isGuestReading(reading) && user.shulId && reading.dateString >= today ? removeReading : undefined} />)}
                     </div> : <div className="user-readings-empty">
-                        <p>{query.trim() ? 'No readings match your search.' : view === 'guest' ? 'No guest registrations linked to your account.' : view === 'all' ? 'No readings assigned yet.' : `No ${view} readings.`}</p>
+                        <p>{query.trim() ? 'No readings match your search.' : view === 'starred' ? 'No starred readings yet. Tap a star in the schedule to save a reading.' : view === 'guest' ? 'No guest registrations linked to your account.' : view === 'all' ? 'No readings assigned yet.' : `No ${view} readings.`}</p>
                         {ownReadings && <a href="/schedule">← Browse the schedule</a>}
                     </div>}
                 </section>

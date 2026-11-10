@@ -146,11 +146,11 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
             </div> : variant === 'user-readings' ? <div className="shul-settings user-readings-page">
                 <div className="settings-panel user-readings-panel">
                     <div className="user-readings-toolbar">
-                        <div className="user-readings-filters skeleton-reading-filters">{Array.from({ length: 4 }, (_, index) => <Block width="100px" className="skeleton-input" key={index} />)}</div>
+                        <div className="user-readings-filters skeleton-reading-filters">{['68px', '115px', '122px', '176px', '100px'].map((width, index) => <Block width={width} className="skeleton-input" key={index} />)}</div>
                         <div className="user-readings-search skeleton-reading-search"><Block width="170px" className="skeleton-label" /><Block className="skeleton-input" /></div>
                         <Block width="110px" className="skeleton-label" />
                     </div>
-                    <h2><Block width="180px" /></h2>
+                    <h2 className="user-readings-list-heading"><Block width="180px" className="skeleton-title" /></h2>
                     <div className="user-readings-list">
                         {Array.from({ length: 4 }, (_, index) => <ReadingCardPlaceholder key={index} />)}
                     </div>

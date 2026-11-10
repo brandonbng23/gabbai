@@ -5,6 +5,9 @@ import AssignedReader from "./assignedReader.tsx";
 import { cancelReading } from '../api.ts';
 import { useReadingRemovalConfirmation } from './useReadingRemovalConfirmation.tsx';
 import { readingAnchor } from '../readingAnchor.ts';
+import { sameReading } from '../starredReadings.ts';
+import type { ReadingStarActions } from '../starredReadings.ts';
+import { ReadingStarButton } from './readingStarButton.tsx';
 
 export type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
 import type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
@@ -20,7 +23,7 @@ export interface Aliyah {
     reader: ShulUser | null;
 }
 
-export interface ReadingActions {
+export interface ReadingActions extends ReadingStarActions {
     currentUserId?: string;
     onReadingCancelled?: (dateString: string, desc: string, aliyah: number) => void;
 }
@@ -82,7 +85,16 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
 
      return (
         <div>
-            <div className={`aliyah${suffix}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+            <div className={`parsha-aliyah aliyah${suffix}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                {props.onReadingStarred && <ReadingStarButton
+                    starred={props.starredReadings?.some(reading => sameReading(reading, {
+                        shulId: props.shulId, dateString: props.dateString, desc: props.desc, aliyah: props.a,
+                    })) ?? false}
+                    disabled={!props.starredReadings}
+                    label={`${aliyahLabels[props.a - 1]} of ${props.desc}, ${props.dateString}`}
+                    onChange={starred => props.onReadingStarred!({
+                        shulId: props.shulId, dateString: props.dateString, desc: props.desc, aliyah: props.a,
+                    }, starred)} />}
                 <div className={`pandora-box${suffix}`}>
                     <div className={`aliyah-label${suffix}`}>{aliyahLabels[props.a - 1]}</div>
                     {props.reader ? (
@@ -111,8 +123,8 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                         </div>
                     )}
                 </div>
+                <div className={`verse-count${suffix}`}>{`${props.verseCount} verses`}</div>
                 <div className={`psukim-text${suffix}`}>{props.psukim}</div>
-                <div className={"psukim-count"}>{`${props.verseCount} verses`}</div>
             </div>
             {cancelError && <p className="schedule-cancel-error" role="alert">{cancelError}</p>}
             {confirmationDialog}
@@ -180,6 +192,8 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
                                 shulId={props.shulId}
                                 currentUserId={props.currentUserId}
                                 onReadingCancelled={props.onReadingCancelled}
+                                starredReadings={props.starredReadings}
+                                onReadingStarred={props.onReadingStarred}
                                 dateString={props.dateString}
                                 desc={props.desc}
                                 a={index + 1}

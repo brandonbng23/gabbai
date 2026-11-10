@@ -16,6 +16,7 @@ import { LoadingSkeleton } from "./Components/loadingSkeleton.tsx"
 import { getCurrentUser, getJson } from "./api.js"
 import type { Shul, User } from "./api.js"
 import { installSessionHistoryGuard } from './sessionHistory.ts';
+import { useStarredReadings } from './starredReadings.ts';
 
 function App() {
     useEffect(() => installSessionHistoryGuard(window, document.body), []);
@@ -37,6 +38,7 @@ function App() {
     const [scheduleError, setScheduleError] = useState<string | null>(null);
     const [shul, setShul] = useState<Shul | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const readingStars = useStarredReadings(user?.id, user?.shulId ?? undefined);
     const isRegistrationPage = window.location.pathname.replace(/\/$/, "") === "/registration";
     const isShulPage = window.location.pathname.replace(/\/$/, "") === "/shul";
     const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
@@ -135,7 +137,7 @@ function App() {
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserReadingsPage && user ? <UserReadings key={viewedUserId || user.id} user={user}
-                  userId={viewedUserId || user.id} onReadingCancelled={handleReadingCancelled} />
+                  userId={viewedUserId || user.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
               : isUserViewPage ? (
                 user && ['member', 'admin'].includes(user.role)
                     ? <UserView key={viewedUserId} userId={viewedUserId} />
@@ -155,7 +157,7 @@ function App() {
               ) : isShulPage ? <MyShul shul={shul} /> : isSchedulePage ? <SchedulePage
                   firstName={user?.firstName} shulId={shulId} readings={schedule}
                   loading={scheduleLoading} error={scheduleError}
-                  currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} />
+                  currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
               : <main className="shul-context"><h1>Page not found</h1><a href="/">Go home</a></main>}
             </div>
         </div>

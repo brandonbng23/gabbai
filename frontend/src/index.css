@@ -1832,6 +1832,20 @@ h4 {
     font-weight: 700;
 }
 
+.verse-count,
+.verse-count-hover {
+    font-size: 16.5px;
+    font-family: Fustat;
+
+    flex: 0 0 80px;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.verse-count-hover {
+    font-weight: 700;
+}
+
 .parsha-btn-un:hover {
     background-color: #700909;
     border-color: #700909;
@@ -4016,7 +4030,7 @@ input[type="number"] {
     font-size: 12px;
 }
 
-.user-readings-page #readings-list-heading {
+.user-readings-page .user-readings-list-heading {
     display: block;
     height: auto;
     margin: 0 0 18px;
@@ -4848,12 +4862,103 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     padding-bottom: 12px;
 }
 .schedule-page .parsha:has(> .parsha-content) {
-    gap: 12px;
+    gap: 0;
     padding-bottom: 0;
 }
 .schedule-page .parsha-content {
-    padding-bottom: .75%;
+    padding: 16px 12px;
     min-width: 0;
+}
+.schedule-page .parsha-content .parsha-title {
+    margin: 0 0 8px;
+}
+.schedule-page .parsha-content .parsha-dates {
+    margin: 0;
+}
+.schedule-page .parsha-content > .divider {
+    width: 100%;
+    margin: 12px 0;
+}
+.schedule-page .parsha-aliyah {
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    gap: 8px 24px;
+}
+.schedule-page .parsha-aliyah > :is(.pandora-box, .pandora-box-hover) {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 156px);
+    column-gap: 24px;
+    flex: 0 1 280px;
+    width: 280px;
+}
+.schedule-page .parsha-aliyah > :is(.psukim-text, .psukim-text-hover) {
+    flex: 0 1 240px;
+}
+.reading-star-control {
+    position: relative;
+    flex: 0 0 auto;
+}
+.reading-star-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #c5c3cb;
+    cursor: pointer;
+}
+.reading-star-button svg {
+    width: 22px;
+    height: 22px;
+    filter: none;
+}
+.reading-star-button[aria-pressed="true"] {
+    color: #ffd166;
+}
+.reading-star-button:hover:not(:disabled) {
+    background: #ffffff15;
+    color: #ffe09a;
+}
+.reading-star-button:focus-visible {
+    outline: 2px solid #ffd166;
+    outline-offset: 2px;
+}
+.reading-star-button:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+.reading-star-error {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 2;
+    width: 240px;
+    padding: 10px;
+    border: 1px solid #9f6464;
+    border-radius: 8px;
+    background: #302f30;
+    color: #f5b1b1;
+    font-size: 13px;
+}
+.reading-card-tag-starred,
+.user-readings-filters button[data-filter="starred"] {
+    --reading-filter-color: #f5efb0;
+}
+.schedule-page .parsha-aliyah :is(.aliyah-label, .aliyah-label-hover) {
+    width: auto;
+}
+.schedule-page .parsha-aliyah :is(.pandora-box, .pandora-box-hover) > button,
+.schedule-page .parsha-aliyah :is(.schedule-reader-assignment, .locked) {
+    margin-inline: 0;
+    max-width: 100%;
 }
 .schedule-page :is(.pandora-box, .pandora-box-hover) {
     height: auto;
@@ -5170,6 +5275,10 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     --skeleton-shine: #56585d;
 }
 @media (max-width: 620px) {
+    .schedule-page .parsha-aliyah > :is(.pandora-box, .pandora-box-hover) {
+        flex-basis: 100%;
+        width: 100%;
+    }
     .navbar .dashboard-label, .navbar .vert-divider, .navbar .navbar-toggler {
         display: none;
     }

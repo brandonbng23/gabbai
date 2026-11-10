@@ -6,19 +6,22 @@ import AssignedReader from './assignedReader.tsx';
 import { TrashIcon } from './trashIcon.tsx';
 import { useReadingRemovalConfirmation } from './useReadingRemovalConfirmation.tsx';
 import { isGuestReading } from '../userReadings.ts';
+import { ReadingStarButton } from './readingStarButton.tsx';
+import type { ReadingStarActions } from '../starredReadings.ts';
 
 const aliyahLabels = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
 
-export function ReadingCard({ user, reading, onCancelReading, cancellationDisabled = false, showTags = true }: {
+export function ReadingCard({ user, reading, onCancelReading, cancellationDisabled = false, showTags = true, starred = false, onReadingStarred }: {
     user: ReaderCardUser;
     reading: UserReading;
     onCancelReading?: (reading: UserReading) => Promise<void>;
     cancellationDisabled?: boolean;
     showTags?: boolean;
-}): JSX.Element {
+    starred?: boolean;
+} & Pick<ReadingStarActions, 'onReadingStarred'>): JSX.Element {
     const [cancelling, setCancelling] = useState(false);
     const [error, setError] = useState('');
-    const { confirmRemoval, confirmationDialog } = useReadingRemovalConfirmation();
+    const { confirmRemoval, confirmationDialog } = useReadingRemovalConfirmation(starred ? 'star' : 'registration');
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const upcoming = reading.dateString >= today;
@@ -44,7 +47,13 @@ export function ReadingCard({ user, reading, onCancelReading, cancellationDisabl
                     <h3>{reading.desc}</h3>
                     <span className="reading-card-aliyah">{aliyahLabels[reading.aliyah - 1]}</span>
                 </div>
-                <AssignedReader reader={user} portal />
+                {!starred && <AssignedReader reader={user} portal />}
+                {starred && onReadingStarred && <ReadingStarButton starred
+                    label={`${aliyahLabels[reading.aliyah - 1]} of ${reading.desc}, ${reading.dateString}`}
+                    onChange={async nextStarred => {
+                        if (!nextStarred && !await confirmRemoval(reading)) return;
+                        await onReadingStarred(reading, nextStarred);
+                    }} />}
             </div>
             <div className="reading-card-body">
                 <div className="reading-card-dates">
@@ -53,12 +62,12 @@ export function ReadingCard({ user, reading, onCancelReading, cancellationDisabl
                 </div>
                 {reading.psukim && <div className="reading-card-verses">{reading.psukim}</div>}
             </div>
-            {isGuestReading(reading) && <span className="reading-card-guest-label">{reading.shulName}</span>}
+            {(isGuestReading(reading) || (starred && 'shulName' in reading)) && <span className="reading-card-guest-label">{String(reading.shulName)}</span>}
             {error && <p className="reading-card-error" role="alert">{error}</p>}
             {(showTags || onCancelReading) && <div className="reading-card-footer">
                 {showTags && <div className="reading-card-tags">
-                    <span className={`reading-card-tag reading-card-tag-${upcoming ? 'upcoming' : 'completed'}`}>
-                        {upcoming ? 'Upcoming' : 'Completed'}
+                    <span className={`reading-card-tag reading-card-tag-${starred ? 'starred' : upcoming ? 'upcoming' : 'completed'}`}>
+                        {starred ? 'Starred' : upcoming ? 'Upcoming' : 'Completed'}
                     </span>
                     {isGuestReading(reading) && <span className="reading-card-tag reading-card-tag-guest">Guest registration</span>}
                 </div>}

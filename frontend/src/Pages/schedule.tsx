@@ -5,7 +5,7 @@ import { QuickStart } from '../Components/quickStart.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { ParshaObj, ReadingActions } from '../Components/parsha.tsx';
 
-export default function SchedulePage({ firstName, shulId, readings, loading, error, currentUserId, onReadingCancelled }: {
+export default function SchedulePage({ firstName, shulId, readings, loading, error, currentUserId, onReadingCancelled, ...readingStars }: {
     firstName?: string;
     shulId?: string;
     readings: ParshaObj[];
@@ -28,10 +28,11 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
             onSelectReading={reading => schedule.current?.revealReading(reading)} />
 
         <div id="full-schedule" className="schedule-content" tabIndex={-1} aria-label="Full schedule">
+        {readingStars.starError && <p className="shul-context" role="alert">Starred readings could not be loaded. {readingStars.starError}</p>}
         {loading ? <LoadingSkeleton variant="schedule" />
             : error ? <p className="shul-context" role="alert">{error}</p>
             : <Schedule ref={schedule} shulId={shulId} parshiyot={readings}
-                currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />}
+                currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} {...readingStars} />}
         </div>
         {showBackToTop && <button type="button" className="schedule-back-to-top" onClick={() => {
             window.scrollTo({ top: 0, behavior: 'instant' });
