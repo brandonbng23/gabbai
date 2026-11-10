@@ -16,8 +16,9 @@
     box-sizing: border-box;
 }
 
+html,
 body {
-    background: #d9d9d9;
+    background: #464545;
     margin: 0;
 }
 
@@ -263,8 +264,12 @@ body {
     border-radius: 4px;
 }
 
-.sidebar-link.active svg {
+.sidebar-link.active svg,
+.sidebar-bottom-link[aria-current="page"] svg {
     fill: #66B1F2;
+}
+
+.sidebar-link.active svg {
     background: rgb(56, 56, 56);
     height: 33px;
     width: 33px;
@@ -276,7 +281,6 @@ body {
     left: 0px;
     width: 6px;
     height: 95%;
-    background-color: #66B1F2;
     border-top-left-radius: 600px;
     border-bottom-left-radius: 600px;
 }
@@ -311,7 +315,6 @@ body {
     width: 20px;
     height: 20px;
 }
-
 .sidebar-bottom-link:hover {
     background: rgb(56, 56, 56);
 }
@@ -914,6 +917,58 @@ h4 {
     margin-left: var(--content-offset);
     width: 77.5%;
     padding-top: 1.5%;
+}
+
+/* Keep navigation steady while page content changes. */
+@media (prefers-reduced-motion: no-preference) {
+    @view-transition {
+        navigation: auto;
+    }
+
+    .app-shell .content-window {
+        view-transition-name: page-content;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+    }
+
+    ::view-transition-group(page-content) {
+        animation: none;
+    }
+
+    ::view-transition-old(page-content) {
+        animation: page-content-out 140ms ease-in both;
+    }
+
+    ::view-transition-new(page-content) {
+        animation: page-content-in 180ms ease-out both;
+    }
+
+    .content-window > :is(main, .skeleton-state),
+    .content-window .skeleton-state,
+    .account-page > .account-page-content,
+    .user-page > .account-page-content,
+    .schedule-content > .schedule,
+    .registration-page > .registration-details {
+        animation: page-content-settle 180ms ease-out;
+    }
+}
+
+@keyframes page-content-out {
+    to { opacity: 0; }
+}
+
+@keyframes page-content-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes page-content-settle {
+    from { opacity: .65; }
+    to { opacity: 1; }
 }
 
 @media (max-width: 1200px) {
