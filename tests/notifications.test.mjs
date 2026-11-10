@@ -314,16 +314,45 @@ test('a roundup emails once per admin while preserving reports longer than one i
     assert.equal(pieces.reduce((sum, message) => sum + message.body.length, 0), report.length);
 });
 
-test('roundup includes detailed registrations and compact vacancies from the real schedule', t => {
+test('roundup groups all registrations into one paragraph before the open-readings summary', t => {
     const state = fixture(t);
     const now = new Date('2026-10-27T19:00:00Z');
-    const reading = getShulSchedule(state.db, state.shul.id).find(item => item.dateString >= '2026-10-27' && item.dateString <= '2027-01-27' && item.psukim[0] && item.psukim[0] !== 'null');
+    const [reading, nextReading] = getShulSchedule(state.db, state.shul.id).filter(item => item.dateString >= '2026-10-27' && item.dateString <= '2027-01-27' && item.psukim[0] && item.psukim[0] !== 'null');
     state.db.registerReading(state.shul.id, { dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: state.member.id }, () => {});
+    const guest = state.make('Visitor', 'guest');
+    state.db.registerReading(state.shul.id, { dateString: nextReading.dateString, desc: nextReading.desc, aliyah: 1, readerId: guest.id }, () => {});
     const report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York');
     assert.ok(report.includes(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah 1: Member Test`));
     assert.ok(report.includes(reading.psukim[0]));
     assert.match(report, /\d+ open \([\d, ]+\)/);
     assert.ok(report.includes('Tuesday, January 19, 2027'));
+    const [header, registered, open] = report.split('\n\n');
+    assert.ok(header.includes('2 registrations'));
+    assert.ok(registered.startsWith('Registered readings: '));
+    assert.ok(registered.includes('Member Test'));
+    assert.ok(registered.includes('Visitor Test (guest)'));
+    assert.ok(registered.includes(nextReading.desc));
+    assert.ok(registered.includes('; '));
+    assert.ok(!registered.includes('\n'));
+    assert.ok(!registered.includes(' open ('));
+    assert.ok(open.startsWith('Open readings: '));
+    assert.ok(!open.includes('Member Test'));
+    assert.ok(!open.includes('\n'));
+    assert.equal(report.split('\n\n').length, 3);
+});
+
+test('roundup handles empty registered and open sections explicitly', t => {
+    const state = fixture(t);
+    const now = new Date('2026-10-27T19:00:00Z');
+    let report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York', '2weeks');
+    assert.ok(report.includes('Registered readings: None in this date range.\n\nOpen readings: '));
+    const range = reportWindow(now, 'America/New_York', '2weeks');
+    const readings = getShulSchedule(state.db, state.shul.id)
+        .filter(reading => reading.dateString >= range.start && reading.dateString <= range.end);
+    state.db.setReadingLocks(state.shul.id, readings.map(({ dateString, desc }) => ({ dateString, desc, locked: true })));
+    report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York', '2weeks');
+    assert.ok(report.includes('0 registrations · 0 vacancies'));
+    assert.ok(report.endsWith('Registered readings: None in this date range.\n\nOpen readings: None in this date range.'));
 });
 
 test('queue and confirmation quota roll back atomically if notification persistence fails', t => {

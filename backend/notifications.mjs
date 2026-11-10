@@ -14,6 +14,8 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
     const startYear = hebrewYear(range.start);
     const endYear = hebrewYear(range.end);
     const lines = [`${shul.name} — registration summary`, `Upcoming readings: ${formatCommunicationDate(range.start)} through ${formatCommunicationDate(range.end)} (${timezone})`, ''];
+    const registeredReadings = [];
+    const openReadings = [];
     let registrations = 0;
     let vacancies = 0;
     for (let year = startYear; year <= endYear; year++) {
@@ -24,17 +26,19 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
                 const reader = reading.readers[index];
                 if (reader) {
                     registrations++;
-                    lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
+                    registeredReadings.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
                 } else if (!reading.locked && !reading.lockedArr[index]) open.push(index + 1);
             }
             if (open.length) {
                 vacancies += open.length;
-                lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
+                openReadings.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
             }
         }
     }
     lines.splice(2, 0, `${registrations} registrations · ${vacancies} vacancies`);
-    if (!registrations && !vacancies) lines.push('No registrations or available readings in this date range.');
+    lines.push(registeredReadings.length ? `Registered readings: ${registeredReadings.join('; ')}.` : 'Registered readings: None in this date range.');
+    lines.push('');
+    lines.push(openReadings.length ? `Open readings: ${openReadings.join('; ')}.` : 'Open readings: None in this date range.');
     return lines.join('\n');
 }
 
