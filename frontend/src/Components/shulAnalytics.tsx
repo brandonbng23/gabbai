@@ -34,21 +34,29 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                     <div><dt>Upcoming readings</dt><dd>{stats.readingCount}</dd><dd className="analytics-metric-note">In this date range</dd></div>
                 </dl>
                 <p className="analytics-explanation">Coverage includes assigned and open aliyot. Unassigned locked aliyot are excluded. Figures update when changes are published.</p>
+                <div className="analytics-detail-grid">
+                <div className="analytics-reader-panel">
                 <h3>Registered readers in this timeframe</h3>
                 <p className="analytics-explanation">Includes guests and admin-assigned readings. The timeframe refers to reading dates.</p>
-                {stats.registeredReaders.length ? <ul className="analytics-readers">{stats.registeredReaders.map(({ reader, aliyahCount, readings }) => <li key={reader.id}>
-                    <div className="analytics-reader-heading">
-                        <div><a href={`/userView?${new URLSearchParams({ user: reader.id })}`}>
-                            {[reader.title, reader.firstName, reader.lastName].filter(Boolean).join(' ')}
-                        </a>{reader.role === 'guest' && <span className="analytics-reader-guest">Guest</span>}</div>
-                        <span className="analytics-open-count">{aliyahCount} {aliyahCount === 1 ? 'aliyah' : 'aliyot'}</span>
-                    </div>
-                    <ul className="analytics-reader-readings">{readings.map(reading => <li key={`${reading.dateString}:${reading.desc}`}>
-                        <span>{formatEventDate(reading.dateString)}</span>
-                        <strong>{reading.desc}</strong>
-                        <span>{reading.aliyot.map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(', ')}</span>
-                    </li>)}</ul>
-                </li>)}</ul> : <div className="analytics-feedback">No readers are registered for readings in this timeframe.</div>}
+                {stats.registeredReaders.length ? <div className="analytics-reader-table-wrap"><table className="analytics-reader-table">
+                    <caption className="visually-hidden">Registered readers and their readings in the selected timeframe</caption>
+                    <thead><tr><th scope="col">Reader</th><th scope="col">Registered readings</th></tr></thead>
+                    <tbody>{stats.registeredReaders.map(({ reader, aliyahCount, readings }) => <tr key={reader.id}>
+                        <th scope="row">
+                            <a href={`/userView?${new URLSearchParams({ user: reader.id })}`}>
+                                {[reader.title, reader.firstName, reader.lastName].filter(Boolean).join(' ')}
+                            </a>
+                            <span className="analytics-reader-summary">{reader.role === 'guest' ? 'Guest · ' : ''}{aliyahCount} {aliyahCount === 1 ? 'aliyah' : 'aliyot'}</span>
+                        </th>
+                        <td><ul className="analytics-reader-assignments">{readings.map(reading => <li key={`${reading.dateString}:${reading.desc}`}>
+                            <strong>{reading.desc}</strong><span aria-hidden="true"> · </span>
+                            <time dateTime={reading.dateString}>{formatEventDate(reading.dateString)}</time><span aria-hidden="true"> · </span>
+                            <span>{reading.aliyot.map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(', ')}</span>
+                        </li>)}</ul></td>
+                    </tr>)}</tbody>
+                </table></div> : <div className="analytics-feedback">No readers are registered for readings in this timeframe.</div>}
+                </div>
+                <div className="analytics-coverage-panel">
                 {stats.readingCount === 0 ? <div className="analytics-feedback">No readings fall in this date range in your configured schedule.</div> : <>
                     <div className="analytics-subheading"><h3>Coverage by week</h3><div className="analytics-legend">
                         <span><i className="analytics-assigned" />Assigned</span><span><i className="analytics-open" />Open</span><span><i className="analytics-locked" />Locked</span>
@@ -67,12 +75,16 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                             <span className="analytics-week-count">{total ? `${bucket.assigned} assigned · ${bucket.open} open` : 'No readings'}</span>
                         </li>;
                     })}</ul>
+                </>}
+                </div>
+                </div>
+                {stats.readingCount > 0 && <div className="analytics-open-readings">
                     <h3>Next readings with open aliyot</h3>
                     {stats.attention.length ? <ul className="analytics-attention">{stats.attention.map(({ reading, open }) => <li key={`${reading.dateString}:${reading.desc}`}>
                         <div><strong>{reading.desc}</strong><span>{reading.gregDate}</span></div>
                         <span className="analytics-open-count">{open} {open === 1 ? 'aliyah' : 'aliyot'} open</span>
                     </li>)}</ul> : <div className="analytics-feedback">All unlocked aliyot in this range are assigned.</div>}
-                </>}
+                </div>}
             </>}
         <h3>Congregation</h3>
         {usersLoading ? <div className="analytics-feedback" role="status">Loading account totals…</div>
