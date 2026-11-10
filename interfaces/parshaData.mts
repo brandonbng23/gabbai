@@ -34,6 +34,8 @@ export interface ParshaData {
     /* Array of strings repersenting verses to be read for each aliyah of parsha. */
     psukim: string[];
     verseCounts: (number | null)[];
+    /* Public admin notes, indexed by aliyah; an empty string means no note. */
+    aliyahNotes?: string[];
     aliyahCount?: number;
     defaultAliyahCount?: number;
     aliyahCountOverride?: number | null;

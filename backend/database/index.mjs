@@ -1,4 +1,5 @@
 import { validatePicture } from '../pictures.mjs';
+import { validateAliyahNote } from '../../interfaces/readingNote.mts';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -110,7 +111,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 26) throw new Error('Database schema is newer than this application');
+            if (version > 28) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -225,6 +226,14 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/026_starred_readings.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(26);
             }
+            if (version < 27) {
+                db.exec(readFileSync(new URL('./migrations/027_aliyah_notes.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(27);
+            }
+            if (version < 28) {
+                db.exec(readFileSync(new URL('./migrations/028_longer_aliyah_notes.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(28);
+            }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
@@ -263,7 +272,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in patch ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -286,6 +295,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 return { occasions: [shulId, dateString, desc, JSON.stringify(labels)] };
             }
             if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
+            if ('note' in patch) {
+                if (aliyah < 1) throw new TypeError('Choose an aliyah for the note.');
+                return { note: [shulId, dateString, desc, aliyah, validateAliyahNote(patch.note)] };
+            }
             if ('readerId' in patch) {
                 if (aliyah < 1) throw new TypeError('A reader must be assigned to an aliyah from 1 to 9');
                 if (patch.readerId !== null) {
@@ -315,7 +328,17 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
                 DO UPDATE SET aliyah_count = excluded.aliyah_count`);
             const removeCount = db.prepare('DELETE FROM reading_aliyah_counts WHERE shul_id = ? AND reading_date = ? AND reading_name = ?');
+            const noteStatement = db.prepare(`INSERT INTO reading_aliyah_notes (shul_id, reading_date, reading_name, aliyah, note)
+                VALUES (?, ?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET note = excluded.note`);
+            const removeNote = db.prepare(`DELETE FROM reading_aliyah_notes
+                WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
             for (const value of values) {
+                if (value.note) {
+                    if (value.note[4] === '') removeNote.run(...value.note.slice(0, 4));
+                    else noteStatement.run(...value.note);
+                    continue;
+                }
                 if (value.count) {
                     if (value.count[3] === null) removeCount.run(...value.count.slice(0, 3));
                     else countStatement.run(...value.count);
@@ -401,6 +424,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return db.prepare('SELECT reading_date, reading_name, occasions_json FROM reading_occasions WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
                     manualOccasions: JSON.parse(row.occasions_json) }));
+        },
+        listReadingNotes(shulId) {
+            return db.prepare(`SELECT reading_date AS dateString, reading_name AS desc, aliyah, note
+                FROM reading_aliyah_notes WHERE shul_id = ?`).all(shulId);
         },
         listReadingLocks(shulId) {
             return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')

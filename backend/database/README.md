@@ -371,6 +371,24 @@ the batch; a failed publication saves none of the changes. The response contains
 each affected reading once. Reset discards local drafts, and publication updates
 the schedule used by the member-facing pages. Search changes do not discard drafts.
 
+Version 27 adds public notes per aliyah in `reading_aliyah_notes`, keyed by shul,
+date, reading name, and aliyah. The same admin-only adjustments endpoint accepts
+`{ dateString, desc, aliyah, note }`. Notes must be single-line strings of at most
+120 characters (expanded from 60 by version 28); surrounding whitespace is
+trimmed and an empty note removes it. The version 28 migration preserves existing notes.
+Notes publish atomically with other adjustments and may be edited on locked
+aliyot. Schedule responses include `aliyahNotes`, indexed like `psukim`, with
+empty strings for slots without notes. Notes for hidden slots are retained.
+Manage Shul provides Add/Edit note buttons that expand editors below aliyah rows
+with character counters, and the public
+schedule uses the remaining row space with a two-line display cap. Hovering a
+note exposes its full text when narrow screens require truncation.
+The editor can apply a note to the same aliyah throughout the current schedule,
+or to all visible aliyot of that dated reading. Before publishing, the active
+button changes to “Apply only to this aliyah” and restores the other notes to
+their prior saved or draft values. Later individual edits are preserved. Reset
+and publication clear the bulk-selection state.
+
 Version 6 adds `reading_aliyah_counts`, keyed by shul and reading date/name.
 The batch adjustments endpoint also accepts `{ dateString, desc, aliyahCount }`.
 An integer from 1 to 7 overrides the schedule rule for that reading; `null`

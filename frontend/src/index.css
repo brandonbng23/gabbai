@@ -3389,6 +3389,7 @@ input[type="number"] {
 .admin-aliyah-hover {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
 
     border-radius: max(0px, calc(var(--result-radius) - var(--admin-aliyah-inset) - 1px));
@@ -3400,6 +3401,133 @@ input[type="number"] {
 .admin-aliyah-hover {
     background-color: #66B1F2;
     font-weight: 800;
+}
+
+.admin-aliyah-verse-count {
+    flex: 0 0 12%;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-aliyah-verse-range {
+    width: 25%;
+}
+.admin-aliyah-verse-range,
+.admin-aliyah-note-actions {
+    padding-left: 0;
+}
+.admin-aliyah-note-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: right;
+}
+.admin-aliyah-note-toggle {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    border: 1px solid #8bc8ff60;
+    border-radius: 7px;
+    background: #302f30;
+    color: #b9dfff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.admin-aliyah-note-toggle:hover:enabled {
+    background: #3d4650;
+}
+.admin-aliyah-note-toggle:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+.admin-aliyah-note-preview {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 400;
+}
+.admin-aliyah-note-editor {
+    flex: 0 0 100%;
+    min-width: 0;
+    margin: 8px 0;
+    padding: 12px;
+    border: 1px solid #646167;
+    border-radius: 9px;
+    background: #302f30;
+    color: #f6f5f7;
+}
+.admin-aliyah-note-editor label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.admin-aliyah-note-editor input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #646167;
+    border-radius: 7px;
+    background: #302f30;
+    color: #f6f5f7;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 400;
+}
+.admin-aliyah-note-editor input::placeholder {
+    color: #bdbcc4;
+}
+.admin-aliyah-note-count {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+}
+.admin-aliyah-note-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: #bdbcc4;
+    font-size: 12px;
+    font-weight: 400;
+}
+.admin-aliyah-note-remove {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #f5b1b1;
+    font: inherit;
+    cursor: pointer;
+}
+.admin-aliyah-note-apply {
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #b9dfff;
+    font: inherit;
+    cursor: pointer;
+}
+.admin-aliyah-note-apply:hover:enabled {
+    background: #8bc8ff15;
+}
+.admin-aliyah-note-apply[aria-pressed="true"] {
+    background: #8bc8ff20;
+}
+.admin-aliyah-note-apply:disabled {
+    opacity: .5;
+    cursor: not-allowed;
 }
 
 .aliyah-lock-btn, .parsha-lock-btn {
@@ -4945,13 +5073,31 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .schedule-page .parsha-aliyah > :is(.aliyah-assignment, .aliyah-assignment-hover) {
     display: grid;
-    grid-template-columns: 100px minmax(0, 156px);
+    grid-template-columns: 100px minmax(0, 166px);
     column-gap: 28px;
-    flex: 0 1 284px;
-    width: 284px;
+    flex: 0 1 294px;
+    width: 294px;
 }
 .schedule-page .parsha-aliyah > :is(.aliyah-verse-range, .aliyah-verse-range-hover) {
     flex: 0 1 260px;
+}
+.schedule-page .aliyah-note {
+    flex: 1 1 140px;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    max-height: 2.8em;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #bdbcc4;
+}
+.schedule-page .parsha-aliyah:is(.aliyah-hover, :focus-within) .aliyah-note {
+    color: inherit;
 }
 .reading-star-control {
     position: relative;
@@ -5287,6 +5433,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .schedule-page :is(.aliyah-assignment, .aliyah-assignment-hover) > button {
     cursor: pointer;
+    width: calc(125px * 1.15 * 1.15);
     margin-left: 20px;
     margin-right: 0;
     min-height: 32px;

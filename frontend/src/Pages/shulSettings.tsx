@@ -8,8 +8,8 @@ import { getShulUsers, getShulUserProfile, getInitialShulVersion, publishReading
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
-import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
-import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
+import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders, pendingReadingNotes, readingNoteKey, editReadingNote, toggleNoteApplication, noteChangeLog } from '../readingAdjustments.ts';
+import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts, NoteDraftState, NoteScope } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
@@ -97,6 +97,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [countDrafts, setCountDrafts] = useState<CountDrafts>({});
     const [occasionDrafts, setOccasionDrafts] = useState<OccasionDrafts>({});
     const [readerDrafts, setReaderDrafts] = useState<ReaderDrafts>({});
+    const [noteEdits, setNoteEdits] = useState<NoteDraftState>({ drafts: {}, applications: {} });
+    const noteDrafts = noteEdits.drafts;
     const [users, setUsers] = useState<ShulUser[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
     const [usersError, setUsersError] = useState('');
@@ -241,7 +243,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const readingChanges = pendingReadingLocks(readingDrafts, schedule);
     const occasionChanges = pendingReadingOccasions(occasionDrafts, schedule);
     const readerChanges = pendingReadingReaders(readerDrafts, schedule);
-    const hasReadingChanges = countChanges.length > 0 || readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0;
+    const noteChanges = pendingReadingNotes(noteDrafts, schedule);
+    const hasReadingChanges = countChanges.length > 0 || readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0 || noteChanges.length > 0;
     const hasUnsavedChanges = contactChangeLog.length > 0 || scheduleChangeLog.length > 0 || hasReadingChanges;
 
     useEffect(() => {
@@ -263,6 +266,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         readingAdjustmentChangeLog.push(`Set ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) to ${change.aliyahCount === null ? 'the schedule rule' : `${change.aliyahCount} aliyot`}.`);
     }
     readingAdjustmentChangeLog.push(...occasionChangeLog(occasionDrafts, schedule));
+    readingAdjustmentChangeLog.push(...noteChangeLog(noteEdits, schedule));
 
     for (const change of readerChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
@@ -466,12 +470,30 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         clearFeedback('readings');
     }
 
+    function changeReadingNote(reading: ParshaObj, aliyah: number, note: string): void {
+        if (busy) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setNoteEdits(previous => editReadingNote(previous, saved, aliyah, note));
+        clearFeedback('readings');
+    }
+
+    function applyNoteToScope(reading: ParshaObj, aliyah: number, note: string, scope: NoteScope): void {
+        if (busy || !note.trim()) return;
+        const reverting = noteEdits.applications[readingNoteKey(reading, aliyah)]?.scope === scope;
+        setNoteEdits(previous => toggleNoteApplication(previous, schedule, reading, aliyah, note, scope, countDrafts));
+        const target = scope === 'aliyah' ? `all ${aliyahLabels[aliyah - 1]} aliyot in the current schedule` : `all aliyot of ${reading.desc} on ${reading.gregDate}`;
+        showFeedback('readings', 'info', reverting ? 'Note applies only to this aliyah. Other notes restored; publish changes to save.'
+            : `Note applied to ${target}. Publish Changes to save.`);
+    }
+
     function resetReadingAdjustments(): void {
         if (busy) return;
         setReadingDrafts({});
         setOccasionDrafts({});
         setReaderDrafts({});
         setCountDrafts({});
+        setNoteEdits({ drafts: {}, applications: {} });
         showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
     }
 
@@ -482,12 +504,13 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         setSaving(true);
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
-            const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges]);
+            const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges, ...noteChanges]);
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
             setOccasionDrafts({});
             setReaderDrafts({});
             setCountDrafts({});
+            setNoteEdits({ drafts: {}, applications: {} });
             showFeedback('readings', 'success', 'Reading adjustments published.');
         } catch (failure) {
             showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
@@ -801,13 +824,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
                                                     savedOccasions={reading.manualOccasions ?? []}
-                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
+                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
                                                     users={users}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
                                                     onCountChange={changeReadingCount}
                                                     onOccasionsChange={changeReadingOccasions}
                                                     onReaderChange={changeReadingReader}
+                                                    onNoteChange={changeReadingNote}
+                                                    noteApplications={noteEdits.applications}
+                                                    onApplyNoteScope={applyNoteToScope}
                                                 />
                                             ))
                                         : 
@@ -819,13 +845,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                     <SearchResult
                                                         key={`${reading.dateString}:${reading.desc}`}
                                                         savedOccasions={reading.manualOccasions ?? []}
-                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
+                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
                                                         users={users}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}
                                                         onCountChange={changeReadingCount}
                                                         onOccasionsChange={changeReadingOccasions}
                                                         onReaderChange={changeReadingReader}
+                                                        onNoteChange={changeReadingNote}
+                                                        noteApplications={noteEdits.applications}
+                                                        onApplyNoteScope={applyNoteToScope}
                                                     />
 
                                                 ))}

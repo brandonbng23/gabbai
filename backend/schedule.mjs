@@ -26,6 +26,12 @@ export function getShulSchedule(database, shulId, year) {
     const occasions = new Map(database.listReadingOccasions(shulId)
         .map(reading => [JSON.stringify([reading.dateString, reading.desc]), reading.manualOccasions]));
     const readers = new Map();
+    const notes = new Map();
+    for (const note of database.listReadingNotes(shulId)) {
+        const key = JSON.stringify([note.dateString, note.desc]);
+        if (!notes.has(key)) notes.set(key, []);
+        notes.get(key).push(note);
+    }
     for (const assignment of database.listReadingReaders(shulId)) {
         const key = JSON.stringify([assignment.dateString, assignment.desc]);
         if (!readers.has(key)) readers.set(key, []);
@@ -51,6 +57,10 @@ export function getShulSchedule(database, shulId, year) {
         reading.aliyahCount = reading.aliyahCountOverride ?? reading.defaultAliyahCount;
         reading.psukim = reading.aliyahOptions[reading.aliyahCount - 1];
         reading.verseCounts = reading.psukim.map(countVerses);
+        reading.aliyahNotes = reading.psukim.map(() => '');
+        for (const note of notes.get(JSON.stringify([reading.dateString, reading.desc])) ?? []) {
+            reading.aliyahNotes[note.aliyah - 1] = note.note;
+        }
         for (const lock of locks.get(JSON.stringify([reading.dateString, reading.desc])) ?? []) {
             if (lock.aliyah === 0) reading.locked = lock.locked;
             else reading.lockedArr[lock.aliyah - 1] = lock.locked;

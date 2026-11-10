@@ -1,17 +1,45 @@
 import { TrashIcon } from './trashIcon.tsx';
-import { reorderManualOccasions } from '../readingAdjustments.ts';
+import { readingNoteKey, reorderManualOccasions } from '../readingAdjustments.ts';
+import type { NoteApplication, NoteScope } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
-import React, { useId, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { UserDropDown } from "./dropdown.tsx";
 import { ReaderCard } from "./userCard.tsx";
 import type { ShulUser } from "../api.ts";
+import { ALIYAH_NOTE_MAX_LENGTH } from '../../../interfaces/readingNote.mts';
 
-function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => void, users: ShulUser[]; onAssignReader: (reader: ShulUser | null) => void }): React.JSX.Element {
+function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
+    readingName: string;
+    verseCount: number | null;
+    disabled: boolean;
+    noteDisabled: boolean;
+    onToggleLock: () => void;
+    users: ShulUser[];
+    onAssignReader: (reader: ShulUser | null) => void;
+    onNoteChange: (note: string) => void;
+    noteScope?: NoteScope;
+    onApplyNote: (note: string, scope: NoteScope) => void;
+}): React.JSX.Element {
     const readerCardId = useId();
+    const noteId = useId();
+    const noteCountId = useId();
+    const noteEditorId = useId();
+    const noteInput = useRef<HTMLInputElement>(null);
+    const noteButton = useRef<HTMLButtonElement>(null);
+    const [noteEditorOpen, setNoteEditorOpen] = useState(false);
     const [readerCardOpen, setReaderCardOpen] = useState(false);
     const [hovered, setHovered] = useState<boolean>(false);
     const hasReader = props.reader != null;
     const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
+
+    useEffect(() => {
+        if (noteEditorOpen) noteInput.current?.focus();
+    }, [noteEditorOpen]);
+
+    function closeNoteEditor(): void {
+        setNoteEditorOpen(false);
+        noteButton.current?.focus();
+    }
 
     const aliyahLabels: string[] = ["Rishon", "Sheni", "Shlishi", "Revi'i", "Chamishi", "Shishi", "Shvi'i", "Maftir", "Haftarah"];
     const aliyahLabel = (
@@ -84,14 +112,68 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
                     selected={props.reader} onSelect={props.onAssignReader} disabled={props.disabled || props.locked} />}
             </div>
 
-            <div style={{ width: "25%" }}>
+            <div className="admin-aliyah-verse-count">
+                {props.verseCount != null && `${props.verseCount} ${props.verseCount === 1 ? 'verse' : 'verses'}`}
+            </div>
+
+            <div className="admin-aliyah-verse-range">
                 {props.psukim}
             </div>
+            <div className="admin-aliyah-note-actions">
+                {props.note && <span className="admin-aliyah-note-preview" title={props.note}>{props.note}</span>}
+                <button ref={noteButton} type="button" className="admin-aliyah-note-toggle"
+                    disabled={props.noteDisabled} aria-expanded={noteEditorOpen} aria-controls={noteEditorId}
+                    aria-label={`${noteEditorOpen ? 'Close note editor' : props.note ? 'Edit note' : 'Add note'} for ${props.readingName} ${aliyahLabels[props.a - 1]}`}
+                    onClick={() => setNoteEditorOpen(open => !open)}>
+                    {noteEditorOpen ? 'Close editor' : props.note ? 'Edit note' : 'Add note'}
+                </button>
+            </div>
+            {noteEditorOpen && <div id={noteEditorId} className="admin-aliyah-note-editor">
+                <label htmlFor={noteId}>Note for {props.readingName} {aliyahLabels[props.a - 1]}</label>
+                <input ref={noteInput} id={noteId} type="text" value={props.note ?? ''}
+                    maxLength={ALIYAH_NOTE_MAX_LENGTH} disabled={props.noteDisabled}
+                    aria-describedby={noteCountId} placeholder="Add a public note…"
+                    title={`Shown on the schedule. Maximum ${ALIYAH_NOTE_MAX_LENGTH} characters.`}
+                    onChange={event => props.onNoteChange(event.target.value)}
+                    onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === 'Escape') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            closeNoteEditor();
+                        }
+                    }} />
+                <div className="admin-aliyah-note-footer">
+                    <span>Shown on the public schedule when section changes are published.</span>
+                    <span id={noteCountId} className="admin-aliyah-note-count">{(props.note ?? '').length}/{ALIYAH_NOTE_MAX_LENGTH}</span>
+                    <button type="button" className="admin-aliyah-note-apply"
+                        disabled={props.noteDisabled || !props.note?.trim()}
+                        aria-pressed={props.noteScope === 'aliyah'}
+                        title={props.noteScope === 'aliyah' ? 'Restore the other notes and keep this note on this aliyah only.'
+                            : `Replace the note for ${aliyahLabels[props.a - 1]} across the current schedule. Publish Changes to save.`}
+                        onClick={() => props.onApplyNote(props.note ?? '', 'aliyah')}>
+                        {props.noteScope === 'aliyah' ? 'Apply only to this aliyah' : `Apply note to all ${aliyahLabels[props.a - 1]}`}
+                    </button>
+                    <span aria-hidden="true">•</span>
+                    <button type="button" className="admin-aliyah-note-apply"
+                        disabled={props.noteDisabled || !props.note?.trim()}
+                        aria-pressed={props.noteScope === 'parsha'}
+                        title={props.noteScope === 'parsha' ? 'Restore the other notes and keep this note on this aliyah only.'
+                            : `Replace notes for all aliyot of this reading. Publish Changes to save.`}
+                        onClick={() => props.onApplyNote(props.note ?? '', 'parsha')}>
+                        {props.noteScope === 'parsha' ? 'Apply only to this aliyah' : `Apply note to all ${props.readingName} aliyot`}
+                    </button>
+                    {props.note && <>
+                        <span aria-hidden="true">•</span>
+                        <button type="button" className="admin-aliyah-note-remove" disabled={props.noteDisabled}
+                            onClick={() => { props.onNoteChange(''); closeNoteEditor(); }}>Remove note</button>
+                    </>}
+                </div>
+            </div>}
         </div>
     )
 }
 
-export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onCountChange }: {
+export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onCountChange, onNoteChange, noteApplications, onApplyNoteScope }: {
     reading: ParshaObj;
     savedOccasions: string[];
     disabled: boolean;
@@ -100,6 +182,9 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
     onOccasionsChange: (reading: ParshaObj, labels: string[]) => void;
     onCountChange: (reading: ParshaObj, count: number | null) => void;
     onReaderChange: (reading: ParshaObj, aliyah: number, reader: ShulUser | null) => void;
+    onNoteChange: (reading: ParshaObj, aliyah: number, note: string) => void;
+    noteApplications: Record<string, NoteApplication>;
+    onApplyNoteScope: (reading: ParshaObj, aliyah: number, note: string, scope: NoteScope) => void;
 }): React.JSX.Element {
         const countInputId = useId();
         const maxAliyot = reading.aliyahOptions?.reduce((max, verses, index) =>
@@ -324,8 +409,15 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
                                             <AdminAliyah
                                                 key={index}
                                                 parshaId={reading.id}
+                                                readingName={reading.desc}
                                                 a={index+1}
                                                 psukim={p}
+                                                verseCount={reading.verseCounts[index]}
+                                                note={reading.aliyahNotes?.[index] ?? ''}
+                                                noteDisabled={disabled}
+                                                onNoteChange={note => onNoteChange(reading, index + 1, note)}
+                                                noteScope={noteApplications[readingNoteKey(reading, index + 1)]?.scope}
+                                                onApplyNote={(note, scope) => onApplyNoteScope(reading, index + 1, note, scope)}
                                                 locked={locked || reading.lockedArr[index]}
                                                 disabled={disabled || locked}
                                                 users={users}

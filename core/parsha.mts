@@ -299,6 +299,7 @@ export class Parsha {
             lockedArr: this.readingSet.getLockStatusArr(),
             psukim,
             verseCounts: psukim.map(countVerses),
+            aliyahNotes: psukim.map(() => ''),
             book: this.readingSet.getBook(),
             readers: this.readingSet.getReaderArr(),
             searchTerms: [...this.getSearchTerms(), ...this.findOccassions()],

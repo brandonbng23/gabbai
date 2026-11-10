@@ -294,14 +294,14 @@ export function createApp(database, {
             const seen = new Set();
             const affected = new Set();
             for (const change of changes) {
-                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in change ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
                 const { dateString, desc, aliyah, locked } = change;
-                if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('aliyahCount' in change) && !('manualOccasions' in change) && !('readerId' in change) && typeof locked !== 'boolean')
+                if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('aliyahCount' in change) && !('manualOccasions' in change) && !('readerId' in change) && !('note' in change) && typeof locked !== 'boolean')
                     || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
                     return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
                 }
                 const key = JSON.stringify([dateString, desc]);
-                const slot = JSON.stringify([dateString, desc, 'aliyahCount' in change ? 'count' : 'readerId' in change ? `reader:${aliyah}` : 'manualOccasions' in change ? 'occasions' : aliyah ?? 0]);
+                const slot = JSON.stringify([dateString, desc, 'aliyahCount' in change ? 'count' : 'readerId' in change ? `reader:${aliyah}` : 'note' in change ? `note:${aliyah}` : 'manualOccasions' in change ? 'occasions' : aliyah ?? 0]);
                 if (seen.has(slot)) return res.status(400).json({ error: "Each reading lock may only appear once per publication" });
                 seen.add(slot);
                 const reading = readings.get(key);
@@ -311,6 +311,9 @@ export function createApp(database, {
                 }
                 if ('readerId' in change && aliyah === undefined) {
                     return res.status(400).json({ error: "Choose an aliyah for the reader" });
+                }
+                if ('note' in change && aliyah === undefined) {
+                    return res.status(400).json({ error: 'Choose an aliyah for the note.' });
                 }
                 if ('readerId' in change && change.readerId !== null) {
                     const reader = typeof change.readerId === 'string' ? app.locals.database.getUser(change.readerId) : null;
