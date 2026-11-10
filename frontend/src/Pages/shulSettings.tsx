@@ -5,7 +5,8 @@ import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import type { Yontifs } from "../../../interfaces/yontifs.mts"
 import { getShulUsers, getShulUserProfile, getInitialShulVersion, publishReadingLocks, publishShulUsers, updateShul, updateShulSettings } from '../api.js';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { BackToTopButton } from '../Components/backToTopButton.tsx';
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
 import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders, pendingReadingNotes, readingNoteKey, editReadingNote, toggleNoteApplication, noteChangeLog } from '../readingAdjustments.ts';
@@ -92,6 +93,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
+    const page = useRef<HTMLDivElement>(null);
     const [view, setView] = useState<AdministrationView>(() => window.location.pathname.replace(/\/$/, '') === '/shulSettings' ? 'settings' : 'management');
     function switchView(next: AdministrationView) {
         if (next === view) return;
@@ -737,7 +739,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     }
 
     return (
-        <div className="account-page">
+        <div ref={page} className="account-page" tabIndex={-1}>
             <header className="account-page-header">
                 <div>
                     <span className="section-eyebrow">MANAGE SHUL</span>
@@ -1499,6 +1501,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     </div>
                 </div>
             </main>
+            <BackToTopButton focusTarget={page} />
         </div>
     );
 }

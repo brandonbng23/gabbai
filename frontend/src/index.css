@@ -1226,7 +1226,7 @@ h4 {
 .quick-start-reveal:hover { color: #dcefff; }
 .quick-start-reveal:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; }
 .schedule-content { scroll-margin-top: 85px; }
-.schedule-back-to-top {
+.back-to-top {
     position: fixed;
     right: 24px;
     bottom: 24px;
@@ -1245,7 +1245,7 @@ h4 {
     cursor: pointer;
     box-shadow: 0 4px 16px #0005;
 }
-.schedule-back-to-top:hover { background: #30465c; border-color: #8bc8ff; }
+.back-to-top:hover { background: #30465c; border-color: #8bc8ff; }
 
 .welcome-bar {
     margin-left: var(--parsha-left-gap);
