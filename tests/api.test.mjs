@@ -602,7 +602,7 @@ test('manual occasions publish with locks, survive reload, preserve calendar tag
     assert.deepEqual(removed.occassions, original.occassions);
 });
 
-test('admin reader assignments publish atomically, respect locks and membership, and reload as ShulUser objects', async t => {
+test('admin reader assignments publish atomically on locked readings, respect membership, and reload as ShulUser objects', async t => {
     const { request, shul, user, db } = await setup(t, true);
     const path = `/api/shuls/${shul.id}/readings/locks`;
     const load = async () => (await (await request(`/api/schedule?shul=${shul.id}`)).json()).find(reading => reading.desc === 'Bereshit');
@@ -620,7 +620,8 @@ test('admin reader assignments publish atomically, respect locks and membership,
         assert.deepEqual(db.listReadingReaders(shul.id), []);
         assert.deepEqual(db.listReadingLocks(shul.id), []);
     }
-    assert.equal((await request(path, patchShul({ changes: [{ ...key, aliyah: 8, locked: true }, assignment] }))).status, 409);
+    assert.equal((await request(path, patchShul({ changes: [{ ...key, aliyah: 8, locked: true }, assignment] }))).status, 200);
+    assert.equal((await load()).lockedArr[7], true);
     const response = await request(path, patchShul({ changes: [assignment, { ...key, manualOccasions: ['Birthday'] }] }));
     assert.equal(response.status, 200);
     const [updated] = await response.json();
@@ -632,9 +633,14 @@ test('admin reader assignments publish atomically, respect locks and membership,
     assert.equal((await load()).readers[7].firstName, 'Joshua');
     assert.equal((await request(path, patchShul({ changes: [{ ...assignment, readerId: user.id }] }))).status, 200);
     assert.equal((await load()).readers[7].id, user.id);
+    assert.equal((await request(path, patchShul({ changes: [{ ...key, locked: true }] }))).status, 200);
     assert.equal((await request(path, patchShul({ changes: [{ ...assignment, readerId: null }] }))).status, 200);
     assert.equal((await load()).readers[7], null);
+    assert.equal((await load()).locked, true);
     assert.equal((await request(path, patchShul({ changes: [assignment] }))).status, 200);
+    assert.equal((await load()).readers[7].id, reader.id);
+    assert.equal((await load()).locked, true);
+    assert.equal((await load()).lockedArr[7], true);
     db.updateUser(reader.id, { shulId: other.id });
     assert.equal((await load()).readers[7], null, 'Transferred members must not remain visible on the old shul schedule');
 });

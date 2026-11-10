@@ -485,7 +485,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     }
 
     function changeReadingReader(reading: ParshaObj, aliyah: number, reader: ShulUser | null): void {
-        if (busy || reading.locked || reading.lockedArr[aliyah - 1]) return;
+        if (busy) return;
         const saved = schedule.find(item => readingKey(item) === readingKey(reading));
         if (!saved) return;
         setReaderDrafts(previous => stageReadingReader(previous, saved, aliyah, reader));

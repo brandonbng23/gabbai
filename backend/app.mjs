@@ -321,13 +321,6 @@ export function createApp(database, {
                 }
                 affected.add(key);
             }
-            for (const change of changes.filter(item => 'readerId' in item && item.readerId !== null)) {
-                const reading = readings.get(JSON.stringify([change.dateString, change.desc]));
-                const lockChanges = changes.filter(item => item.dateString === change.dateString && item.desc === change.desc && 'locked' in item);
-                const whole = lockChanges.find(item => item.aliyah === undefined)?.locked ?? reading.locked;
-                const slot = lockChanges.find(item => item.aliyah === change.aliyah)?.locked ?? reading.lockedArr[change.aliyah - 1];
-                if (whole || slot) return res.status(409).json({ error: "Unlock the aliyah before assigning a reader" });
-            }
             // Validate every change before the repository commits the batch atomically.
             app.locals.database.setReadingLocks(req.params.id, changes);
             const updated = getShulSchedule(app.locals.database, req.params.id)

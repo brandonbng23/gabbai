@@ -12,6 +12,7 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
     readingName: string;
     verseCount: number | null;
     disabled: boolean;
+    readerDisabled: boolean;
     noteDisabled: boolean;
     onToggleLock: () => void;
     users: ShulUser[];
@@ -100,7 +101,7 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
                     <button type="button" className="reading-assignment-remove-button"
                         aria-label={`Remove ${readerName} from ${aliyahLabels[props.a - 1]}`}
                         title="Remove reader"
-                        disabled={props.disabled || props.locked}
+                        disabled={props.readerDisabled}
                         onClick={event => {
                             event.stopPropagation();
                             props.onAssignReader(null);
@@ -108,8 +109,8 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
                         <TrashIcon />
                     </button>
                 </div>
-                : props.locked ? "Locked" : <UserDropDown options={props.users}
-                    selected={props.reader} onSelect={props.onAssignReader} disabled={props.disabled || props.locked} />}
+                : <UserDropDown options={props.users}
+                    selected={props.reader} onSelect={props.onAssignReader} disabled={props.readerDisabled} />}
             </div>
 
             <div className="admin-aliyah-verse-count">
@@ -420,6 +421,7 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
                                                 onApplyNote={(note, scope) => onApplyNoteScope(reading, index + 1, note, scope)}
                                                 locked={locked || reading.lockedArr[index]}
                                                 disabled={disabled || locked}
+                                                readerDisabled={disabled}
                                                 users={users}
                                                 onAssignReader={reader => onReaderChange(reading, index + 1, reader)}
                                                 onToggleLock={() => onLockChange(reading, !reading.lockedArr[index], index + 1)}
