@@ -9,6 +9,7 @@ import { readingAnchor } from '../readingAnchor.ts';
 import { ReadingCardArrow } from './readingCardArrow.tsx';
 import { EventCard } from './eventCard.tsx';
 import { availableAliyot } from '../quickStartReadings.ts';
+import { DonationHighlight, donationHighlightLink } from './donationHighlight.tsx';
 
 function HighlightRow({ items, prompt, label }: { items: ReactNode[]; prompt?: ReactNode; label: string }) {
     const track = useRef<HTMLUListElement>(null);
@@ -31,7 +32,8 @@ function HighlightRow({ items, prompt, label }: { items: ReactNode[]; prompt?: R
     </div>;
 }
 
-export function ScheduleHighlights({ readings, saved, events, eventsLoading, eventsError, signedIn, onSelect }: {
+export function ScheduleHighlights({ readings, saved, events, eventsLoading, eventsError, signedIn, onSelect, shulId, donationUrl }: {
+    shulId?: string; donationUrl?: string;
     readings: ParshaObj[]; saved: SignificantPortion[]; events: ShulEvent[];
     eventsLoading: boolean; eventsError: string; signedIn: boolean;
     onSelect: (reading: ParshaObj) => void;
@@ -39,7 +41,8 @@ export function ScheduleHighlights({ readings, saved, events, eventsLoading, eve
     const [expanded, setExpanded] = useState(false);
     const extraId = useId();
     const highlights = scheduleHighlights(readings, saved, events, localToday());
-    const firstRowCount = signedIn ? 4 : 5;
+    const donationLink = donationHighlightLink(shulId, donationUrl);
+    const firstRowCount = 5 - (signedIn ? 1 : 0) - (donationLink ? 1 : 0);
     function card(item: ScheduleHighlight) {
         if (item.kind === 'event') return <li key={item.id}><EventCard event={item.event} compact /></li>;
         const { reading, occasions } = item;
@@ -60,12 +63,14 @@ export function ScheduleHighlights({ readings, saved, events, eventsLoading, eve
         <span>Add your b’nai mitzvah parsha or a meaningful date in My Preferences.</span>
         <span className="highlight-occasion">Add a parsha →</span>
     </a></li> : undefined;
-    if (!signedIn && !highlights.length && !eventsLoading && !eventsError) return null;
+    const firstRow = highlights.slice(0, firstRowCount).map(card);
+    if (donationLink) firstRow.unshift(<li key="donation"><DonationHighlight href={donationLink} /></li>);
+    if (!signedIn && !highlights.length && !donationLink && !eventsLoading && !eventsError) return null;
     return <section className="schedule-highlights" aria-labelledby="schedule-highlights-heading">
         <h2 id="schedule-highlights-heading">Highlights</h2>
         {eventsLoading && <div className="event-feedback" role="status">Loading shul events…</div>}
         {eventsError && <div className="event-feedback" role="status">{eventsError}</div>}
-        <HighlightRow items={highlights.slice(0, firstRowCount).map(card)} prompt={prompt} label="highlights" />
+        <HighlightRow items={firstRow} prompt={prompt} label="highlights" />
         {highlights.length > firstRowCount && <>
             <button type="button" className="highlights-expand" aria-expanded={expanded} aria-controls={extraId}
                 onClick={() => setExpanded(value => !value)}>{expanded ? 'Show fewer highlights' : `Show more highlights (${highlights.length - firstRowCount})`}</button>

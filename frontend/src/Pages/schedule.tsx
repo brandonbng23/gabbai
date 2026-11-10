@@ -9,9 +9,10 @@ import type { SignificantPortion } from '../../../interfaces/significantPortions
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { ParshaObj, ReadingActions } from '../Components/parsha.tsx';
 
-export default function SchedulePage({ firstName, shulId, readings, loading, error, currentUserId, onReadingCancelled, significantParshiyot = [], events, eventsLoading, eventsError, ...readingStars }: {
+export default function SchedulePage({ firstName, shulId, donationUrl, readings, loading, error, currentUserId, onReadingCancelled, significantParshiyot = [], events, eventsLoading, eventsError, ...readingStars }: {
     firstName?: string;
     shulId?: string;
+    donationUrl?: string;
     readings: ParshaObj[];
     loading: boolean;
     error: string | null;
@@ -28,7 +29,7 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
             onSelectReading={reading => schedule.current?.revealReading(reading)} />
 
         <div id="full-schedule" className="schedule-content" tabIndex={-1} aria-label="Full schedule">
-        {!loading && !error && <ScheduleHighlights readings={readings} saved={significantParshiyot}
+        {!loading && !error && <ScheduleHighlights readings={readings} saved={significantParshiyot} shulId={shulId} donationUrl={donationUrl}
             events={events} eventsLoading={eventsLoading} eventsError={eventsError} signedIn={Boolean(currentUserId)}
             onSelect={reading => schedule.current?.revealReading(reading)} />}
         {readingStars.starError && <p className="page-message" role="alert">Starred readings could not be loaded. {readingStars.starError}</p>}

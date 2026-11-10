@@ -160,7 +160,7 @@ function App() {
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="page-message" role="alert">Only shul administrators can access these settings.</p>
               ) : isShulPage ? <MyShul shul={shul} events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error} /> : isSchedulePage ? <SchedulePage
-                  firstName={user?.firstName} shulId={shulId} readings={schedule}
+                  firstName={user?.firstName} shulId={shulId} donationUrl={shul.donationUrl} readings={schedule}
                   significantParshiyot={user?.settings.significantPortions}
                   events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error}
                   loading={scheduleLoading} error={scheduleError}
