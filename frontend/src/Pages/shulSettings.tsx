@@ -895,6 +895,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'management'}>
                     <ShulAnalytics schedule={schedule} loading={scheduleLoading} error={scheduleError}
+                        shulId={shul.id} active={view === 'management'}
                         users={users} usersLoading={usersLoading} usersError={usersError} year={settings.hebYear} onSelectReading={revealReading} />
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">

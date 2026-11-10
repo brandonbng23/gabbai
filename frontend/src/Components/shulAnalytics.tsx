@@ -6,6 +6,7 @@ import { localToday } from '../scheduleHighlights.ts';
 import { formatEventDate } from '../../../interfaces/shulEvent.mts';
 import { readingAdjustmentAnchor } from '../readingAnchor.ts';
 import { availableAliyot } from '../quickStartReadings.ts';
+import { MonthlyEngagementComparison } from './monthlyEngagementComparison.tsx';
 
 const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shvi’i', 'Maftir', 'Haftarah'];
 
@@ -16,17 +17,19 @@ function AdjustmentLink({ reading, onSelect }: { reading: Pick<ParshaObj, 'dateS
     }}>{reading.desc}</a>;
 }
 
-export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year, onSelectReading }: {
+export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year, onSelectReading, shulId, active }: {
     schedule: ParshaObj[]; loading: boolean; error: string | null;
     users: ShulUser[]; usersLoading: boolean; usersError: string; year: number;
     onSelectReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
+    shulId: string;
+    active: boolean;
 }) {
     const [weeks, setWeeks] = useState(8);
     const today = localToday();
     const stats = shulAnalytics(schedule, today, weeks);
     return <section className="content-panel shul-analytics" aria-labelledby="shul-analytics-heading">
         <div className="settings-section-header">
-            <div><h2 id="shul-analytics-heading">Analytics</h2><p>Reading coverage and participation from your published schedule for Hebrew year {year}.</p></div>
+            <div><h2 id="shul-analytics-heading">Analytics</h2><p>Reading coverage and participation. Upcoming figures use your published schedule for Hebrew year {year}.</p></div>
             <div className="analytics-range">
                 <label htmlFor="analytics-weeks">Look ahead</label>
                 <select id="analytics-weeks" value={weeks} onChange={event => setWeeks(Number(event.target.value))}>
@@ -101,6 +104,7 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                     </li>)}</ul> : <div className="analytics-feedback">All unlocked aliyot in this range are assigned.</div>}
                 </div>}
             </>}
+        <MonthlyEngagementComparison shulId={shulId} schedule={schedule} active={active} />
         <h3>Congregation</h3>
         {usersLoading ? <div className="analytics-feedback" role="status">Loading account totals…</div>
             : usersError ? <div className="analytics-feedback" role="alert">{usersError}</div>

@@ -1,5 +1,7 @@
 import type { ParshaObj } from './Components/parsha.tsx';
 import type { ShulUser } from './api.ts';
+import { readingCoverage } from '../../core/readingCoverage.mts';
+export { readingCoverage } from '../../core/readingCoverage.mts';
 
 export interface ReaderParticipation {
     reader: ShulUser;
@@ -11,19 +13,6 @@ export function addCalendarDays(date: string, days: number): string {
     const value = new Date(`${date}T12:00:00Z`);
     value.setUTCDate(value.getUTCDate() + days);
     return value.toISOString().slice(0, 10);
-}
-
-export function readingCoverage(reading: ParshaObj) {
-    let assigned = 0, open = 0, locked = 0;
-    const readerIds = new Set<string>();
-    reading.psukim.forEach((verses, index) => {
-        if (!verses || verses === 'null') return;
-        const reader = reading.readers[index];
-        if (reader) { assigned++; readerIds.add(reader.id); }
-        else if (reading.locked || reading.lockedArr[index]) locked++;
-        else open++;
-    });
-    return { assigned, open, locked, readerIds };
 }
 
 export function shulAnalytics(schedule: ParshaObj[], today: string, weeks: number) {

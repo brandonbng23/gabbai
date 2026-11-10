@@ -7192,3 +7192,27 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     color: var(--settings-muted);
     font-size: 12px;
 }
+.analytics-month-comparison { margin-top: 24px; padding: 16px; border: 1px solid var(--settings-border); border-radius: 10px; }
+.analytics-month-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.analytics-month-header > div:first-child { flex: 1 1 250px; }
+.shul-analytics .analytics-month-header h3 { margin: 0 0 6px; }
+.shul-analytics .analytics-month-header p,
+.shul-analytics .analytics-comparison-note { margin: 6px 0; color: var(--settings-muted); font: 400 12px/1.5 Fustat, sans-serif; }
+.analytics-month-selectors { display: flex; flex-wrap: wrap; gap: 12px; }
+.analytics-month-selectors label { display: block; margin-bottom: 4px; color: var(--settings-muted); font-size: 12px; }
+.analytics-month-selectors input { min-height: 36px; max-width: 100%; padding: 6px 9px; border: 1px solid var(--settings-border); border-radius: 7px; background: #3d3b3f; color: #f6f5f7; font: inherit; font-size: 13px; color-scheme: dark; }
+.analytics-comparison-table-wrap { max-width: 100%; overflow-x: auto; margin-top: 16px; }
+.analytics-comparison-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.analytics-comparison-table th,
+.analytics-comparison-table td { padding: 10px 14px 10px 0; text-align: left; border-bottom: 1px solid var(--settings-border); vertical-align: top; }
+.analytics-comparison-table thead th { color: var(--settings-muted); font-size: 12px; font-weight: 500; }
+.analytics-comparison-table tbody th { font-weight: 500; }
+.analytics-comparison-table td { width: 24%; }
+.analytics-comparison-table strong { display: block; margin-bottom: 5px; font-size: 16px; font-weight: 600; }
+.analytics-comparison-table td:nth-child(2) strong { color: #8bc8ff; }
+.analytics-comparison-table td:nth-child(3) strong { color: #bdbcc4; }
+.analytics-comparison-bar { display: block; height: 5px; border-radius: 999px; }
+.analytics-comparison-bar-0 { background: #8bc8ff; }
+.analytics-comparison-bar-1 { background: #8394a4; }
+.analytics-comparison-difference { color: var(--settings-muted); white-space: nowrap; }
+.shul-analytics .analytics-comparison-note { margin-top: 12px; }
