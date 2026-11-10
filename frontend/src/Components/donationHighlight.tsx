@@ -22,3 +22,13 @@ export function DonationHighlight({ href }: { href: string }) {
         <span className="highlight-occasion">{donationMessage.action} ↗</span>
     </a>;
 }
+
+export function RegistrationDonationBanner({ href }: { href: string }) {
+    return <aside className="registration-donation-banner" aria-labelledby="registration-donation-heading">
+        <div className="registration-donation-copy">
+            <h2 id="registration-donation-heading">{donationMessage.title}</h2>
+            <p>{donationMessage.message}</p>
+        </div>
+        <a className="registration-donation-link" href={href} target="_blank" rel="noopener noreferrer">{donationMessage.action} ↗</a>
+    </aside>;
+}

@@ -7,9 +7,11 @@ import type { ParshaObj } from '../Components/parsha.tsx';
 import InfoIcon from '../Components/infoTip.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { ProfilePicture } from '../Components/profilePicture.tsx';
+import { donationHighlightLink, RegistrationDonationBanner } from '../Components/donationHighlight.tsx';
 
 interface RegistrationProps {
     shulId?: string;
+    donationUrl?: string;
     schedule: ParshaObj[];
     loading: boolean;
     error: string | null;
@@ -19,7 +21,8 @@ interface RegistrationProps {
 const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', "Revi'i", 'Chamishi', 'Shishi', "Shvi'i", 'Maftir', 'Haftarah'];
 const englishLabels = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh'];
 
-export default function AliyahRegistration({ shulId, schedule, loading, error, user }: RegistrationProps) {
+export default function AliyahRegistration({ shulId, donationUrl, schedule, loading, error, user }: RegistrationProps) {
+    const donationLink = donationHighlightLink(shulId, donationUrl);
     const [mode, setMode] = useState<'profile' | 'guest'>('profile');
     const [submitting, setSubmitting] = useState(false);
     const [registered, setRegistered] = useState(false);
@@ -255,6 +258,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                             {quotaError && <p role="status">{quotaError}</p>}
                             {policyError ? <p role="status">{policyError}</p> : emailPolicy && !emailPolicy.emailAvailable && <p>Email is currently unavailable. Registration and inbox confirmations still work.</p>}
                         </section>
+                        {donationLink && canRegister && <RegistrationDonationBanner href={donationLink} />}
                         <div className="registration-actions">
                           <p id="registration-status" role="status">
                             {locked ? 'Your shul has locked this aliyah. Choose another aliyah from the schedule.'

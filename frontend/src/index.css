@@ -7221,3 +7221,21 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 @media (max-width: 600px) {
     .analytics-link-metrics { grid-template-columns: 1fr; }
 }
+
+/* Compact donation banner on the registration page. */
+.registration-page .registration-donation-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    margin-top: 24px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--registration-accent);
+    border-radius: 6px;
+    background: #8bc8ff12;
+}
+.registration-donation-copy { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.registration-page .registration-donation-banner h2 { display: inline; height: auto; margin: 0 8px 0 0; padding: 0; border: 0; color: var(--registration-text); font: 600 14px/1.6 Fustat, sans-serif; }
+.registration-page .registration-donation-banner p { display: inline; margin: 0; font: 400 13px/1.6 Fustat, sans-serif; }
+.registration-donation-link { display: inline-flex; align-items: center; min-height: 36px; padding: 6px 10px; border-radius: 6px; color: var(--registration-accent); text-decoration: none; font: 600 13px/1.4 Fustat, sans-serif; }
+.registration-donation-link:hover { color: var(--registration-hover); background: #8bc8ff1a; }
