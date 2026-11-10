@@ -9,7 +9,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { openDatabase } from '../backend/database/index.mjs';
 import { createApp } from '../backend/app.mjs';
 import { createNotificationService, buildReadingRoundup } from '../backend/notifications.mjs';
-import { localClock, threeMonthWindow, reportWindow, isReportDue } from '../backend/notificationPolicy.mjs';
+import { isShabbatDeliveryPaused, localClock, threeMonthWindow, reportWindow, isReportDue } from '../backend/notificationPolicy.mjs';
 import { getShulSchedule } from '../backend/schedule.mjs';
 import { formatCommunicationDate } from '../backend/communicationDate.mjs';
 
@@ -62,6 +62,33 @@ test('a member shares five confirmation requests across self and guest bookings'
     assert.equal(book(state).emailConfirmation.status, 'daily_limit');
 });
 
+test('quota checks match booking limits, share member guest allowances, and reset at local midnight', t => {
+    const state = fixture(t);
+    const now = new Date('2026-10-28T03:50:00Z');
+    const quota = options => state.db.getConfirmationEmailQuota(state.shul.id, options, now);
+    assert.deepEqual(quota({ bookerId: state.member.id }), {
+        limit: 5, used: 0, remaining: 5, timezone: 'America/New_York', localDay: '2026-10-27',
+    });
+    for (let i = 0; i < 5; i++) assert.equal(book(state, { now }).emailConfirmation.status, 'queued');
+    assert.equal(quota({ bookerId: state.member.id }).remaining, 0);
+    assert.equal(quota({ bookerId: state.member.id, readerEmail: 'visitor@example.com' }).remaining, 0);
+    assert.equal(quota({ bookerId: state.admin.id }).remaining, 5, 'Other accounts keep their own allowance');
+    assert.equal(state.db.getConfirmationEmailQuota(state.shul.id, { bookerId: state.member.id }, new Date('2026-10-28T04:10:00Z')).remaining, 5);
+    assert.equal(quota({ bookerId: state.member.id }).used, 5, 'Repeated checks never consume quota');
+});
+
+test('guest quota checks normalize email addresses and match guest profile registrations', t => {
+    const state = fixture(t);
+    const now = new Date('2026-10-28T03:50:00Z');
+    const guest = { title: 'Mr.', firstName: 'Visitor', lastName: 'Test', email: 'visitor@example.com' };
+    assert.equal(state.db.getConfirmationEmailQuota(state.shul.id, { readerEmail: guest.email }, now).remaining, 1);
+    book(state, { now, guest, readerId: undefined });
+    const profile = state.db.getUserByEmail(guest.email);
+    assert.equal(state.db.getConfirmationEmailQuota(state.shul.id, { readerEmail: ' VISITOR@example.com ' }, now).remaining, 0);
+    assert.equal(state.db.getConfirmationEmailQuota(state.shul.id, { bookerId: profile.id }, now).remaining, 0);
+    assert.equal(state.db.getConfirmationEmailQuota(state.shul.id, { readerEmail: 'different@example.com' }, now).remaining, 1);
+});
+
 test('disabled email and failed bookings do not consume confirmation quota', t => {
     const state = fixture(t);
     assert.equal(book(state, { emailEnabled: false }).emailConfirmation.status, 'unavailable');
@@ -93,18 +120,65 @@ test('timezones follow DST and calendar-month windows clamp at month end', () =>
     assert.deepEqual(threeMonthWindow(new Date('2026-11-30T18:00:00Z'), 'America/New_York'), { start: '2026-11-30', end: '2027-02-28' });
 });
 
-test('report scheduling respects chosen minutes and local Monday/Thursday or Monday/Wednesday/Friday', () => {
-    const config = { timezone: 'America/New_York', reportTime: '15:30', reportFrequency: 'mon_thu' };
+test('report scheduling respects the chosen delivery day and local delivery time', () => {
+    const config = { timezone: 'America/New_York', reportTime: '15:30', reportDays: [1] };
     assert.equal(isReportDue(new Date('2026-10-26T19:29:00Z'), config), false);
     assert.equal(isReportDue(new Date('2026-10-26T19:30:00Z'), config), true);
     assert.equal(isReportDue(new Date('2026-10-27T19:30:00Z'), config), false);
-    assert.equal(isReportDue(new Date('2026-10-29T19:30:00Z'), config), true);
-    assert.equal(isReportDue(new Date('2026-10-28T19:30:00Z'), { ...config, reportFrequency: 'mon_wed_fri' }), true);
-    assert.equal(isReportDue(new Date('2026-10-29T19:30:00Z'), { ...config, reportFrequency: 'mon_wed_fri' }), false);
-    assert.equal(isReportDue(new Date('2026-10-30T19:30:00Z'), { ...config, reportFrequency: 'mon_wed_fri' }), true);
-    assert.equal(isReportDue(new Date('2026-10-31T19:30:00Z'), { ...config, reportFrequency: 'mon_wed_fri' }), false);
+    assert.equal(isReportDue(new Date('2026-10-29T19:30:00Z'), config), false);
+    assert.equal(isReportDue(new Date('2026-10-28T19:30:00Z'), { ...config, reportDays: [3] }), true);
+    assert.equal(isReportDue(new Date('2026-10-29T19:30:00Z'), { ...config, reportDays: [3] }), false);
+    assert.equal(isReportDue(new Date('2026-10-30T19:30:00Z'), { ...config, reportDays: [3] }), false);
+    assert.equal(isReportDue(new Date('2026-10-31T19:30:00Z'), { ...config, reportDays: [3] }), false);
     assert.equal(isReportDue(new Date('2026-11-02T20:30:00Z'), config), true, 'After DST ends, 3:30 PM is 20:30 UTC');
     assert.equal(isReportDue(new Date('2026-10-27T01:00:00Z'), config), true, 'Local Monday is still Monday when UTC has reached Tuesday');
+});
+
+test('reports can be delivered on any selected weekday, including Sunday and Saturday', () => {
+    for (let selectedDay = 0; selectedDay <= 6; selectedDay++) {
+        const config = { timezone: 'America/New_York', reportTime: '15:30', reportDays: [selectedDay] };
+        for (let day = 0; day <= 6; day++) {
+            const now = new Date(`2026-10-${25 + day}T19:30:00Z`);
+            assert.equal(isReportDue(now, config), day === selectedDay, `Selected ${selectedDay}, actual ${day}`);
+        }
+    }
+    const sunday = { timezone: 'America/New_York', reportTime: '15:30', reportDays: [0] };
+    assert.equal(isReportDue(new Date('2026-11-01T20:29:00Z'), sunday), false);
+    assert.equal(isReportDue(new Date('2026-11-01T20:30:00Z'), sunday), true, 'Sunday after DST ends uses standard time');
+    assert.equal(isReportDue(new Date('2026-11-02T01:00:00Z'), sunday), true, 'Local Sunday continues into UTC Monday');
+});
+
+test('legacy delivery days normalize to one day and a new selection survives reopening', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'gabbai-delivery-days-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, 'notifications.sqlite');
+    let db = openDatabase(path);
+    const presets = [['daily', [0, 1, 2, 3, 4, 5, 6]], ['mon_thu', [1, 4]], ['mon_wed_fri', [1, 3, 5]]];
+    const shuls = presets.map(([name]) => db.createShul({ name, settings: { hebYear: 5787 } }));
+    const admin = db.createUser({ shulId: shuls[0].id, role: 'admin', firstName: 'Delivery', lastName: 'Admin', email: 'delivery@example.com' });
+    db.close();
+    const legacy = new DatabaseSync(path);
+    try {
+        for (let i = 0; i < shuls.length; i++) legacy.prepare(`INSERT INTO shul_notification_settings
+            (shul_id, report_frequency, report_time, timezone) VALUES (?, ?, '15:30', 'America/Chicago')`).run(shuls[i].id, presets[i][0]);
+        legacy.exec('ALTER TABLE shul_notification_settings DROP COLUMN report_days; DELETE FROM schema_migrations WHERE version >= 29');
+    } finally { legacy.close(); }
+    db = openDatabase(path);
+    try {
+        for (let i = 0; i < shuls.length; i++) {
+            const config = db.getNotificationSettings(shuls[i].id);
+            assert.deepEqual(config.reportDays, [presets[i][1][0]]);
+            assert.equal(config.timezone, 'America/Chicago');
+            assert.equal(config.reportTime, '15:30');
+        }
+        assert.deepEqual(db.updateNotificationSettings(admin.id, shuls[0].id, { reportDays: [6] }).reportDays, [6]);
+        for (const reportDays of [[], [0, 6], [0, 0], [-1], [7], [1.5], ['0'], null])
+            assert.throws(() => db.updateNotificationSettings(admin.id, shuls[0].id, { reportDays }), TypeError);
+        assert.deepEqual(db.getNotificationSettings(shuls[0].id).reportDays, [6]);
+    } finally { db.close(); }
+    db = openDatabase(path);
+    try { assert.deepEqual(db.getNotificationSettings(shuls[0].id).reportDays, [6]); }
+    finally { db.close(); }
 });
 
 test('report windows cover two weeks or one to three calendar months', () => {
@@ -126,15 +200,16 @@ test('legacy calendar-month preferences migrate to week steps without losing com
     let db = openDatabase(path);
     const shul = db.createShul({ name: 'Summary Shul', settings: { hebYear: 5787 } });
     const admin = db.createUser({ shulId: shul.id, role: 'admin', firstName: 'Admin', lastName: 'Test', email: 'summary-upgrade@example.com' });
-    db.updateNotificationSettings(admin.id, shul.id, { timezone: 'America/Chicago', reportTime: '14:20', reportFrequency: 'mon_thu',
+    db.updateNotificationSettings(admin.id, shul.id, { timezone: 'America/Chicago', reportTime: '14:20', reportDays: [1],
         instantAdminUserId: admin.id, dailyReports: [{ userId: admin.id, enabled: false }] });
     db.close();
     const raw = new DatabaseSync(path);
     raw.exec(`CREATE TABLE old_notification_settings AS SELECT * FROM shul_notification_settings;
-        UPDATE old_notification_settings SET report_range = '3months';
+        UPDATE old_notification_settings SET report_range = '3months', report_frequency = 'mon_thu';
+        ALTER TABLE old_notification_settings DROP COLUMN report_days;
         DROP TABLE shul_notification_settings;
         ALTER TABLE old_notification_settings RENAME TO shul_notification_settings;
-        DELETE FROM schema_migrations WHERE version = 25;`);
+        DELETE FROM schema_migrations WHERE version >= 25;`);
     raw.close();
     db = openDatabase(path);
     try {
@@ -142,7 +217,7 @@ test('legacy calendar-month preferences migrate to week steps without losing com
         assert.equal(settings.reportRange, '12weeks');
         assert.equal(settings.timezone, 'America/Chicago');
         assert.equal(settings.reportTime, '14:20');
-        assert.equal(settings.reportFrequency, 'mon_thu');
+        assert.deepEqual(settings.reportDays, [1]);
         assert.equal(settings.instantAdminUserId, admin.id);
         assert.equal(settings.dailyReports[0].enabled, false);
         for (const range of ['2weeks', '4weeks', '6weeks', '8weeks', '10weeks', '12weeks'])
@@ -152,7 +227,7 @@ test('legacy calendar-month preferences migrate to week steps without losing com
 
 test('worker uses the selected schedule and passes the selected window to the report builder', async t => {
     const state = fixture(t);
-    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { reportTime: '15:30', reportFrequency: 'mon_thu', reportRange: '2weeks' });
+    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { reportTime: '15:30', reportDays: [4], reportRange: '2weeks' });
     let now = new Date('2026-10-27T20:00:00Z'); // Tuesday: no report.
     const windows = [];
     const service = createNotificationService({ database: state.db, mailer: { enabled: false }, clock: () => now,
@@ -167,13 +242,35 @@ test('worker uses the selected schedule and passes the selected window to the re
     await service.tick();
     assert.deepEqual(windows, ['2weeks']);
     assert.equal(state.db.listUserMessages(state.admin.id).length, 1);
-    for (const input of [{ reportTime: '25:00' }, { reportFrequency: 'weekly' }, { reportRange: '1year' }])
+    for (const input of [{ reportTime: '25:00' }, { reportDays: [7] }, { reportRange: '1year' }])
         assert.throws(() => state.db.updateNotificationSettings(state.admin.id, state.shul.id, input), TypeError);
+});
+
+test('Sunday-only summaries run on Sunday once and skip unselected days', async t => {
+    const state = fixture(t);
+    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { reportDays: [0], reportTime: '15:30' });
+    let now = new Date('2026-10-31T20:00:00Z');
+    let builds = 0;
+    const service = createNotificationService({ database: state.db, mailer: { enabled: false }, clock: () => now,
+        roundupBuilder() { builds++; return 'Sunday summary'; } });
+    await service.tick();
+    assert.equal(builds, 0);
+    now = new Date('2026-11-01T20:29:00Z');
+    await service.tick();
+    assert.equal(builds, 0);
+    now = new Date('2026-11-01T20:30:00Z');
+    await service.tick();
+    await service.tick();
+    assert.equal(builds, 1);
+    assert.equal(state.db.listUserMessages(state.admin.id).length, 1);
+    now = new Date('2026-11-02T21:00:00Z');
+    await service.tick();
+    assert.equal(builds, 1);
 });
 
 test('roundups run once per admin at 4 PM local, catch up the same day, and create inbox messages without email', async t => {
     const state = fixture(t);
-    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { timezone: 'America/Los_Angeles' });
+    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { timezone: 'America/Los_Angeles', reportDays: [2] });
     let now = new Date('2026-10-27T22:59:00Z');
     let builds = 0;
     const service = createNotificationService({ database: state.db, mailer: { enabled: false }, clock: () => now,
@@ -188,9 +285,66 @@ test('roundups run once per admin at 4 PM local, catch up the same day, and crea
         assert.equal(state.db.listUserMessages(admin.id).length, 1);
         assert.equal(state.db.listUserMessages(admin.id)[0].sender.type, 'system');
     }
-    now = new Date('2026-10-29T01:00:00Z'); // Oct 28, 6 PM: same-day catch-up.
+    now = new Date('2026-11-04T01:00:00Z'); // Next scheduled Tuesday, after the delivery time.
     await service.tick();
     assert.equal(state.db.listUserMessages(state.admin.id).length, 2);
+});
+
+test('Shabbat email pause follows local Friday and Saturday boundaries, including DST changes', () => {
+    for (const [start, end] of [
+        ['2026-10-30T04:00:00Z', '2026-11-01T04:00:00Z'],
+        ['2026-11-06T05:00:00Z', '2026-11-08T05:00:00Z'],
+    ]) {
+        const beginning = new Date(start);
+        const ending = new Date(end);
+        assert.equal(isShabbatDeliveryPaused(new Date(beginning.getTime() - 1), 'America/New_York'), false);
+        assert.equal(isShabbatDeliveryPaused(beginning, 'America/New_York'), true);
+        assert.equal(isShabbatDeliveryPaused(new Date(ending.getTime() - 1), 'America/New_York'), true);
+        assert.equal(isShabbatDeliveryPaused(ending, 'America/New_York'), false);
+    }
+    const now = new Date('2026-11-08T04:59:00Z');
+    assert.equal(isShabbatDeliveryPaused(now, 'America/New_York'), true, 'Still Saturday locally');
+    assert.equal(isShabbatDeliveryPaused(now, 'Asia/Jerusalem'), false, 'Already Sunday locally');
+});
+
+test('confirmations, instant alerts, and Friday summaries stay queued until Sunday and deliver once', async t => {
+    const state = fixture(t);
+    state.db.updateNotificationSettings(state.admin.id, state.shul.id, { reportDays: [5], instantAdminUserId: state.admin.id });
+    let now = new Date('2026-11-06T22:00:00Z');
+    assert.equal(book(state, { now }).emailConfirmation.status, 'queued');
+    const mailer = fakeMailer();
+    const service = createNotificationService({ database: state.db, mailer, clock: () => now, roundupBuilder: () => 'Friday summary' });
+    await service.tick();
+    assert.equal(mailer.calls.length, 0);
+    assert.equal(state.db.listUserMessages(state.member.id).length, 1, 'Registration confirmation is available immediately');
+    assert.equal(state.db.listUserMessages(state.admin.id).length, 2, 'Instant alert and scheduled summary reach the inbox');
+    now = new Date('2026-11-08T04:59:59Z');
+    await service.tick();
+    assert.equal(mailer.calls.length, 0);
+    now = new Date('2026-11-08T05:00:00Z');
+    await service.tick();
+    assert.equal(mailer.calls.length, 4, 'Confirmation, alert, and both admin summaries resume');
+    assert.equal(mailer.calls.filter(call => call.text === 'Friday summary').length, 2);
+    await service.tick();
+    assert.equal(mailer.calls.length, 4, 'Deferred emails are sent only once');
+});
+
+test('paused emails neither block another timezone nor reserve its delivery quota', async t => {
+    const state = fixture(t);
+    const other = state.db.createShul({ name: 'Jerusalem Shul', settings: { hebYear: 5787 } });
+    const otherAdmin = state.make('JerusalemAdmin', 'admin', other.id);
+    state.db.updateNotificationSettings(otherAdmin.id, other.id, { timezone: 'Asia/Jerusalem' });
+    for (let i = 0; i < 99; i++) state.make(`JerusalemAdmin${i}`, 'admin', other.id);
+    const now = new Date('2026-11-08T04:59:00Z');
+    book(state, { now }); // First queued job belongs to a shul still on Saturday.
+    state.db.recordDailyRoundup(other.id, '2026-11-08', 'Sunday summary', { now, emailEnabled: true });
+    const mailer = fakeMailer();
+    const service = createNotificationService({ database: state.db, mailer, clock: () => now });
+    await service.tick();
+    assert.equal(mailer.calls.length, 100, 'All 100 delivery slots remain available to the unpaused shul');
+    assert.ok(mailer.calls.every(call => call.text === 'Sunday summary'));
+    const resumed = state.db.claimNotificationEmail(new Date('2026-11-09T05:00:00Z'));
+    assert.equal(resumed.to, state.member.email, 'Paused confirmation remained queued across workers and quota resets');
 });
 
 test('all email categories share the global UTC cap across shuls and concurrent workers', async t => {
@@ -224,7 +378,7 @@ test('daily report switches control inbox and email delivery without changing in
     const now = new Date('2026-10-27T20:00:00Z');
     assert.ok(state.db.getNotificationSettings(state.shul.id).dailyReports.every(preference => preference.enabled));
     state.db.updateNotificationSettings(state.admin.id, state.shul.id, {
-        instantAdminUserId: state.admin2.id, dailyReports: [{ userId: state.admin2.id, enabled: false }],
+        reportDays: [2], instantAdminUserId: state.admin2.id, dailyReports: [{ userId: state.admin2.id, enabled: false }],
     });
     const mailer = fakeMailer();
     const service = createNotificationService({ database: state.db, mailer, clock: () => now, roundupBuilder: () => 'Daily report' });
@@ -314,16 +468,45 @@ test('a roundup emails once per admin while preserving reports longer than one i
     assert.equal(pieces.reduce((sum, message) => sum + message.body.length, 0), report.length);
 });
 
-test('roundup includes detailed registrations and compact vacancies from the real schedule', t => {
+test('roundup groups all registrations into one paragraph before the open-readings summary', t => {
     const state = fixture(t);
     const now = new Date('2026-10-27T19:00:00Z');
-    const reading = getShulSchedule(state.db, state.shul.id).find(item => item.dateString >= '2026-10-27' && item.dateString <= '2027-01-27' && item.psukim[0] && item.psukim[0] !== 'null');
+    const [reading, nextReading] = getShulSchedule(state.db, state.shul.id).filter(item => item.dateString >= '2026-10-27' && item.dateString <= '2027-01-27' && item.psukim[0] && item.psukim[0] !== 'null');
     state.db.registerReading(state.shul.id, { dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: state.member.id }, () => {});
+    const guest = state.make('Visitor', 'guest');
+    state.db.registerReading(state.shul.id, { dateString: nextReading.dateString, desc: nextReading.desc, aliyah: 1, readerId: guest.id }, () => {});
     const report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York');
     assert.ok(report.includes(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah 1: Member Test`));
     assert.ok(report.includes(reading.psukim[0]));
     assert.match(report, /\d+ open \([\d, ]+\)/);
     assert.ok(report.includes('Tuesday, January 19, 2027'));
+    const [header, registered, open] = report.split('\n\n');
+    assert.ok(header.includes('2 registrations'));
+    assert.ok(registered.startsWith('Registered readings: '));
+    assert.ok(registered.includes('Member Test'));
+    assert.ok(registered.includes('Visitor Test (guest)'));
+    assert.ok(registered.includes(nextReading.desc));
+    assert.ok(registered.includes('; '));
+    assert.ok(!registered.includes('\n'));
+    assert.ok(!registered.includes(' open ('));
+    assert.ok(open.startsWith('Open readings: '));
+    assert.ok(!open.includes('Member Test'));
+    assert.ok(!open.includes('\n'));
+    assert.equal(report.split('\n\n').length, 3);
+});
+
+test('roundup handles empty registered and open sections explicitly', t => {
+    const state = fixture(t);
+    const now = new Date('2026-10-27T19:00:00Z');
+    let report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York', '2weeks');
+    assert.ok(report.includes('Registered readings: None in this date range.\n\nOpen readings: '));
+    const range = reportWindow(now, 'America/New_York', '2weeks');
+    const readings = getShulSchedule(state.db, state.shul.id)
+        .filter(reading => reading.dateString >= range.start && reading.dateString <= range.end);
+    state.db.setReadingLocks(state.shul.id, readings.map(({ dateString, desc }) => ({ dateString, desc, locked: true })));
+    report = buildReadingRoundup(state.db, state.shul.id, now, 'America/New_York', '2weeks');
+    assert.ok(report.includes('0 registrations · 0 vacancies'));
+    assert.ok(report.endsWith('Registered readings: None in this date range.\n\nOpen readings: None in this date range.'));
 });
 
 test('queue and confirmation quota roll back atomically if notification persistence fails', t => {
@@ -360,12 +543,17 @@ test('notification settings are admin-only and the rules are publicly readable',
     assert.equal(policy.guestDailyLimit, 1);
     assert.equal(policy.globalDailyLimit, 100);
     assert.equal(policy.globalResetTimezone, 'UTC');
+    assert.deepEqual(policy.reportDays, [0]);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`)).status, 401);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, memberCookie, { timezone: 'UTC' })).status, 403);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { timezone: 'invalid/timezone' })).status, 400);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { instantAdminUserId: state.member.id })).status, 400);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { timezone: 'Asia/Jerusalem', instantAdminUserId: state.admin2.id })).status, 200);
     assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { dailyReports: [{ userId: state.admin2.id, enabled: false }] })).status, 200);
+    assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { reportDays: [6] })).status, 200);
+    assert.deepEqual((await (await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie)).json()).reportDays, [6]);
+    assert.equal((await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie, { reportDays: [] })).status, 400);
+    assert.deepEqual((await (await request(`/api/shuls/${state.shul.id}/notification-policy`)).json()).reportDays, [6]);
     assert.equal((await (await request(`/api/shuls/${state.shul.id}/notifications`, adminCookie)).json()).dailyReports.find(preference => preference.userId === state.admin2.id).enabled, false);
     assert.equal((await (await request(`/api/shuls/${state.shul.id}/notification-policy`)).json()).timezone, 'Asia/Jerusalem');
     app.locals.mailer = fakeMailer();
@@ -378,4 +566,26 @@ test('notification settings are admin-only and the rules are publicly readable',
     assert.equal(response.status, 201);
     assert.equal((await response.json()).emailConfirmation.status, 'queued');
     assert.equal(state.db.listUserMessages(state.admin2.id)[0].sender.type, 'system');
+    const quotaPath = `${base}/api/shuls/${state.shul.id}/confirmation-email-quota`;
+    const checkQuota = (body, auth) => fetch(quotaPath, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(auth ? { Cookie: auth } : {}) },
+        body: JSON.stringify(body),
+    });
+    let quotaResponse = await checkQuota({ registrationType: 'profile' }, memberCookie);
+    assert.equal(quotaResponse.status, 200);
+    assert.equal(quotaResponse.headers.get('cache-control'), 'no-store');
+    assert.equal((await quotaResponse.json()).remaining, 4);
+    quotaResponse = await checkQuota({ registrationType: 'guest' }, memberCookie);
+    assert.equal((await quotaResponse.json()).remaining, 4, 'Member guest bookings use the same allowance');
+    for (let i = 0; i < 4; i++) book(state, { now: new Date() });
+    assert.equal((await (await checkQuota({ registrationType: 'profile' }, memberCookie)).json()).remaining, 0);
+    assert.equal((await (await checkQuota({ registrationType: 'profile' }, adminCookie)).json()).remaining, 5);
+    assert.equal((await checkQuota({ registrationType: 'profile' })).status, 401);
+    assert.equal((await checkQuota({ registrationType: 'profile', userId: state.member.id }, adminCookie)).status, 400);
+    assert.equal((await checkQuota({ registrationType: 'guest', guestEmail: 'bad-email' })).status, 400);
+    const guestEmail = 'quota-guest@example.com';
+    assert.equal((await (await checkQuota({ registrationType: 'guest', guestEmail })).json()).remaining, 1);
+    book(state, { now: new Date(), readerId: undefined,
+        guest: { title: 'Mr.', firstName: 'Quota', lastName: 'Guest', email: guestEmail } });
+    assert.equal((await (await checkQuota({ registrationType: 'guest', guestEmail: guestEmail.toUpperCase() })).json()).remaining, 0);
 });

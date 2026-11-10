@@ -1,8 +1,42 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { countVerses } from '../core/verseCount.mts';
+import { Settings } from '../core/settings.mts';
+import { ReadingSet } from '../core/readingSet.mts';
 import { openDatabase } from '../backend/database/index.mjs';
 import { getAssignedReadingDetails, getShulSchedule } from '../backend/schedule.mjs';
+
+for (const [file, headers, firstPassage, width] of [
+    ['psukim.csv', 1, 1, 10],
+    ['triennial.csv', 2, 1, 25],
+    ['double_triennial.csv', 1, 3, 11],
+]) {
+    test(`${file}: every literal passage has a valid verse count`, () => {
+        const rows = readFileSync(new URL(`../data/${file}`, import.meta.url), 'utf8').split(/\r?\n/);
+        const controls = new Set(['null', 'ref', 'trad', 'double']);
+        for (let line = headers; line < rows.length; line++) {
+            if (!rows[line].trim()) continue;
+            const cells = rows[line].split(',').map(cell => cell.trim());
+            assert.equal(cells.length, width, `${file}:${line + 1}: unexpected column count`);
+            for (let column = firstPassage; column < cells.length; column++) {
+                const reference = cells[column];
+                if (!reference || controls.has(reference)) continue;
+                const count = countVerses(reference);
+                assert.ok(count !== null && count > 0,
+                    `${file}:${line + 1}, ${cells[0]}, column ${column}: ${reference}`);
+            }
+        }
+    });
+}
+
+test('Vayeshev year-two Shlishi resolves to Genesis 38:12–14 and three verses', () => {
+    const settings = new Settings(5787);
+    settings.setTriennial(true);
+    const reading = new ReadingSet('Vayeshev', 7, settings, [], 5787);
+    assert.equal(reading.getPsukim(3), 'Genesis 38:12-38:14');
+    assert.equal(countVerses(reading.getPsukim(3)), 3);
+});
 
 test('verse counts include both endpoints and actual chapter lengths', () => {
     assert.equal(countVerses('Numbers 28:9-28:15'), 7);

@@ -1,3 +1,5 @@
+import type { SignificantPortion } from './significantPortions.mts';
+
 export interface UserReading {
     dateString: string;
     desc: string;
@@ -7,6 +9,11 @@ export interface UserReading {
     hDate?: string | null;
     psukim?: string | null;
     verseCount?: number | null;
+}
+
+export interface StarredReading extends UserReading {
+    shulId: string;
+    shulName: string;
 }
 
 export interface User {
@@ -20,7 +27,7 @@ export interface User {
     role: 'member' | 'admin' | 'guest';
     title: string;
     pictureUrl?: string;
-    settings: Record<string, unknown>;
+    settings: Record<string, unknown> & { significantPortions?: SignificantPortion[] };
     // Derived from saved assignments; never includes nested reader profiles.
     assignedReadings: UserReading[];
 }

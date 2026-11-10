@@ -1,11 +1,176 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { occasionChangeLog, stageReadingCount, pendingReadingCounts, stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions } from '../frontend/src/readingAdjustments.ts';
+import { occasionChangeLog, stageReadingCount, pendingReadingCounts, stageReadingReader, pendingReadingReaders, reorderManualOccasions, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, stageReadingLock, stageReadingOccasions, stageReadingNote, pendingReadingNotes, stageAliyahNotes, editReadingNote, toggleNoteApplication, readingNoteKey, noteChangeLog } from '../frontend/src/readingAdjustments.ts';
 
 const reading = {
     id: 1, readers: Array(9).fill(null), manualOccasions: [], dateString: '2026-10-10', desc: 'Bereshit', locked: false,
     lockedArr: Array(9).fill(false), psukim: ['one', 'two', 'three', 'null', 'null', 'null', 'null', 'maftir', 'haftarah'],
 };
+
+test('note drafts preview independently, preserve typed spaces, and revert to saved notes', () => {
+    const saved = { ...reading, aliyahNotes: ['Saved note', ...Array(8).fill('')] };
+    let drafts = stageReadingNote({}, saved, 1, 'Use special ');
+    const preview = previewReadingLocks(saved, {}, {}, {}, {}, drafts);
+    assert.equal(preview.aliyahNotes[0], 'Use special ');
+    assert.equal(saved.aliyahNotes[0], 'Saved note');
+    assert.equal(pendingReadingNotes(drafts, [saved])[0].note, 'Use special');
+    drafts = stageReadingNote(drafts, saved, 1, 'Saved note');
+    assert.deepEqual(drafts, {});
+    drafts = stageReadingNote({}, saved, 1, '');
+    assert.equal(pendingReadingNotes(drafts, [saved])[0].note, '');
+    const other = { ...saved, desc: 'Noach' };
+    assert.deepEqual(previewReadingLocks(other, {}, {}, {}, {}, drafts), other);
+    assert.deepEqual(pendingReadingNotes(stageReadingNote({}, saved, 2, '  '), [saved]), []);
+    assert.equal(pendingReadingNotes(drafts, []).length, 1, 'Missing readings retain drafts for server validation');
+});
+
+test('applying a note to an aliyah stages only matching visible slots and preserves other drafts', () => {
+    const saved = { ...reading, aliyahNotes: ['First note', 'Old second note', ...Array(7).fill('')] };
+    const other = { ...reading, desc: 'Noach', psukim: ['one', 'null', ...Array(7).fill('null')] };
+    const initial = stageReadingNote({}, saved, 1, 'Unrelated draft');
+    const snapshot = structuredClone(saved);
+    const notes = stageAliyahNotes(initial, [saved, other], 2, ' New note ');
+    assert.equal(previewReadingLocks(saved, {}, {}, {}, {}, notes).aliyahNotes[1], 'New note');
+    assert.equal(previewReadingLocks(saved, {}, {}, {}, {}, notes).aliyahNotes[0], 'Unrelated draft');
+    assert.equal(pendingReadingNotes(notes, [saved, other]).length, 2);
+    assert.deepEqual(saved, snapshot);
+    assert.deepEqual(initial, stageReadingNote({}, saved, 1, 'Unrelated draft'));
+    assert.equal(stageAliyahNotes(initial, [saved], 2, '   '), initial);
+});
+
+test('applying a note to all respects pending aliyah-count changes', () => {
+    const saved = { ...reading, defaultAliyahCount: 1, aliyahCount: 1,
+        psukim: ['Genesis 1:1-1:5', 'null'],
+        aliyahOptions: [['Genesis 1:1-1:5', 'null'], ['Genesis 1:1-1:5', 'Genesis 1:6-1:10']] };
+    const counts = stageReadingCount({}, saved, 2);
+    const notes = stageAliyahNotes({}, [saved], 2, 'Second aliyah note', counts);
+    assert.equal(pendingReadingNotes(notes, [saved])[0].aliyah, 2);
+    const preview = previewReadingLocks(saved, {}, {}, {}, counts, notes);
+    assert.equal(preview.aliyahNotes[1], 'Second aliyah note');
+});
+
+test('toggling all matching aliyot back to one restores previous drafts and keeps the source note', () => {
+    const other = { ...reading, desc: 'Noach', aliyahNotes: ['Saved elsewhere', ...Array(8).fill('')] };
+    let state = { drafts: {}, applications: {} };
+    state = editReadingNote(state, reading, 1, 'Shared note');
+    state = editReadingNote(state, other, 1, 'Earlier unsaved note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    assert.equal(state.applications[readingNoteKey(reading, 1)].scope, 'aliyah');
+    assert.equal(previewReadingLocks(other, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Shared note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    assert.deepEqual(state.applications, {});
+    assert.equal(previewReadingLocks(reading, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Shared note');
+    assert.equal(previewReadingLocks(other, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Earlier unsaved note');
+    assert.equal(other.aliyahNotes[0], 'Saved elsewhere');
+});
+
+test('applying to a parsha affects only its visible aliyot on that date and reverses cleanly', () => {
+    const otherDate = { ...reading, dateString: '2026-10-17' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Parsha note');
+    state = toggleNoteApplication(state, [reading, otherDate], reading, 1, 'Parsha note', 'parsha');
+    assert.equal(state.applications[readingNoteKey(reading, 1)].scope, 'parsha');
+    assert.deepEqual(pendingReadingNotes(state.drafts, [reading, otherDate]).map(change => change.aliyah), [1, 2, 3, 8, 9]);
+    assert.ok(pendingReadingNotes(state.drafts, [reading, otherDate]).every(change => change.dateString === reading.dateString));
+    state = toggleNoteApplication(state, [reading, otherDate], reading, 1, 'Parsha note', 'parsha');
+    assert.equal(pendingReadingNotes(state.drafts, [reading, otherDate]).length, 1);
+    assert.equal(pendingReadingNotes(state.drafts, [reading, otherDate])[0].aliyah, 1);
+});
+
+test('switching bulk scopes restores the old scope before applying the new one', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Scoped note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Scoped note', 'aliyah');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Scoped note', 'parsha');
+    const pending = pendingReadingNotes(state.drafts, [reading, other]);
+    assert.equal(pending.length, 5);
+    assert.ok(pending.every(change => change.desc === reading.desc));
+    assert.equal(state.applications[readingNoteKey(reading, 1)].scope, 'parsha');
+});
+
+test('returning to one aliyah preserves later individual edits to other notes', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Shared note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    state = editReadingNote(state, other, 1, 'Later individual edit');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    assert.equal(previewReadingLocks(other, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Later individual edit');
+});
+
+test('editing the source of a bulk note returns it to an individual note', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Shared note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    state = editReadingNote(state, reading, 1, 'Changed source');
+    assert.deepEqual(state.applications, {});
+    assert.deepEqual(pendingReadingNotes(state.drafts, [reading, other]), [
+        { dateString: reading.dateString, desc: reading.desc, aliyah: 1, note: 'Changed source' },
+    ]);
+});
+
+test('overlapping bulk applications can be undone without restoring an already removed scope', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Global note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Global note', 'aliyah');
+    state = editReadingNote(state, other, 2, 'Parsha note');
+    state = toggleNoteApplication(state, [reading, other], other, 2, 'Parsha note', 'parsha');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Global note', 'aliyah');
+    assert.equal(previewReadingLocks(other, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Parsha note');
+    state = toggleNoteApplication(state, [reading, other], other, 2, 'Parsha note', 'parsha');
+    const pending = pendingReadingNotes(state.drafts, [reading, other]);
+    assert.equal(pending.length, 2);
+    assert.ok(pending.some(change => change.desc === reading.desc && change.aliyah === 1 && change.note === 'Global note'));
+    assert.ok(pending.some(change => change.desc === other.desc && change.aliyah === 2 && change.note === 'Parsha note'));
+});
+
+test('overlapping scopes with the same text retain the later scope until it is undone', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Same note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Same note', 'aliyah');
+    state = editReadingNote(state, other, 2, 'Same note');
+    state = toggleNoteApplication(state, [reading, other], other, 2, 'Same note', 'parsha');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Same note', 'aliyah');
+    assert.equal(previewReadingLocks(other, {}, {}, {}, {}, state.drafts).aliyahNotes[0], 'Same note');
+    state = toggleNoteApplication(state, [reading, other], other, 2, 'Same note', 'parsha');
+    assert.equal(pendingReadingNotes(state.drafts, [reading, other]).length, 2);
+});
+
+test('bulk note changes produce one summary and reverting restores individual entries', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = editReadingNote({ drafts: {}, applications: {} }, reading, 1, 'Shared note');
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    assert.deepEqual(noteChangeLog(state, [reading, other]), [
+        'Set the note for Rishon across the current schedule to “Shared note” (2 aliyot changed).',
+    ]);
+    state = toggleNoteApplication(state, [reading, other], reading, 1, 'Shared note', 'aliyah');
+    assert.deepEqual(noteChangeLog(state, [reading, other]), [
+        'Set the note for Rishon of Bereshit (2026-10-10) to “Shared note”.',
+    ]);
+});
+
+test('parsha bulk summaries count only changed notes and keep later edits separate', () => {
+    const saved = { ...reading, gregDate: 'October 10, 2026', aliyahNotes: ['Parsha note', ...Array(8).fill('')] };
+    let state = toggleNoteApplication({ drafts: {}, applications: {} }, [saved], saved, 1, 'Parsha note', 'parsha');
+    assert.deepEqual(noteChangeLog(state, [saved]), [
+        'Set the note for all aliyot of Bereshit (October 10, 2026) to “Parsha note” (4 aliyot changed).',
+    ]);
+    state = editReadingNote(state, saved, 2, 'Individual exception');
+    assert.deepEqual(noteChangeLog(state, [saved]), [
+        'Set the note for all aliyot of Bereshit (October 10, 2026) to “Parsha note” (3 aliyot changed).',
+        'Set the note for Sheni of Bereshit (October 10, 2026) to “Individual exception”.',
+    ]);
+    assert.deepEqual(noteChangeLog({ drafts: {}, applications: state.applications }, [saved]), []);
+});
+
+test('overlapping bulk note summaries count each pending change once', () => {
+    const other = { ...reading, desc: 'Noach' };
+    let state = toggleNoteApplication({ drafts: {}, applications: {} }, [reading, other], reading, 1, 'Global note', 'aliyah');
+    state = editReadingNote(state, other, 2, 'Parsha note');
+    state = toggleNoteApplication(state, [reading, other], other, 2, 'Parsha note', 'parsha');
+    assert.deepEqual(noteChangeLog(state, [reading, other]), [
+        'Set the note for Rishon across the current schedule to “Global note” (1 aliyah changed).',
+        'Set the note for all aliyot of Noach (2026-10-10) to “Parsha note” (5 aliyot changed).',
+    ]);
+});
 
 test('draft locks preview immediately without mutating the saved schedule', () => {
     const draft = stageReadingLock({}, reading, true, 8);
@@ -115,6 +280,16 @@ test('count drafts preview only their reading and reset independently of the sch
     assert.equal(pendingReadingCounts(reset, [overridden])[0].aliyahCount, null);
 });
 
+
+test('aliyah count previews recalculate verse counts without changing the saved counts', () => {
+    const saved = { ...reading, aliyahCount: 2, defaultAliyahCount: 2, aliyahCountOverride: null,
+        psukim: ['Genesis 1:1-1:5', 'Genesis 1:6-1:10'], verseCounts: [5, 5],
+        aliyahOptions: [['Genesis 1:1-1:10', 'null'], ['Genesis 1:1-1:5', 'Genesis 1:6-1:10']] };
+    const drafts = stageReadingCount({}, saved, 1);
+    const preview = previewReadingLocks(saved, {}, {}, {}, drafts);
+    assert.deepEqual(preview.verseCounts, [10, null]);
+    assert.deepEqual(saved.verseCounts, [5, 5]);
+});
 
 test('occasion log reflects net additions and removals and clears when edits are undone', () => {
     const saved = { ...reading, gregDate: 'October 10, 2026', occassions: ['Shabbat'], manualOccasions: ['Birthday'] };

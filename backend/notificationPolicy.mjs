@@ -8,14 +8,20 @@ export function localClock(now, timezone) {
 }
 
 export const reportRanges = ['2weeks', '4weeks', '6weeks', '8weeks', '10weeks', '12weeks'];
-export const reportFrequencies = ['daily', 'mon_thu', 'mon_wed_fri'];
+export const reportWeekdays = [0, 1, 2, 3, 4, 5, 6];
+
+export function isShabbatDeliveryPaused(now, timezone) {
+    // Without location/sunset settings, reserve all of Friday and Saturday.
+    const { day } = localClock(now, timezone);
+    const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+    return weekday === 5 || weekday === 6;
+}
 
 export function isReportDue(now, settings) {
     const local = localClock(now, settings.timezone);
     const weekday = new Date(`${local.day}T12:00:00Z`).getUTCDay();
-    const weekdays = { daily: [0, 1, 2, 3, 4, 5, 6], mon_thu: [1, 4], mon_wed_fri: [1, 3, 5] };
     const [hour, minute] = settings.reportTime.split(':').map(Number);
-    return weekdays[settings.reportFrequency].includes(weekday) && local.hour * 60 + local.minute >= hour * 60 + minute;
+    return settings.reportDays.includes(weekday) && local.hour * 60 + local.minute >= hour * 60 + minute;
 }
 
 export function reportWindow(now, timezone, range = '12weeks') {

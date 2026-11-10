@@ -32,7 +32,7 @@ test('combined startup proxies saved profiles and stops both servers', { timeout
     const frontendPort = await availablePort();
     const child = spawn(process.execPath, ['scripts/dev.mjs', '--host', '127.0.0.1', '--port', String(frontendPort), '--strictPort'], {
         cwd: fileURLToPath(new URL('../', import.meta.url)),
-        env: { ...process.env, PORT: String(backendPort), GABBAI_DATABASE_PATH: filename, GABBAI_DEV_USER_ID: user.id },
+        env: { ...process.env, GMAIL_ENABLED: 'false', PORT: String(backendPort), GABBAI_DATABASE_PATH: filename, GABBAI_DEV_USER_ID: user.id },
         stdio: ['ignore', 'pipe', 'pipe'],
     });
     const exited = once(child, 'exit');
@@ -110,7 +110,7 @@ test('a frontend startup failure also stops the backend', { timeout: 15000 }, as
     const backendPort = await availablePort();
     const child = spawn(process.execPath, ['scripts/dev.mjs', '--host', '127.0.0.1', '--port', String(occupied.address().port), '--strictPort'], {
         cwd: fileURLToPath(new URL('../', import.meta.url)),
-        env: { ...process.env, PORT: String(backendPort), GABBAI_DATABASE_PATH: join(directory, 'dev.sqlite') },
+        env: { ...process.env, GMAIL_ENABLED: 'false', PORT: String(backendPort), GABBAI_DATABASE_PATH: join(directory, 'dev.sqlite') },
         stdio: 'ignore',
     });
     const exited = once(child, 'exit');

@@ -4,7 +4,7 @@ import { installMessaging } from './messages.mjs';
 import { createGmailMailer } from './gmail.mjs';
 import { createNotificationService, installNotificationRoutes } from './notifications.mjs';
 import { fileURLToPath } from "node:url";
-import { getAssignedReadingDetails, getGuestReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
+import { getAssignedReadingDetails, getGuestReadingDetails, getStarredReadingDetails, getSchedule, getShulSchedule } from "./schedule.mjs";
 import { openDatabase } from "./database/index.mjs";
 import { ensureDemoUser } from "./database/demo.mjs";
 import { validateKeys } from "./database/settings.mjs";
@@ -236,7 +236,7 @@ export function createApp(database, {
             return res.status(404).json({ error: "Shul not found" });
         }
         try {
-            validateKeys(req.body, ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'picture'], 'shul');
+            validateKeys(req.body, ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime', 'picture'], 'shul');
             return res.json(app.locals.database.updateShul(req.params.id, { ...req.body, ...('picture' in req.body ? { picture: decodePicture(req.body.picture) } : {}) }));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
@@ -294,14 +294,14 @@ export function createApp(database, {
             const seen = new Set();
             const affected = new Set();
             for (const change of changes) {
-                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in change ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
                 const { dateString, desc, aliyah, locked } = change;
-                if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('aliyahCount' in change) && !('manualOccasions' in change) && !('readerId' in change) && typeof locked !== 'boolean')
+                if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('aliyahCount' in change) && !('manualOccasions' in change) && !('readerId' in change) && !('note' in change) && typeof locked !== 'boolean')
                     || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
                     return res.status(400).json({ error: "Provide a reading date, name, lock status, and optional aliyah from 1 to 9" });
                 }
                 const key = JSON.stringify([dateString, desc]);
-                const slot = JSON.stringify([dateString, desc, 'aliyahCount' in change ? 'count' : 'readerId' in change ? `reader:${aliyah}` : 'manualOccasions' in change ? 'occasions' : aliyah ?? 0]);
+                const slot = JSON.stringify([dateString, desc, 'aliyahCount' in change ? 'count' : 'readerId' in change ? `reader:${aliyah}` : 'note' in change ? `note:${aliyah}` : 'manualOccasions' in change ? 'occasions' : aliyah ?? 0]);
                 if (seen.has(slot)) return res.status(400).json({ error: "Each reading lock may only appear once per publication" });
                 seen.add(slot);
                 const reading = readings.get(key);
@@ -311,6 +311,9 @@ export function createApp(database, {
                 }
                 if ('readerId' in change && aliyah === undefined) {
                     return res.status(400).json({ error: "Choose an aliyah for the reader" });
+                }
+                if ('note' in change && aliyah === undefined) {
+                    return res.status(400).json({ error: 'Choose an aliyah for the note.' });
                 }
                 if ('readerId' in change && change.readerId !== null) {
                     const reader = typeof change.readerId === 'string' ? app.locals.database.getUser(change.readerId) : null;
@@ -363,6 +366,47 @@ export function createApp(database, {
         return res.json(getGuestReadingDetails(database, req.sessionUserId));
     });
 
+    app.get('/api/me/starred-readings', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to view your starred readings.' });
+        return res.json(getStarredReadingDetails(database, req.currentUserId));
+    });
+
+    function saveReadingStar(req, res, next) {
+        res.set('Cache-Control', 'no-store');
+        const user = req.currentUserId ? database.getUser(req.currentUserId) : null;
+        if (!user) return res.status(401).json({ error: 'Sign in to star a reading.' });
+        try {
+            validateKeys(req.body, ['shulId', 'dateString', 'desc', 'aliyah'], 'starred reading');
+            const { shulId, dateString, desc, aliyah } = req.body;
+            if (typeof shulId !== 'string' || !shulId || typeof dateString !== 'string'
+                || !/^\d{4}-\d{2}-\d{2}$/.test(dateString) || !Number.isFinite(Date.parse(dateString))
+                || new Date(dateString).toISOString().slice(0, 10) !== dateString
+                || typeof desc !== 'string' || !desc.trim() || desc.length > 254
+                || !Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9)
+                return res.status(400).json({ error: 'Choose a valid reading and aliyah from 1 to 9.' });
+            const starred = req.method === 'PUT';
+            let reading;
+            if (starred) {
+                if (shulId !== user.shulId) return res.status(403).json({ error: 'Choose a reading from your shul.' });
+                reading = getShulSchedule(database, shulId)
+                    .find(item => item.dateString === dateString && item.desc === desc);
+                if (!reading) return res.status(404).json({ error: 'Reading not found in your shul’s schedule.' });
+                const psukim = reading.psukim[aliyah - 1];
+                if (!psukim || psukim === 'null') return res.status(400).json({ error: 'This aliyah is not part of the reading.' });
+            }
+            database.setReadingStar(user.id, { shulId, dateString, desc, aliyah }, starred);
+            return res.json(starred ? { shulId, shulName: database.getShul(shulId).name,
+                dateString, desc, aliyah, gregDate: reading.gregDate, hDate: reading.hDate,
+                psukim: reading.psukim[aliyah - 1], verseCount: reading.verseCounts[aliyah - 1] } : { starred: false });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    }
+    app.put('/api/me/starred-readings', saveReadingStar);
+    app.delete('/api/me/starred-readings', saveReadingStar);
+
     // Sessions identify individual users; opt-in previews can supply a sample identity.
     app.get("/api/me", (req, res) => {
         res.set("Cache-Control", "no-store");
@@ -374,6 +418,20 @@ export function createApp(database, {
         const user = app.locals.database.getUser(userId);
         if (!user) return res.status(404).json({ error: "Current user not found" });
         return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
+    });
+
+    app.patch('/api/me/significant-portions', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to save significant parshiyot.' });
+        if (!database.getUser(req.currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
+        try {
+            validateKeys(req.body, ['portions'], 'significant parshiyot');
+            const user = database.setSignificantPortions(req.currentUserId, req.body.portions);
+            return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
     });
 
     app.patch('/api/me', (req, res, next) => {

@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import type { JSX } from 'react';
+import { useImperativeHandle, useState } from 'react';
+import type { JSX, Ref } from 'react';
+import { flushSync } from 'react-dom';
+import { readingAnchor } from '../readingAnchor.ts';
+import { hasStarredAliyah } from '../scheduleFilters.ts';
 import Filter from './filter.tsx';
 import Parsha from './parsha.tsx';
 import type { ParshaObj, ReadingActions } from './parsha.tsx';
@@ -15,7 +18,12 @@ function toDate(value: string): Date {
     return new Date(year, month - 1, day);
 }
 
-export default function Schedule({ parshiyot, shulId, currentUserId, onReadingCancelled }: {
+export interface ScheduleHandle {
+    revealReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
+}
+
+export default function Schedule({ ref, parshiyot, shulId, currentUserId, onReadingCancelled, ...readingStars }: {
+    ref?: Ref<ScheduleHandle>;
     parshiyot: ParshaObj[];
     shulId?: string;
 } & ReadingActions): JSX.Element {
@@ -24,13 +32,36 @@ export default function Schedule({ parshiyot, shulId, currentUserId, onReadingCa
     const [bookFilter, setBookFilter] = useState<string[]>([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [starredOnly, setStarredOnly] = useState(false);
 
-    const searchTerm = nameFilter.toLowerCase();
+    useImperativeHandle(ref, () => ({
+        revealReading(reading) {
+            const id = readingAnchor(reading);
+            if (!document.getElementById(id)) {
+                // Commit cleared filters before looking up a previously hidden card.
+                flushSync(() => {
+                    setNameFilter('');
+                    setDateFilter('');
+                    setBookFilter([]);
+                    setStartDate('');
+                    setEndDate('');
+                    setStarredOnly(false);
+                });
+            }
+            const card = document.getElementById(id);
+            if (!card) return;
+            card.scrollIntoView({ behavior: 'instant', block: 'start' });
+            card.focus({ preventScroll: true });
+        },
+    }), []);
+
+    const searchTerm = nameFilter.trim().toLowerCase();
     const hasDateRange = Boolean(startDate || endDate);
     const today = new Date();
     const rangeStart = toDate(startDate || formatDateString(today, 0));
     const rangeEnd = toDate(endDate || formatDateString(today, 1));
     const filteredReadings = parshiyot.filter(reading => {
+        if (starredOnly && !hasStarredAliyah(reading, readingStars.starredReadings, shulId)) return false;
         if (searchTerm && !reading.searchTerms.some(term => term.toLowerCase().includes(searchTerm))) return false;
         if (dateFilter && reading.dateString !== dateFilter) return false;
         if (bookFilter.length && !bookFilter.includes(reading.book)) return false;
@@ -54,11 +85,15 @@ export default function Schedule({ parshiyot, shulId, currentUserId, onReadingCa
                 setStartDate={setStartDate}
                 endDate={endDate}
                 setEndDate={setEndDate}
+                starredOnly={starredOnly}
+                setStarredOnly={setStarredOnly}
+                showStarredFilter={Boolean(currentUserId)}
+                starredFilterDisabled={!readingStars.starredReadings}
             />
             <div className="parshiyot">
                 {filteredReadings.length ? filteredReadings.map(reading => (
                     <Parsha key={`${reading.dateString}-${reading.desc}`} {...reading} shulId={shulId}
-                        currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} />
+                        currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} {...readingStars} />
                 )) : (
                     <div className="no-results" role="status">
                         <h3>Oy Gevalt!</h3>

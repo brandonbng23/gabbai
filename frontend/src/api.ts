@@ -153,7 +153,14 @@ export interface ReadingReaderChange {
     readerId: string | null;
 }
 
-export async function publishReadingLocks(shulId: string, changes: (ReadingLockChange | ReadingOccasionChange | ReadingReaderChange | ReadingCountChange)[]): Promise<ParshaObj[]> {
+export interface ReadingNoteChange {
+    dateString: string;
+    desc: string;
+    aliyah: number;
+    note: string;
+}
+
+export async function publishReadingLocks(shulId: string, changes: (ReadingLockChange | ReadingOccasionChange | ReadingReaderChange | ReadingCountChange | ReadingNoteChange)[]): Promise<ParshaObj[]> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/readings/locks`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -179,6 +186,8 @@ export interface Shul extends ShulSummary {
     email: string;
     phone: string;
     address: string;
+    torahServiceDay: 'Friday' | 'Saturday';
+    torahServiceTime: string;
     settings: {
         hebYear: number;
         il: boolean;
@@ -214,6 +223,17 @@ export type { User, ShulUser, UserReading, UserViewProfile, GuestReading } from 
 
 export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
 
+export async function saveSignificantPortions(portions: import('../../interfaces/significantPortions.mts').SignificantPortion[]): Promise<User> {
+    const response = await fetch('/api/me/significant-portions', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portions }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save significant parshiyot.');
+    }
+    return response.json();
+}
+
 export async function updateCurrentUser(changes: Partial<UserProfile> & { picture?: string | null }): Promise<User> {
     const response = await fetch('/api/me', {
         method: 'PATCH',
@@ -227,7 +247,7 @@ export async function updateCurrentUser(changes: Partial<UserProfile> & { pictur
     return response.json();
 }
 
-export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl'>;
+export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl' | 'torahServiceDay' | 'torahServiceTime'>;
 
 export interface InitialShulVersion {
     info: ShulInfo;
@@ -326,7 +346,7 @@ export interface NotificationPolicy {
     globalResetTimezone: string;
     roundupHour: number;
     reportTime: string;
-    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportDays: number[];
     reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
 }
 export interface NotificationSettings {
@@ -334,12 +354,30 @@ export interface NotificationSettings {
     instantAdminUserId: string | null;
     dailyReports: Array<{ userId: string; enabled: boolean }>;
     reportTime: string;
-    reportFrequency: 'daily' | 'mon_thu' | 'mon_wed_fri';
+    reportDays: number[];
     reportRange: '2weeks' | '4weeks' | '6weeks' | '8weeks' | '10weeks' | '12weeks';
 }
 export async function getNotificationPolicy(shulId: string, signal: AbortSignal): Promise<NotificationPolicy> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/notification-policy`, { signal, cache: 'no-store' });
     if (!response.ok) throw new Error('Unable to load email availability.');
+    return response.json();
+}
+
+export interface ConfirmationEmailQuota {
+    limit: number;
+    used: number;
+    remaining: number;
+    timezone: string;
+    localDay: string;
+}
+
+export async function getConfirmationEmailQuota(shulId: string, registrationType: 'profile' | 'guest', guestEmail: string | undefined, signal: AbortSignal): Promise<ConfirmationEmailQuota> {
+    const response = await fetch(`/api/shuls/${encodeURIComponent(shulId)}/confirmation-email-quota`, {
+        method: 'POST', signal, cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationType, ...(guestEmail ? { guestEmail } : {}) }),
+    });
+    if (!response.ok) throw new Error('Your confirmation email allowance could not be checked.');
     return response.json();
 }
 export async function getNotificationSettings(shulId: string, signal: AbortSignal): Promise<NotificationSettings> {

@@ -4,15 +4,17 @@
 
 - Registration confirmations are always saved as system messages in the reader’s
   platform inbox. A signed-in guest booker also gets the guest confirmation.
-- Emailing a confirmation is optional, unchecked by default. Members and admins
+- Emailing a confirmation is optional, checked by default when email is available.
+  The checkbox is unchecked and disabled when the registration's daily quota is
+  exhausted. Members and admins
   can request five per shul-local day across their own and guest bookings.
   Registrations without a signed-in member/admin use a limit of one per
   normalized guest email address per shul-local day. This also applies when
   using a guest profile without the guest form. Guest identity is not verified, so this
   is an email-address limit, not a reliable per-person limit.
 - Admins enabled for daily reports get a system inbox roundup at the shul’s chosen time in its
-  configured IANA timezone. Schedules can be daily, Monday/Thursday (M/R), or
-  Monday/Wednesday/Friday (M/W/F). Summaries cover 2–12 weeks in two-week steps (up to about three months),
+  configured IANA timezone. Choose exactly one delivery day, Sunday through
+  Saturday. Summaries cover 2–12 weeks in two-week steps (up to about three months),
   including today, with reader names, dates, aliyot, and passages for assigned
   readings. Vacancies have only date, reading name, count, and aliyah numbers;
   locked/unavailable slots are not advertised as vacancies.
@@ -24,11 +26,24 @@
   per UTC day**, resetting at midnight UTC. This includes confirmations, instant
   alerts, and roundups. System inbox messages and registrations continue when
   email is disabled, capped, or unavailable.
+- **No emails are dispatched on Friday or Saturday in the shul’s timezone.**
+  Without location and sunset settings, this conservative Shabbat pause covers
+  both full days. Confirmations, alerts, and summaries remain queued until Sunday,
+  including summaries scheduled for Friday or Saturday. Paused jobs do not reserve
+  global delivery quota or block delivery for shuls in other timezones. Registration
+  confirmation request quotas still apply when the request is made; platform inbox
+  messages are saved immediately.
 
 These rules appear publicly on the registration form and in the README. They are
 also available without signing in at `GET /api/shuls/:id/notification-policy`.
-Each shul’s timezone, per-admin daily report switches, and instant-alert admin are editable under **Administration
-Settings → Communication Settings**. New shuls default to `America/New_York`
+The form checks the remaining allowance with a no-store
+`POST /api/shuls/:id/confirmation-email-quota`, using `registrationType` and, for
+guests without a member booker, `guestEmail`. Profile checks require sign-in and
+always use the current account. Guest email checks are debounced in the form.
+Checking never consumes quota; registration enforces the limit atomically even
+if another booking changes it after the form loads.
+Each shul’s timezone, delivery day, per-admin daily report switches, and instant-alert admin are editable under **Manage
+Shul → Communication Settings**. New shuls default to `America/New_York`
 until an admin changes the timezone.
 
 ## Gmail setup
@@ -105,9 +120,10 @@ For either method, check authentication without sending a message:
 node --env-file=.env scripts/verify-email.mjs
 ```
 
-Then start development with `node --env-file=.env scripts/dev.mjs` (or production
-with `node --env-file=.env index.js`). The usual npm scripts do not load `.env`
-automatically. In hosting, set the same environment variables and restart.
+The normal startup commands (`npm run dev`, `npm run dev:backend`, and `npm start`)
+automatically load the project-root `.env`, preserving variables already supplied
+by the host. Restart the backend after changing email configuration.
+In hosting, set the same environment variables and restart.
 The server must stay running for scheduled summaries.
 
 For a delivery test, register for a reading with an email address you control
@@ -191,3 +207,11 @@ not three exact calendar months. Legacy one-, two-, and three-month selections
 migrate to 4, 8, and 12 weeks respectively, preserving the other settings.
 New inbox and email subjects call these Registration Summaries. Internal report
 field names and outbox categories remain unchanged for compatibility.
+
+Migration 29 adds selectable delivery days. The current settings and public policy
+APIs expose `reportDays` as an array containing exactly one integer, Sunday `0` through
+Saturday `6`, replacing `reportFrequency`. Storage uses a weekday bitmask in
+`report_days`; the historical frequency column is retained for migration
+compatibility. Older multi-day preferences use their first selected weekday;
+new settings default to Sunday. The form uses a single-choice dropdown, and
+the API rejects multiple days.

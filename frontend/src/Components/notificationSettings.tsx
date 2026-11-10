@@ -14,6 +14,9 @@ const summaryWindows = [
     { value: '12weeks', label: '12 weeks (about 3 months)' },
 ] as const;
 
+const deliveryDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const deliveryDayLabel = (days: number[]) => deliveryDays[days[0]] ?? 'None selected';
+
 export default function NotificationSettings({ shulId }: { shulId: string }) {
     const [settings, setSettings] = useState<Settings | null>(null);
     const [savedSettings, setSavedSettings] = useState<Settings | null>(null);
@@ -38,11 +41,10 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
         const admin = admins.find(user => user.id === id);
         return admin ? `${admin.firstName} ${admin.lastName}` : id ? 'Previously selected admin' : 'Off';
     };
-    const frequencies = { daily: 'Daily', mon_thu: 'Monday & Thursday', mon_wed_fri: 'Monday, Wednesday & Friday' };
     if (settings && savedSettings) {
         if (settings.timezone !== savedSettings.timezone) changes.push(`Shul timezone: ${timezoneLabel(savedSettings.timezone)} → ${timezoneLabel(settings.timezone)}`);
         if (settings.reportTime !== savedSettings.reportTime) changes.push(`Summary send time: ${savedSettings.reportTime} → ${settings.reportTime}`);
-        if (settings.reportFrequency !== savedSettings.reportFrequency) changes.push(`Summary frequency: ${frequencies[savedSettings.reportFrequency]} → ${frequencies[settings.reportFrequency]}`);
+        if (JSON.stringify(settings.reportDays) !== JSON.stringify(savedSettings.reportDays)) changes.push(`Summary delivery day: ${deliveryDayLabel(savedSettings.reportDays)} → ${deliveryDayLabel(settings.reportDays)}`);
         if (settings.reportRange !== savedSettings.reportRange) changes.push(`Look ahead: ${summaryWindows.find(window => window.value === savedSettings.reportRange)?.label} → ${summaryWindows.find(window => window.value === settings.reportRange)?.label}`);
         for (const admin of admins) {
             const wasEnabled = savedSettings.dailyReports.find(preference => preference.userId === admin.id)?.enabled ?? true;
@@ -53,7 +55,7 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
     }
     async function save(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!settings || busy || changes.length === 0) return;
+        if (!settings || busy || changes.length === 0 || settings.reportDays.length !== 1) return;
         setBusy(true); setError(''); setNotice('');
         try {
             const result = await updateNotificationSettings(shulId, settings);
@@ -64,7 +66,7 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
         catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to save.'); }
         finally { setBusy(false); }
     }
-    return <section className="settings-panel notification-settings" aria-labelledby="notification-settings-heading">
+    return <section className="content-panel notification-settings" aria-labelledby="notification-settings-heading">
         <h2 id="notification-settings-heading">Communication Settings</h2>
         <p>Manage registration summaries and new-booking alerts for your admins.</p>
         {error && <p role="alert">{error} {!settings && <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry</button>}</p>}
@@ -91,12 +93,13 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
                 </div>
                 
                 <div className="notification-field">
-            <label htmlFor="notification-report-frequency">Frequencey</label>
-            <select id="notification-report-frequency" disabled={busy} value={settings.reportFrequency} onChange={event => setSettings({ ...settings, reportFrequency: event.target.value as Settings['reportFrequency'] })}>
-                <option value="daily">Daily</option>
-                <option value="mon_thu">Monday &amp; Thursday (M/R)</option>
-                <option value="mon_wed_fri">Monday, Wednesday &amp; Friday (M/W/F)</option>
+            <label htmlFor="notification-delivery-day">Delivery day</label>
+            <select id="notification-delivery-day" required disabled={busy} value={settings.reportDays[0]}
+                aria-describedby="notification-delivery-day-help"
+                onChange={event => setSettings({ ...settings, reportDays: [Number(event.target.value)] })}>
+                {deliveryDays.map((label, day) => <option key={label} value={day}>{label}</option>)}
             </select>
+            <span className="notification-field-help" id="notification-delivery-day-help">Select one day in your shul’s timezone.</span>
                 </div>
                 <div className="notification-field">
             <div className="notification-range-heading">
@@ -148,6 +151,7 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
             </section>
             <div className="notification-delivery-note">
                 <h3>Email delivery limits</h3>
+                <p>Emails are paused for Shabbat throughout Friday and Saturday in your shul’s timezone. Queued confirmations, alerts, and summaries resume delivery on Sunday. Platform inbox messages remain available.</p>
                 <p>All email types share a limit of 100 emails per day across Gabbai, resetting at midnight UTC. Summaries and alerts still arrive in platform inboxes when email is unavailable or the limit is reached.</p>
             </div>
             <div className="settings-form-footer">
@@ -163,7 +167,7 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
                             setError('');
                             setNotice('');
                         }}>Reset changes</button>
-                        <button className="submit-btn" type="submit" disabled={busy || changes.length === 0}>{busy ? 'Saving…' : 'Save Changes'}</button>
+                        <button className="submit-btn" type="submit" disabled={busy || changes.length === 0 || settings.reportDays.length !== 1}>{busy ? 'Saving…' : 'Save Changes'}</button>
                     </div>
                     <span role="status">{changes.length === 0 ? notice : ''}</span>
                 </div>

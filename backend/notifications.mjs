@@ -14,6 +14,8 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
     const startYear = hebrewYear(range.start);
     const endYear = hebrewYear(range.end);
     const lines = [`${shul.name} — registration summary`, `Upcoming readings: ${formatCommunicationDate(range.start)} through ${formatCommunicationDate(range.end)} (${timezone})`, ''];
+    const registeredReadings = [];
+    const openReadings = [];
     let registrations = 0;
     let vacancies = 0;
     for (let year = startYear; year <= endYear; year++) {
@@ -24,17 +26,19 @@ export function buildReadingRoundup(database, shulId, now, timezone, window = '1
                 const reader = reading.readers[index];
                 if (reader) {
                     registrations++;
-                    lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
+                    registeredReadings.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc} · Aliyah ${index + 1}: ${reader.title ? `${reader.title} ` : ''}${reader.firstName} ${reader.lastName}${reader.role === 'guest' ? ' (guest)' : ''} — ${verses}${reading.verseCounts[index] ? ` (${reading.verseCounts[index]} verses)` : ''}`);
                 } else if (!reading.locked && !reading.lockedArr[index]) open.push(index + 1);
             }
             if (open.length) {
                 vacancies += open.length;
-                lines.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
+                openReadings.push(`${formatCommunicationDate(reading.dateString)} · ${reading.desc}: ${open.length} open (${open.join(', ')})`);
             }
         }
     }
     lines.splice(2, 0, `${registrations} registrations · ${vacancies} vacancies`);
-    if (!registrations && !vacancies) lines.push('No registrations or available readings in this date range.');
+    lines.push(registeredReadings.length ? `Registered readings: ${registeredReadings.join('; ')}.` : 'Registered readings: None in this date range.');
+    lines.push('');
+    lines.push(openReadings.length ? `Open readings: ${openReadings.join('; ')}.` : 'Open readings: None in this date range.');
     return lines.join('\n');
 }
 
@@ -103,11 +107,33 @@ export function createNotificationService({ database, mailer, preview = false, c
 }
 
 export function installNotificationRoutes(app, database, { emailEnabled }) {
+    app.post('/api/shuls/:id/confirmation-email-quota', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        try {
+            validateKeys(req.body, ['registrationType', 'guestEmail'], 'confirmation email quota');
+            const { registrationType, guestEmail } = req.body;
+            if (!['profile', 'guest'].includes(registrationType)) throw new TypeError('Choose a profile or guest registration.');
+            const bookerId = registrationType === 'guest' ? req.sessionUserId : req.currentUserId;
+            const booker = bookerId ? database.getUser(bookerId) : null;
+            if (registrationType === 'profile' && !booker) return res.status(401).json({ error: 'Sign in to check your confirmation email allowance.' });
+            const memberBooker = booker?.shulId === req.params.id && ['member', 'admin'].includes(booker.role);
+            if (registrationType === 'guest' && !memberBooker
+                && (typeof guestEmail !== 'string' || guestEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())))
+                throw new TypeError('Enter a valid guest email address.');
+            return res.json(database.getConfirmationEmailQuota(req.params.id, {
+                bookerId, readerEmail: registrationType === 'guest' ? guestEmail : booker.email,
+            }));
+        } catch (error) {
+            if (error instanceof TypeError) res.status(400).json({ error: error.message });
+            else if (error.status) res.status(error.status).json({ error: error.message });
+            else next(error);
+        }
+    });
     app.get('/api/shuls/:id/notification-policy', (req, res, next) => {
         try {
             const config = database.getNotificationSettings(req.params.id);
             res.set('Cache-Control', 'no-store').json({ ...notificationPolicy, timezone: config.timezone, roundupHour: Number(config.reportTime.split(':')[0]),
-                reportTime: config.reportTime, reportFrequency: config.reportFrequency, reportRange: config.reportRange, emailAvailable: emailEnabled() });
+                reportTime: config.reportTime, reportDays: config.reportDays, reportRange: config.reportRange, emailAvailable: emailEnabled() });
         }
         catch (error) { if (error.status) res.status(error.status).json({ error: error.message }); else next(error); }
     });
@@ -120,7 +146,7 @@ export function installNotificationRoutes(app, database, { emailEnabled }) {
     });
     app.patch('/api/shuls/:id/notifications', (req, res, next) => {
         try {
-            validateKeys(req.body, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportFrequency', 'reportRange'], 'notification settings');
+            validateKeys(req.body, ['timezone', 'instantAdminUserId', 'dailyReports', 'reportTime', 'reportDays', 'reportRange'], 'notification settings');
             res.set('Cache-Control', 'no-store').json(database.updateNotificationSettings(req.currentUserId, req.params.id, req.body));
         } catch (error) {
             if (error instanceof TypeError) res.status(400).json({ error: error.message });

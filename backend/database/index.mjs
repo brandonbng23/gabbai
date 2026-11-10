@@ -1,4 +1,7 @@
 import { validatePicture } from '../pictures.mjs';
+import { validateAliyahNote } from '../../interfaces/readingNote.mts';
+import { validateSignificantPortions } from '../../interfaces/significantPortions.mts';
+import { parshaForSignificantDate } from '../../core/significantDate.mts';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -10,7 +13,7 @@ import { createMessagingRepository } from './messages.mjs';
 import { createNotificationRepository } from './notifications.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
-const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address'];
+const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime'];
 const userFields = ['shulId', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'role', 'title'];
 
 function normalizeShulCode(value) {
@@ -53,7 +56,13 @@ function email(value) {
 }
 
 function shulValues(input) {
-    return shulFields.map(key => text(input[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
+    const day = input.torahServiceDay ?? 'Saturday';
+    const time = input.torahServiceTime ?? '';
+    if (!['Friday', 'Saturday'].includes(day)) throw new TypeError('Torah service day must be Friday or Saturday.');
+    if (typeof time !== 'string' || (time !== '' && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)))
+        throw new TypeError('Choose a valid Torah service time.');
+    const normalized = { ...input, torahServiceDay: day, torahServiceTime: time };
+    return shulFields.map(key => text(normalized[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
 }
 
 function userValues(input) {
@@ -72,6 +81,7 @@ function decodeShul(row) {
     if (!row) return null;
     return { id: row.id, code: row.join_code, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
         email: row.email, phone: row.phone, address: row.address,
+        torahServiceDay: row.torah_service_day, torahServiceTime: row.torah_service_time,
         ...(row.picture_version ? { pictureUrl: pictureUrl('shuls', row.id, row.picture_version) } : {}),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
 }
@@ -110,7 +120,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 25) throw new Error('Database schema is newer than this application');
+            if (version > 30) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -221,6 +231,28 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.exec(readFileSync(new URL('./migrations/025_summary_windows.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(25);
             }
+            if (version < 26) {
+                db.exec(readFileSync(new URL('./migrations/026_starred_readings.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(26);
+            }
+            if (version < 27) {
+                db.exec(readFileSync(new URL('./migrations/027_aliyah_notes.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(27);
+            }
+            if (version < 28) {
+                db.exec(readFileSync(new URL('./migrations/028_longer_aliyah_notes.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(28);
+            }
+            if (version < 29) {
+                if (!db.prepare('PRAGMA table_info(shul_notification_settings)').all().some(column => column.name === 'report_days'))
+                    db.exec(readFileSync(new URL('./migrations/029_summary_delivery_days.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(29);
+            }
+            if (version < 30) {
+                if (!db.prepare('PRAGMA table_info(shuls)').all().some(column => column.name === 'torah_service_day'))
+                    db.exec(readFileSync(new URL('./migrations/030_torah_service_time.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(30);
+            }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
     } catch (error) {
@@ -259,7 +291,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in patch ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -282,6 +314,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 return { occasions: [shulId, dateString, desc, JSON.stringify(labels)] };
             }
             if (!Number.isInteger(aliyah) || aliyah < 0 || aliyah > 9) throw new TypeError('Invalid aliyah');
+            if ('note' in patch) {
+                if (aliyah < 1) throw new TypeError('Choose an aliyah for the note.');
+                return { note: [shulId, dateString, desc, aliyah, validateAliyahNote(patch.note)] };
+            }
             if ('readerId' in patch) {
                 if (aliyah < 1) throw new TypeError('A reader must be assigned to an aliyah from 1 to 9');
                 if (patch.readerId !== null) {
@@ -311,7 +347,17 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 VALUES (?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name)
                 DO UPDATE SET aliyah_count = excluded.aliyah_count`);
             const removeCount = db.prepare('DELETE FROM reading_aliyah_counts WHERE shul_id = ? AND reading_date = ? AND reading_name = ?');
+            const noteStatement = db.prepare(`INSERT INTO reading_aliyah_notes (shul_id, reading_date, reading_name, aliyah, note)
+                VALUES (?, ?, ?, ?, ?) ON CONFLICT (shul_id, reading_date, reading_name, aliyah)
+                DO UPDATE SET note = excluded.note`);
+            const removeNote = db.prepare(`DELETE FROM reading_aliyah_notes
+                WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
             for (const value of values) {
+                if (value.note) {
+                    if (value.note[4] === '') removeNote.run(...value.note.slice(0, 4));
+                    else noteStatement.run(...value.note);
+                    continue;
+                }
                 if (value.count) {
                     if (value.count[3] === null) removeCount.run(...value.count.slice(0, 3));
                     else countStatement.run(...value.count);
@@ -338,6 +384,19 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         ...notifications,
         path,
         close: () => db.close(),
+        listStarredReadings(userId) {
+            return db.prepare(`SELECT shul_id AS shulId, reading_date AS dateString,
+                reading_name AS desc, aliyah FROM starred_readings WHERE user_id = ?
+                ORDER BY reading_date, reading_name, aliyah`).all(userId);
+        },
+        setReadingStar(userId, { shulId, dateString, desc, aliyah }, starred) {
+            const values = [userId, shulId, dateString, desc, aliyah];
+            if (starred) db.prepare(`INSERT INTO starred_readings
+                (user_id, shul_id, reading_date, reading_name, aliyah) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT DO NOTHING`).run(...values);
+            else db.prepare(`DELETE FROM starred_readings WHERE user_id = ? AND shul_id = ?
+                AND reading_date = ? AND reading_name = ? AND aliyah = ?`).run(...values);
+        },
         getShul,
         getPicture(kind, id) {
             if (!['users', 'shuls'].includes(kind)) throw new TypeError('Invalid picture owner');
@@ -385,6 +444,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
                     manualOccasions: JSON.parse(row.occasions_json) }));
         },
+        listReadingNotes(shulId) {
+            return db.prepare(`SELECT reading_date AS dateString, reading_name AS desc, aliyah, note
+                FROM reading_aliyah_notes WHERE shul_id = ?`).all(shulId);
+        },
         listReadingLocks(shulId) {
             return db.prepare('SELECT reading_date, reading_name, aliyah, locked FROM reading_locks WHERE shul_id = ?')
                 .all(shulId).map(row => ({ dateString: row.reading_date, desc: row.reading_name,
@@ -396,7 +459,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         },
         getInitialShulVersion(id) {
             const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
-            return row ? { info: JSON.parse(row.info_json), settings: JSON.parse(row.settings_json),
+            return row ? { info: { torahServiceDay: 'Saturday', torahServiceTime: '', ...JSON.parse(row.info_json) }, settings: JSON.parse(row.settings_json),
                 source: row.source, capturedAt: row.captured_at } : null;
         },
         getUser,
@@ -578,8 +641,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const settings = mergeShulSettings(defaultShulSettings(input.settings?.hebYear), input.settings ?? {});
             const id = randomUUID();
             return transaction(() => {
-                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address, torah_service_day, torah_service_time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
                 assignShulCode(db, id);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
                 const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
@@ -633,6 +696,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 }
                 db.prepare(`INSERT INTO reading_readers (shul_id, reading_date, reading_name, aliyah, user_id, registered_by_user_id)
                     VALUES (?, ?, ?, ?, ?, ?)`).run(shulId, dateString, desc, aliyah, id, guest ? readerId ?? null : null);
+                if (!guest) {
+                    db.prepare(`DELETE FROM starred_readings WHERE user_id = ? AND shul_id = ?
+                        AND reading_date = ? AND reading_name = ? AND aliyah = ?`)
+                        .run(id, shulId, dateString, desc, aliyah);
+                }
                 const confirmation = recordReadingConfirmation(shulId, { dateString, desc, aliyah,
                     recipientIds: guest && readerId ? [id, readerId] : [id] });
                 return { emailConfirmation: recordRegistrationNotifications({ shulId, readerId: id, bookerId: readerId, guest: Boolean(guest), dateString, desc, aliyah,
@@ -663,7 +731,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return transaction(() => {
                 const current = requireRecord(getShul(id), 'Shul');
                 const values = shulValues({ ...current, ...patch });
-                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?,
+                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?, torah_service_day = ?, torah_service_time = ?,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
                 if ('picture' in patch) writePicture('shuls', id, patch.picture);
                 return getShul(id);
@@ -687,6 +755,19 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.prepare(`UPDATE shul_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                     WHERE shul_id = ?`).run(JSON.stringify(settings), id);
                 return getShul(id);
+            });
+        },
+        setSignificantPortions(id, portions) {
+            const validated = validateSignificantPortions(portions);
+            return transaction(() => {
+                const user = requireRecord(getUser(id), 'User');
+                const israel = user.shulId ? getShul(user.shulId)?.settings.il ?? false : false;
+                const resolved = validated.map(entry => entry.gregorianDate
+                    ? { ...entry, portion: parshaForSignificantDate(entry.gregorianDate, israel).portion } : entry);
+                const json = serializeUserSettings({ ...user.settings, significantPortions: resolved });
+                db.prepare(`UPDATE user_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE user_id = ?`).run(json, id);
+                return getUser(id);
             });
         },
         // Replace the whole preferences object; shul settings use partial updates.

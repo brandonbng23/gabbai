@@ -8,13 +8,15 @@ import { getShulUsers, getShulUserProfile, getInitialShulVersion, publishReading
 import { useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import { SearchResult } from "../Components/searchResults.tsx";
-import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders } from '../readingAdjustments.ts';
-import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts } from '../readingAdjustments.ts';
+import { occasionChangeLog, pendingReadingCounts, stageReadingCount, pendingReadingLocks, pendingReadingOccasions, previewReadingLocks, readingKey, stageReadingLock, stageReadingOccasions, stageReadingReader, pendingReadingReaders, pendingReadingNotes, readingNoteKey, editReadingNote, toggleNoteApplication, noteChangeLog } from '../readingAdjustments.ts';
+import type { CountDrafts, ReadingDrafts, OccasionDrafts, ReaderDrafts, NoteDraftState, NoteScope } from '../readingAdjustments.ts';
 import { UserCard } from "../Components/userCard.tsx";
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 import NotificationSettings from '../Components/notificationSettings.tsx';
+import ShulSettingsNavigation from '../Components/shulSettingsNavigation.tsx';
+import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
 type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
@@ -97,6 +99,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [countDrafts, setCountDrafts] = useState<CountDrafts>({});
     const [occasionDrafts, setOccasionDrafts] = useState<OccasionDrafts>({});
     const [readerDrafts, setReaderDrafts] = useState<ReaderDrafts>({});
+    const [noteEdits, setNoteEdits] = useState<NoteDraftState>({ drafts: {}, applications: {} });
+    const noteDrafts = noteEdits.drafts;
     const [users, setUsers] = useState<ShulUser[]>([]);
     const [usersLoading, setUsersLoading] = useState(true);
     const [usersError, setUsersError] = useState('');
@@ -168,6 +172,9 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [email, setEmail] = useState<string>(shul.email);
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
     const [donation, setDonation] = useState<string>(shul.donationUrl);
+    const [torahServiceDay, setTorahServiceDay] = useState(shul.torahServiceDay);
+    const [torahServiceTime, setTorahServiceTime] = useState(shul.torahServiceTime);
+    const serviceTimeChanged = torahServiceDay !== shul.torahServiceDay || torahServiceTime !== shul.torahServiceTime;
     const [saving, setSaving] = useState(false);
     const [pictureBusy, setPictureBusy] = useState(false);
     const [pictureDraft, setPictureDraft] = useState<string | null | undefined>();
@@ -214,6 +221,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         .filter((field) => field.value !== field.savedValue)
         .map((field) => `Changed ${field.label} to ${field.value ? `“${field.value}”` : '(empty)'}.`);
 
+    if (serviceTimeChanged) contactChangeLog.push(`Changed Torah Service Time to ${torahServiceTime ? formatTorahServiceTime(torahServiceDay, torahServiceTime) : '(empty)'}.`);
     if (pictureDraft !== undefined) contactChangeLog.push(pictureDraft === null ? 'Remove shul picture.' : 'Change shul picture.');
 
     const scheduleChanges = [
@@ -241,7 +249,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const readingChanges = pendingReadingLocks(readingDrafts, schedule);
     const occasionChanges = pendingReadingOccasions(occasionDrafts, schedule);
     const readerChanges = pendingReadingReaders(readerDrafts, schedule);
-    const hasReadingChanges = countChanges.length > 0 || readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0;
+    const noteChanges = pendingReadingNotes(noteDrafts, schedule);
+    const hasReadingChanges = countChanges.length > 0 || readingChanges.length > 0 || occasionChanges.length > 0 || readerChanges.length > 0 || noteChanges.length > 0;
     const hasUnsavedChanges = contactChangeLog.length > 0 || scheduleChangeLog.length > 0 || hasReadingChanges;
 
     useEffect(() => {
@@ -263,6 +272,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         readingAdjustmentChangeLog.push(`Set ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString}) to ${change.aliyahCount === null ? 'the schedule rule' : `${change.aliyahCount} aliyot`}.`);
     }
     readingAdjustmentChangeLog.push(...occasionChangeLog(occasionDrafts, schedule));
+    readingAdjustmentChangeLog.push(...noteChangeLog(noteEdits, schedule));
 
     for (const change of readerChanges) {
         const saved = schedule.find(reading => readingKey(reading) === readingKey(change));
@@ -466,12 +476,30 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         clearFeedback('readings');
     }
 
+    function changeReadingNote(reading: ParshaObj, aliyah: number, note: string): void {
+        if (busy) return;
+        const saved = schedule.find(item => readingKey(item) === readingKey(reading));
+        if (!saved) return;
+        setNoteEdits(previous => editReadingNote(previous, saved, aliyah, note));
+        clearFeedback('readings');
+    }
+
+    function applyNoteToScope(reading: ParshaObj, aliyah: number, note: string, scope: NoteScope): void {
+        if (busy || !note.trim()) return;
+        const reverting = noteEdits.applications[readingNoteKey(reading, aliyah)]?.scope === scope;
+        setNoteEdits(previous => toggleNoteApplication(previous, schedule, reading, aliyah, note, scope, countDrafts));
+        const target = scope === 'aliyah' ? `all ${aliyahLabels[aliyah - 1]} aliyot in the current schedule` : `all aliyot of ${reading.desc} on ${reading.gregDate}`;
+        showFeedback('readings', 'info', reverting ? 'Note applies only to this aliyah. Other notes restored; publish changes to save.'
+            : `Note applied to ${target}. Publish Changes to save.`);
+    }
+
     function resetReadingAdjustments(): void {
         if (busy) return;
         setReadingDrafts({});
         setOccasionDrafts({});
         setReaderDrafts({});
         setCountDrafts({});
+        setNoteEdits({ drafts: {}, applications: {} });
         showFeedback('readings', 'info', 'Unsaved reading adjustments reset.');
     }
 
@@ -482,12 +510,13 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         setSaving(true);
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
-            const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges]);
+            const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges, ...noteChanges]);
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
             setOccasionDrafts({});
             setReaderDrafts({});
             setCountDrafts({});
+            setNoteEdits({ drafts: {}, applications: {} });
             showFeedback('readings', 'success', 'Reading adjustments published.');
         } catch (failure) {
             showFeedback('readings', 'error', failure instanceof Error ? failure.message : 'Could not publish reading adjustments. Your changes are still here.');
@@ -503,6 +532,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         setEmail(values.email);
         setWebsite(values.websiteUrl);
         setDonation(values.donationUrl);
+        setTorahServiceDay(values.torahServiceDay);
+        setTorahServiceTime(values.torahServiceTime);
     }
 
     function applyScheduleValues(values: Settings): void {
@@ -590,6 +621,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         try {
             const updated = await updateShul(shul.id, {
                 name, address, phone, email, websiteUrl: website, donationUrl: donation,
+                torahServiceDay, torahServiceTime,
                 ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}),
             });
             setPictureDraft(undefined);
@@ -599,6 +631,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             setEmail(updated.email);
             setWebsite(updated.websiteUrl);
             setDonation(updated.donationUrl);
+            setTorahServiceDay(updated.torahServiceDay);
+            setTorahServiceTime(updated.torahServiceTime);
             onSaved(updated);
             showFeedback('info', 'success', 'Shul information published.');
         } catch (failure) {
@@ -652,22 +686,20 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     }
 
     return (
-        <div className="shul-admin-page">
-            <header className="settings-page-header">
+        <div className="account-page">
+            <header className="account-page-header">
                 <div>
-                    <span className="settings-eyebrow">SHUL MANAGEMENT</span>
+                    <span className="section-eyebrow">MANAGE SHUL</span>
                     <h1>Administration Settings</h1>
                     <p>Manage your shul’s details, set your schedule settings, and control permissions.</p>
                 </div>
-                <div className="settings-page-actions">
-                    <span className="settings-admin-badge"><span aria-hidden="true" />Administrator access</span>
-                </div>
             </header>
 
-            <main className="shul-settings">
-                <div className="settings-view">
-                    <aside className="shul-card" aria-label="Published shul information">
-                        <div className="settings-summary-heading shul-profile-heading">
+            <main className="account-page-content">
+                <ShulSettingsNavigation />
+                <div className="account-page-sections">
+                    <aside className="summary-card" aria-label="Published shul information">
+                        <div className="summary-card-heading shul-profile-heading">
                             <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
                             <div>
                                 <h2>{shul.name}</h2>
@@ -675,40 +707,40 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                             <span className="settings-published-badge">Published details</span>
                         </div>
                         <div className="settings-contact-grid">
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M128 252.6C128 148.4 214 64 320 64C426 64 512 148.4 512 252.6C512 371.9 391.8 514.9 341.6 569.4C329.8 582.2 310.1 582.2 298.3 569.4C248.1 514.9 127.9 371.9 127.9 252.6zM320 320C355.3 320 384 291.3 384 256C384 220.7 355.3 192 320 192C284.7 192 256 220.7 256 256C256 291.3 284.7 320 320 320z"/></svg>
-                                <div><span className="settings-contact-label">Address</span><span>{shul.address || 'Not provided'}</span></div>
+                                <div><span className="summary-field-label">Address</span><span>{shul.address || 'Not provided'}</span></div>
                             </div>
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M224.2 89C216.3 70.1 195.7 60.1 176.1 65.4L170.6 66.9C106 84.5 50.8 147.1 66.9 223.3C104 398.3 241.7 536 416.7 573.1C493 589.3 555.5 534 573.1 469.4L574.6 463.9C580 444.2 569.9 423.6 551.1 415.8L453.8 375.3C437.3 368.4 418.2 373.2 406.8 387.1L368.2 434.3C297.9 399.4 241.3 341 208.8 269.3L253 233.3C266.9 222 271.6 202.9 264.8 186.3L224.2 89z"/></svg>
-                                <div><span className="settings-contact-label">Phone</span><span>{shul.phone || 'Not provided'}</span></div>
+                                <div><span className="summary-field-label">Phone</span><span>{shul.phone || 'Not provided'}</span></div>
                             </div>
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M320 128C214 128 128 214 128 320C128 426 214 512 320 512C337.7 512 352 526.3 352 544C352 561.7 337.7 576 320 576C178.6 576 64 461.4 64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320L576 352C576 405 533 448 480 448C450.7 448 424.4 434.8 406.8 414.1C384 435.1 353.5 448 320 448C249.3 448 192 390.7 192 320C192 249.3 249.3 192 320 192C347.9 192 373.7 200.9 394.7 216.1C400.4 211.1 407.8 208 416 208C433.7 208 448 222.3 448 240L448 352C448 369.7 462.3 384 480 384C497.7 384 512 369.7 512 352L512 320C512 214 426 128 320 128zM384 320C384 284.7 355.3 256 320 256C284.7 256 256 284.7 256 320C256 355.3 284.7 384 320 384C355.3 384 384 355.3 384 320z"/></svg>
-                                <div><span className="settings-contact-label">Email</span><span>{shul.email || 'Not provided'}</span></div>
+                                <div><span className="summary-field-label">Email</span><span>{shul.email || 'Not provided'}</span></div>
                             </div>
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M451.5 160C434.9 160 418.8 164.5 404.7 172.7C388.9 156.7 370.5 143.3 350.2 133.2C378.4 109.2 414.3 96 451.5 96C537.9 96 608 166 608 252.5C608 294 591.5 333.8 562.2 363.1L491.1 434.2C461.8 463.5 422 480 380.5 480C294.1 480 224 410 224 323.5C224 322 224 320.5 224.1 319C224.6 301.3 239.3 287.4 257 287.9C274.7 288.4 288.6 303.1 288.1 320.8C288.1 321.7 288.1 322.6 288.1 323.4C288.1 374.5 329.5 415.9 380.6 415.9C405.1 415.9 428.6 406.2 446 388.8L517.1 317.7C534.4 300.4 544.2 276.8 544.2 252.3C544.2 201.2 502.8 159.8 451.7 159.8zM307.2 237.3C305.3 236.5 303.4 235.4 301.7 234.2C289.1 227.7 274.7 224 259.6 224C235.1 224 211.6 233.7 194.2 251.1L123.1 322.2C105.8 339.5 96 363.1 96 387.6C96 438.7 137.4 480.1 188.5 480.1C205 480.1 221.1 475.7 235.2 467.5C251 483.5 269.4 496.9 289.8 507C261.6 530.9 225.8 544.2 188.5 544.2C102.1 544.2 32 474.2 32 387.7C32 346.2 48.5 306.4 77.8 277.1L148.9 206C178.2 176.7 218 160.2 259.5 160.2C346.1 160.2 416 230.8 416 317.1C416 318.4 416 319.7 416 321C415.6 338.7 400.9 352.6 383.2 352.2C365.5 351.8 351.6 337.1 352 319.4C352 318.6 352 317.9 352 317.1C352 283.4 334 253.8 307.2 237.5z"/></svg>
-                                <div><span className="settings-contact-label">Website</span><span>{shul.websiteUrl.replace("https://", "") || 'Not provided'}</span></div>
+                                <div><span className="summary-field-label">Website</span><span>{shul.websiteUrl.replace("https://", "") || 'Not provided'}</span></div>
                             </div>
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M305 151.1L320 171.8L335 151.1C360 116.5 400.2 96 442.9 96C516.4 96 576 155.6 576 229.1L576 231.7C576 343.9 436.1 474.2 363.1 529.9C350.7 539.3 335.5 544 320 544C304.5 544 289.2 539.4 276.9 529.9C203.9 474.2 64 343.9 64 231.7L64 229.1C64 155.6 123.6 96 197.1 96C239.8 96 280 116.5 305 151.1z"/></svg>
-                                <div><span className="settings-contact-label">Donations</span><span>{shul.donationUrl.replace("https://", "") || 'Not provided'}</span></div>
+                                <div><span className="summary-field-label">Donations</span><span>{shul.donationUrl.replace("https://", "") || 'Not provided'}</span></div>
                             </div>
-                            <div className="shul-card-item">
+                            <div className="summary-card-item">
                                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">{/* Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc. */}<path fill="currentColor" d="M280 88C280 57.1 254.9 32 224 32C193.1 32 168 57.1 168 88C168 118.9 193.1 144 224 144C254.9 144 280 118.9 280 88zM304 300.7L341 350.6C353.8 333.1 369.5 317.9 387.3 305.6L331.1 229.9C306 196 266.3 176 224 176C181.7 176 142 196 116.8 229.9L46.3 324.9C35.8 339.1 38.7 359.1 52.9 369.7C67.1 380.3 87.1 377.3 97.7 363.1L144 300.7L144 576C144 593.7 158.3 608 176 608C193.7 608 208 593.7 208 576L208 416C208 407.2 215.2 400 224 400C232.8 400 240 407.2 240 416L240 576C240 593.7 254.3 608 272 608C289.7 608 304 593.7 304 576L304 300.7zM496 608C575.5 608 640 543.5 640 464C640 384.5 575.5 320 496 320C416.5 320 352 384.5 352 464C352 543.5 416.5 608 496 608zM512 400L512 448L560 448C568.8 448 576 455.2 576 464C576 472.8 568.8 480 560 480L512 480L512 528C512 536.8 504.8 544 496 544C487.2 544 480 536.8 480 528L480 480L432 480C423.2 480 416 472.8 416 464C416 455.2 423.2 448 432 448L480 448L480 400C480 391.2 487.2 384 496 384C504.8 384 512 391.2 512 400z"/></svg>
-                                <div><span className="settings-contact-label">Shul Code</span><span>{shul.code}</span></div>
+                                <div><span className="summary-field-label">Shul Code</span><span>{shul.code}</span></div>
                             </div>
                         </div>
                     </aside>
 
-                    <section className="settings-panel" aria-labelledby="shul-info-heading">
+                    <section className="content-panel" aria-labelledby="shul-info-heading">
                         <div className="settings-section-header">
                             <div><h2 id="shul-info-heading">Shul Information</h2><p>Keep your congregation’s contact details up to date.</p></div>
                             <RestoreMenu section="Shul information" disabled={busy} onRestore={() => { void restoreFirstVersion('info'); }} />
                         </div>
-                        <form className="shul-settings-edit" onSubmit={updateShulInfo} onChange={() => clearFeedback('info')}>
-                            <fieldset className="shul-edit" disabled={busy}>
+                        <form className="settings-edit-form" onSubmit={updateShulInfo} onChange={() => clearFeedback('info')}>
+                            <fieldset className="settings-fieldset" disabled={busy}>
                                 <legend className="visually-hidden">Shul information</legend>
                                 <div className="settings-field-row shul-picture-field">
                                     <div className="settings-field-edit">
@@ -757,6 +789,30 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                         </div>
                                     </div>
                                 ))}
+                                <div className="settings-field-row">
+                                    <div className="settings-field-edit">
+                                        <span className="settings-field-label" id="torah-service-label">Torah Service Time</span>
+                                        <div className="torah-service-inputs" role="group" aria-labelledby="torah-service-label">
+                                            <label className="visually-hidden" htmlFor="shul-service-day">Service day</label>
+                                            <select id="shul-service-day" value={torahServiceDay}
+                                                onChange={event => setTorahServiceDay(event.target.value as Shul['torahServiceDay'])}>
+                                                <option value="Friday">Friday</option>
+                                                <option value="Saturday">Saturday</option>
+                                            </select>
+                                            <label className="visually-hidden" htmlFor="shul-service-time">Service time</label>
+                                            <input id="shul-service-time" type="time" value={torahServiceTime}
+                                                onChange={event => setTorahServiceTime(event.target.value)} />
+                                        </div>
+                                        <FieldReset label="Torah Service Time" changed={serviceTimeChanged} onReset={() => resetField(() => {
+                                            setTorahServiceDay(shul.torahServiceDay);
+                                            setTorahServiceTime(shul.torahServiceTime);
+                                        }, 'info')} />
+                                    </div>
+                                    <div className="settings-field-preview">
+                                        <span className="settings-field-label">Torah Service Time</span>
+                                        <div className="settings-preview-value">{formatTorahServiceTime(torahServiceDay, torahServiceTime)}</div>
+                                    </div>
+                                </div>
                                 <div className="settings-form-footer">
                                     <ChangeLog changes={contactChangeLog} />
                                     <div className="settings-footer-actions">
@@ -772,12 +828,12 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
-                    <section className="settings-panel" aria-labelledby="adjustments-heading">
+                    <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
                         </div>
-                        <form className="shul-settings-edit" onSubmit={publishReadingAdjustments}>
-                            <fieldset className="shul-edit" disabled={busy || scheduleLoading || Boolean(scheduleError)}>
+                        <form className="settings-edit-form" onSubmit={publishReadingAdjustments}>
+                            <fieldset className="settings-fieldset" disabled={busy || scheduleLoading || Boolean(scheduleError)}>
                                 <legend className="visually-hidden">Reading adjustments</legend>
                                 <div className="reading-search">
                                     <label htmlFor="reading-search">Search by Parsha or Yontif name</label>
@@ -804,13 +860,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                 <SearchResult
                                                     key={`${reading.dateString}:${reading.desc}`}
                                                     savedOccasions={reading.manualOccasions ?? []}
-                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
+                                                    reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
                                                     users={users}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
                                                     onCountChange={changeReadingCount}
                                                     onOccasionsChange={changeReadingOccasions}
                                                     onReaderChange={changeReadingReader}
+                                                    onNoteChange={changeReadingNote}
+                                                    noteApplications={noteEdits.applications}
+                                                    onApplyNoteScope={applyNoteToScope}
                                                 />
                                             ))
                                         : 
@@ -822,13 +881,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                     <SearchResult
                                                         key={`${reading.dateString}:${reading.desc}`}
                                                         savedOccasions={reading.manualOccasions ?? []}
-                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts)}
+                                                        reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
                                                         users={users}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}
                                                         onCountChange={changeReadingCount}
                                                         onOccasionsChange={changeReadingOccasions}
                                                         onReaderChange={changeReadingReader}
+                                                        onNoteChange={changeReadingNote}
+                                                        noteApplications={noteEdits.applications}
+                                                        onApplyNoteScope={applyNoteToScope}
                                                     />
 
                                                 ))}
@@ -852,13 +914,13 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
-                    <section className="settings-panel" aria-labelledby="schedule-heading">
+                    <section className="content-panel" aria-labelledby="schedule-heading">
                         <div className="settings-section-header">
                             <div><h2 id="schedule-heading">Schedule Settings</h2><p>Set reading preferences to reflect your congregation’s traditions.</p></div>
                             <RestoreMenu section="Schedule settings" disabled={busy} onRestore={() => { void restoreFirstVersion('schedule'); }} />
                         </div>
-                        <form className="shul-settings-edit" onSubmit={updateShulSchedule} onChange={() => clearFeedback('schedule')}>
-                            <fieldset className="shul-edit" disabled={busy}>
+                        <form className="settings-edit-form" onSubmit={updateShulSchedule} onChange={() => clearFeedback('schedule')}>
+                            <fieldset className="settings-fieldset" disabled={busy}>
                                 <legend className="visually-hidden">Schedule settings</legend>
                                 <div className="settings-preference-row">
                                     <div>
@@ -1213,7 +1275,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
-                    <section className="settings-panel" aria-labelledby="permissions-heading">
+                    <section className="content-panel" aria-labelledby="permissions-heading">
                         <div className="settings-section-header">
                             <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Guests, members, and administrators of {shul.name}.</p></div>
                         </div>

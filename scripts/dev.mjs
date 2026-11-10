@@ -2,7 +2,9 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { openDatabase } from '../backend/database/index.mjs';
 import { ensureDemoUser } from '../backend/database/demo.mjs';
+import { loadEnvironment } from '../backend/environment.mjs';
 
+loadEnvironment();
 const root = fileURLToPath(new URL('../', import.meta.url));
 const databasePath = process.env.GABBAI_DATABASE_PATH
     || fileURLToPath(new URL('../data/gabbai.dev.sqlite', import.meta.url));

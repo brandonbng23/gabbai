@@ -4,6 +4,10 @@ import InfoIcon from "./infoTip.tsx";
 import AssignedReader from "./assignedReader.tsx";
 import { cancelReading } from '../api.ts';
 import { useReadingRemovalConfirmation } from './useReadingRemovalConfirmation.tsx';
+import { readingAnchor } from '../readingAnchor.ts';
+import { sameReading } from '../starredReadings.ts';
+import type { ReadingStarActions } from '../starredReadings.ts';
+import { ReadingStarButton } from './readingStarButton.tsx';
 
 export type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
 import type { ParshaData as ParshaObj } from '../../../interfaces/parshaData.mts';
@@ -13,12 +17,14 @@ export interface Aliyah {
     parshaId: number;
     a: number;
     psukim: string;
+    verseCount: number;
+    note?: string;
     available: boolean;
     locked: boolean;
     reader: ShulUser | null;
 }
 
-export interface ReadingActions {
+export interface ReadingActions extends ReadingStarActions {
     currentUserId?: string;
     onReadingCancelled?: (dateString: string, desc: string, aliyah: number) => void;
 }
@@ -80,15 +86,24 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
 
      return (
         <div>
-            <div className={`aliyah${suffix}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-                <div className={`pandora-box${suffix}`}>
+            <div className={`parsha-aliyah aliyah${suffix}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+                {props.onReadingStarred && <ReadingStarButton
+                    starred={props.starredReadings?.some(reading => sameReading(reading, {
+                        shulId: props.shulId, dateString: props.dateString, desc: props.desc, aliyah: props.a,
+                    })) ?? false}
+                    disabled={!props.starredReadings}
+                    label={`${aliyahLabels[props.a - 1]} of ${props.desc}, ${props.dateString}`}
+                    onChange={starred => props.onReadingStarred!({
+                        shulId: props.shulId, dateString: props.dateString, desc: props.desc, aliyah: props.a,
+                    }, starred)} />}
+                <div className={`aliyah-assignment${suffix}`}>
                     <div className={`aliyah-label${suffix}`}>{aliyahLabels[props.a - 1]}</div>
                     {props.reader ? (
-                        <div className="schedule-reader-assignment">
+                        <div className="aliyah-reader-assignment">
                             <AssignedReader reader={props.reader} />
-                            <div className="schedule-reader-actions">
+                            <div className="aliyah-reader-actions">
                                 {props.reader.id === props.currentUserId && props.shulId && props.onReadingCancelled && (
-                                    <button type="button" className="reader-remove-btn" disabled={cancelling}
+                                    <button type="button" className="reading-assignment-remove-button" disabled={cancelling}
                                         aria-label={`Cancel your ${aliyahLabels[props.a - 1]} reading for ${props.desc}, ${props.dateString}`}
                                         title={cancelling ? 'Cancelling…' : 'Cancel your reading'}
                                         aria-busy={cancelling} onClick={() => void cancel()}>
@@ -103,13 +118,15 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                             Register
                         </button>
                     ) : (
-                        <div className="locked">
+                        <div className="aliyah-availability">
                             <img src={hovered ? '/lock-solid-full.svg' : '/lock-solid-full-blue.svg'} alt="" />
                             {props.locked ? 'Locked' : 'Unavailable'}
                         </div>
                     )}
                 </div>
-                <div className={`psukim-text${suffix}`}>{props.psukim}</div>
+                <div className={`aliyah-verse-count${suffix}`}>{`${props.verseCount} verses`}</div>
+                <div className={`aliyah-verse-range${suffix}`}>{props.psukim}</div>
+                {props.note && <div className="aliyah-note" title={`From your shul: ${props.note}`}><strong>From your shul: </strong>{props.note}</div>}
             </div>
             {cancelError && <p className="schedule-cancel-error" role="alert">{cancelError}</p>}
             {confirmationDialog}
@@ -134,17 +151,17 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
         return o;
     }
     return (
-        <div className="parsha">
+        <div className="parsha" id={readingAnchor(props)} tabIndex={-1}>
 
-            <div className="notices">
+            <div className="parsha-notices">
                 {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
-                    <div className="locked-msg">
+                    <div className="parsha-lock-notice">
                         <img src="/lock-solid-full.svg" alt="" />
                         This parsha has been locked by your shul
                     </div>
                 )}
                 {[...props.occassions, ...(props.manualOccasions ?? [])].map((o: string, index) => (
-                    <div key={index} className="occassion">
+                    <div key={index} className="parsha-occasion">
                         {formatOccassionView(o)}
                     </div>
                 ))}
@@ -161,8 +178,8 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
 
                 <div>
                     <h5 className="parsha-dates">
-                        <span className="engl">{props.gregDate}</span>
-                        <span className="heb">{props.hDate}</span>
+                        <span className="parsha-gregorian-date">{props.gregDate}</span>
+                        <span className="parsha-hebrew-date">{props.hDate}</span>
                     </h5>
                 </div>
 
@@ -177,10 +194,14 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
                                 shulId={props.shulId}
                                 currentUserId={props.currentUserId}
                                 onReadingCancelled={props.onReadingCancelled}
+                                starredReadings={props.starredReadings}
+                                onReadingStarred={props.onReadingStarred}
                                 dateString={props.dateString}
                                 desc={props.desc}
                                 a={index + 1}
                                 psukim={psukim}
+                                verseCount={props.verseCounts[index] ?? 0}
+                                note={props.aliyahNotes?.[index] ?? ''}
                                 locked={props.locked || props.lockedArr[index]}
                                 available={!props.locked && !props.readers[index]}
                                 reader={props.readers[index]}

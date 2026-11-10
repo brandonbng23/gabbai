@@ -312,6 +312,19 @@ They appear in My Readings but are never added to the booker's `assignedReadings
 or activity statistics. Admin reassignment clears this attribution. Existing
 anonymous bookings remain unlinked; ownership is not inferred from email or name.
 
+Version 26 stores private starred aliyot in `starred_readings`, keyed by user,
+shul, date, reading name, and aliyah. `GET /api/me/starred-readings` returns only
+the current user's shortlist with resolved reading details. `PUT` and `DELETE`
+on the same endpoint accept `{ shulId, dateString, desc, aliyah }` and save or
+remove a star idempotently. Saving requires a real aliyah in the user's shul
+schedule; removing also works after changing shuls or schedule settings. Stars
+appear in the schedule and the My Readings “Starred” filter, never in another
+user's profile, shared schedules, assignments, activity statistics, or
+registration notifications. Starring does not reserve or register a reading.
+Successful profile registration removes the assigned reader's matching star in
+the same transaction. Failed registrations and guest registrations preserve all
+stars, including the reader's and the booker's stars.
+
 Version 10 introduces persistent, unique shul join codes. Version 11 replaces
 numeric codes with four uppercase letters; the demo shul keeps `DEMO`, which is
 reserved from automatic allocation. Existing numeric codes are reassigned once.
@@ -357,6 +370,24 @@ fields per change. Every entry is validated before a single transaction saves
 the batch; a failed publication saves none of the changes. The response contains
 each affected reading once. Reset discards local drafts, and publication updates
 the schedule used by the member-facing pages. Search changes do not discard drafts.
+
+Version 27 adds public notes per aliyah in `reading_aliyah_notes`, keyed by shul,
+date, reading name, and aliyah. The same admin-only adjustments endpoint accepts
+`{ dateString, desc, aliyah, note }`. Notes must be single-line strings of at most
+120 characters (expanded from 60 by version 28); surrounding whitespace is
+trimmed and an empty note removes it. The version 28 migration preserves existing notes.
+Notes publish atomically with other adjustments and may be edited on locked
+aliyot. Schedule responses include `aliyahNotes`, indexed like `psukim`, with
+empty strings for slots without notes. Notes for hidden slots are retained.
+Manage Shul provides Add/Edit note buttons that expand editors below aliyah rows
+with character counters, and the public
+schedule uses the remaining row space with a two-line display cap. Hovering a
+note exposes its full text when narrow screens require truncation.
+The editor can apply a note to the same aliyah throughout the current schedule,
+or to all visible aliyot of that dated reading. Before publishing, the active
+button changes to “Apply only to this aliyah” and restores the other notes to
+their prior saved or draft values. Later individual edits are preserved. Reset
+and publication clear the bulk-selection state.
 
 Version 6 adds `reading_aliyah_counts`, keyed by shul and reading date/name.
 The batch adjustments endpoint also accepts `{ dateString, desc, aliyahCount }`.

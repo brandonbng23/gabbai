@@ -4,7 +4,7 @@ export function getGreeting(): string {
     if (hour < 12) {
         return "Boker Tov";
     } else if (hour < 18) {
-        return "Tazaharayim Tovim";
+        return "Tzaharayim Tovim";
     } else {
         return "Erev Tov";
     }
@@ -12,7 +12,7 @@ export function getGreeting(): string {
 
 function WelcomeBar({ fName }: { fName?: string }) {
     return (
-        <div className="welcomeBar">
+        <div className="welcome-bar">
             <h4>{getGreeting()}{fName ? `, ${fName}` : ''}!</h4>
         </div>
     );

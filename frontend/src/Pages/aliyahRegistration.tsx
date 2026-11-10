@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
-import { getNotificationPolicy, registerForReading } from '../api.js';
-import type { GuestRegistration, User, NotificationPolicy } from '../api.js';
+import { getNotificationPolicy, getConfirmationEmailQuota, registerForReading } from '../api.js';
+import type { GuestRegistration, User, NotificationPolicy, ConfirmationEmailQuota } from '../api.js';
 import type { ParshaObj } from '../Components/parsha.tsx';
 import InfoIcon from '../Components/infoTip.tsx';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
@@ -24,11 +24,24 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     const [submitting, setSubmitting] = useState(false);
     const [registered, setRegistered] = useState(false);
     const [registrationError, setRegistrationError] = useState('');
-    const [emailConfirmation, setEmailConfirmation] = useState(false);
+    const [emailConfirmation, setEmailConfirmation] = useState(true);
+    const [guestEmail, setGuestEmail] = useState('');
+    const [quotaState, setQuotaState] = useState<{ key: string; quota?: ConfirmationEmailQuota; error?: string } | null>(null);
     const [emailNotice, setEmailNotice] = useState('');
     const [emailPolicy, setEmailPolicy] = useState<NotificationPolicy | null>(null);
     const [policyError, setPolicyError] = useState('');
     const useProfile = mode === 'profile' && Boolean(user);
+    const memberBooker = Boolean(user && user.shulId === shulId && ['member', 'admin'].includes(user.role));
+    const quotaEmail = !useProfile && !memberBooker ? guestEmail.trim().toLowerCase() : undefined;
+    const validQuotaEmail = Boolean(quotaEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quotaEmail));
+    const quotaIdentity = useProfile && user ? `profile:${user.id}:${user.role}`
+        : memberBooker ? `guest-booker:${user!.id}` : validQuotaEmail ? `guest:${quotaEmail}` : null;
+    const quotaKey = shulId && quotaIdentity ? `${shulId}:${quotaIdentity}` : null;
+    const emailQuota = quotaState?.key === quotaKey ? quotaState?.quota : undefined;
+    const quotaError = quotaState?.key === quotaKey ? quotaState?.error : undefined;
+    const quotaPending = Boolean(quotaKey && !emailQuota && !quotaError);
+    const quotaReached = emailQuota?.remaining === 0;
+    const requestConfirmationEmail = emailConfirmation && !quotaReached && !quotaError && Boolean(emailPolicy?.emailAvailable);
     const backUrl = shulId ? `/schedule?${new URLSearchParams({ shul: shulId })}` : '/schedule';
 
     const params = new URLSearchParams(window.location.search);
@@ -56,6 +69,20 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
     }, [shulId]);
 
     useEffect(() => {
+        if (!shulId || !quotaKey) return;
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            getConfirmationEmailQuota(shulId, useProfile ? 'profile' : 'guest', quotaEmail, controller.signal)
+                .then(quota => { if (!controller.signal.aborted) setQuotaState({ key: quotaKey, quota }); })
+                .catch(() => {
+                    if (!controller.signal.aborted) setQuotaState({ key: quotaKey,
+                        error: 'Your email allowance could not be checked. You can still register and receive an inbox confirmation.' });
+                });
+        }, quotaEmail ? 300 : 0);
+        return () => { window.clearTimeout(timer); controller.abort(); };
+    }, [shulId, quotaKey, quotaEmail, useProfile]);
+
+    useEffect(() => {
         const previousTitle = document.title;
         document.title = 'Aliyah registration | Gabbai';
         return () => { document.title = previousTitle; };
@@ -72,7 +99,7 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
         setSubmitting(true);
         setRegistrationError('');
         try {
-            const result = await registerForReading(shulId, parsha, aliyah, details, emailConfirmation);
+            const result = await registerForReading(shulId, parsha, aliyah, details, requestConfirmationEmail);
             const status = result.emailConfirmation?.status;
             setEmailNotice(status === 'queued' ? 'Confirmation email requested. Delivery is subject to the app-wide daily limit.'
                 : status === 'daily_limit' ? 'Your daily confirmation email limit has been reached. Your registration and inbox confirmation are saved.'
@@ -208,20 +235,24 @@ export default function AliyahRegistration({ shulId, schedule, loading, error, u
                                 <div className="registration-item">
                                     <label className="registration-label" htmlFor="guest-email">Email</label>
                                     <input id="guest-email" type="email" name="emailRegister" required maxLength={254}
+                                        value={guestEmail} onChange={event => setGuestEmail(event.target.value)}
                                         autoComplete="email" placeholder="e.g. josh@example.com" />
                                 </div>
                             </fieldset>
                         </section>}
                         <section className="registration-email-options" aria-labelledby="confirmation-email-heading">
-                            <h3 id="confirmation-email-heading">Confirmation</h3>
+                            <h3 id="confirmation-email-heading">Communication</h3>
                             <div className="settings-check-options"><label>
-                                <input type="checkbox" checked={emailConfirmation} disabled={submitting || !canRegister || !emailPolicy?.emailAvailable}
+                                <input type="checkbox" checked={requestConfirmationEmail}
+                                    disabled={submitting || !canRegister || !emailPolicy?.emailAvailable || quotaPending || quotaReached || Boolean(quotaError)}
                                     onChange={event => setEmailConfirmation(event.target.checked)} aria-describedby="confirmation-email-rules" />
                                 Email me a registration confirmation
                             </label></div>
-                            <p id="confirmation-email-rules">You are limited to {user && ['member', 'admin'].includes(user.role)
+                            <p id="confirmation-email-rules">You are limited to {emailQuota?.limit ?? (memberBooker
                                 ? emailPolicy?.memberDailyLimit ?? 5
-                                : emailPolicy?.guestDailyLimit ?? 1} confirmation {user && ['member', 'admin'].includes(user.role) ? 'emails' : 'email'} per day.</p>
+                                : emailPolicy?.guestDailyLimit ?? 1)} confirmation emails per day.</p>
+                            {quotaReached && <p role="status">Your daily confirmation email limit has been reached. It resets at midnight ({emailQuota.timezone}). You can still register and receive an inbox confirmation.</p>}
+                            {quotaError && <p role="status">{quotaError}</p>}
                             {policyError ? <p role="status">{policyError}</p> : emailPolicy && !emailPolicy.emailAvailable && <p>Email is currently unavailable. Registration and inbox confirmations still work.</p>}
                         </section>
                         <div className="registration-actions">
