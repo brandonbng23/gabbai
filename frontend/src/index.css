@@ -3675,8 +3675,8 @@ input[type="number"] {
 
 .action-icons {
     display: grid;
-    grid-template-columns: repeat(4, 20px);
-    gap: 35px;
+    grid-template-columns: repeat(5, 20px);
+    gap: clamp(8px, 1.5vw, 20px);
     justify-content: flex-start;
     max-width: 185px;
 
@@ -3801,6 +3801,19 @@ input[type="number"] {
 
 .action-icons .discard-user-btn {
     grid-column: 4;
+}
+
+.action-icons .freeze-user-btn {
+    grid-column: 5;
+    grid-row: 1;
+}
+
+.action-icons .freeze-user-btn[aria-pressed="true"] svg {
+    fill: #8bc8ff;
+}
+
+.user-card-hover .action-icons .freeze-user-btn[aria-pressed="true"] svg {
+    fill: #1a2a3e;
 }
 
 .action-icons svg {
@@ -6897,4 +6910,25 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     vertical-align: middle;
     color: #8bc8ff;
     flex-shrink: 0;
+}
+.frozen-account-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #8bc8ff1a;
+    color: #8bc8ff;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.user-card-hover .frozen-account-badge {
+    background: #1a2a3e1a;
+    color: #ffffff;
+}
+
+.action-icons .freeze-user-btn[aria-pressed="true"] {
+    background: #8bc8ff1a;
+    color: #8bc8ff;
+    fill: #8bc8ff;
 }

@@ -89,6 +89,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
     const [messages, setMessages] = useState<Record<SettingsSection, SubmissionFeedback | null>>({ info: null, schedule: null, readings: null, permissions: null });
     const [permissionDrafts, setPermissionDrafts] = useState<Record<string, 'admin' | 'member' | null>>({});
+    const [freezeDrafts, setFreezeDrafts] = useState<Record<string, boolean>>({});
     const [openEditorId, setOpenEditorId] = useState<string | null>(null);
     const [editableProfiles, setEditableProfiles] = useState<Record<string, UserProfile>>({});
     const [profileDrafts, setProfileDrafts] = useState<Record<string, Partial<UserProfile>>>({});
@@ -301,7 +302,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
 
 
     const busy = saving || pictureBusy || restoring !== null;
-    const permissionChanges: ShulUserChange[] = [...new Set([...Object.keys(permissionDrafts), ...Object.keys(profileDrafts), ...Object.keys(userPictureDrafts)])].flatMap(userId => {
+    const permissionChanges: ShulUserChange[] = [...new Set([...Object.keys(permissionDrafts), ...Object.keys(profileDrafts), ...Object.keys(userPictureDrafts), ...Object.keys(freezeDrafts)])].flatMap(userId => {
         const saved = users.find(user => user.id === userId);
         if (!saved) return [];
         const role = permissionDrafts[userId];
@@ -310,8 +311,10 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             .filter(([key, value]) => value !== editableProfiles[userId]?.[key as keyof UserProfile])) as Partial<UserProfile>;
         const hasProfile = role !== null && Object.keys(profile).length > 0;
         const hasPicture = role !== null && userPictureDrafts[userId] !== undefined;
-        if (role === undefined && !hasProfile && !hasPicture) return [];
+        const frozen = role !== null ? freezeDrafts[userId] : undefined;
+        if (role === undefined && !hasProfile && !hasPicture && frozen === undefined) return [];
         return [{ userId, previousRole: saved.role, ...(role !== undefined ? { role } : {}),
+            ...(frozen !== undefined ? { frozen, previousFrozen: Boolean(saved.frozen) } : {}),
             ...(hasPicture ? { picture: userPictureDrafts[userId], previousPictureUrl: saved.pictureUrl ?? null } : {}),
             ...(hasProfile ? { profile, previousProfile: Object.fromEntries(Object.keys(profile).map(key =>
                 [key, editableProfiles[userId][key as keyof UserProfile]])) } : {}) }];
@@ -323,7 +326,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             : change.role === 'admin' ? `Promote ${name} to admin.` : `Demote ${name} to member.`];
         const labels: Record<keyof UserProfile, string> = { title: 'title', firstName: 'first name', lastName: 'last name', hebrewName: 'Hebrew name', email: 'email', phone: 'phone' };
         const pictureEntry = 'picture' in change ? [`${change.picture === null ? 'Remove' : 'Update'} ${name}’s profile picture.`] : [];
-        return [...entries, ...Object.entries(change.profile ?? {}).map(([key, value]) => `Set ${name}’s ${labels[key as keyof UserProfile]} to ${value || '-'}.`), ...pictureEntry];
+        const freezeEntry = change.frozen === undefined ? [] : [`${change.frozen ? 'Freeze' : 'Unfreeze'} ${name}’s account.`];
+        return [...entries, ...Object.entries(change.profile ?? {}).map(([key, value]) => `Set ${name}’s ${labels[key as keyof UserProfile]} to ${value || '-'}.`), ...pictureEntry, ...freezeEntry];
     });
 
     function resetUserPicture(userId: string): void {
@@ -380,6 +384,17 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             nameClick={nameClick} setNameClick={setNameClick}
             disabled={busy || user.id === currentUserId} pendingRemoval={draft === null} canDiscard={user.role !== 'admin'} canEdit={user.role !== 'admin'}
             pendingRole={draft !== undefined && draft !== null}
+            frozen={freezeDrafts[user.id] ?? Boolean(user.frozen)}
+            onFreeze={() => {
+                if (busy || user.id === currentUserId) return;
+                setFreezeDrafts(previous => {
+                    const next = { ...previous };
+                    if (next[user.id] !== undefined) delete next[user.id];
+                    else next[user.id] = !user.frozen;
+                    return next;
+                });
+                clearFeedback('permissions');
+            }}
             onRoleChange={role => stageUserChange(user, draft === role ? undefined : role)}
             onDiscard={() => stageUserChange(user, draft === null ? undefined : null)}
             onEdit={() => { void toggleUserEditor(user); }} editorOpen={openEditorId === user.id} editorId={editorId} />
@@ -416,6 +431,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             const updated = await publishShulUsers(shul.id, permissionChanges);
             setUsers(updated);
             setPermissionDrafts({});
+            setFreezeDrafts({});
             setProfileDrafts({});
             setUserPictureDrafts({});
             setEditableProfiles({});
@@ -1277,7 +1293,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
 
                     <section className="content-panel" aria-labelledby="permissions-heading">
                         <div className="settings-section-header">
-                            <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Guests, members, and administrators of {shul.name}.</p></div>
+                            <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Guests, members, and administrators of {shul.name}. Frozen accounts can sign in and view the app, but cannot register or make account changes.</p></div>
                         </div>
                         <div className="settings-users" aria-busy={usersLoading}>
                             <div className="user-search">
@@ -1413,7 +1429,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                     <span>Changes take effect after publishing.</span>
                                     <div className="settings-footer-buttons">
                                         <button className="settings-reset-btn" type="button" disabled={busy || permissionChanges.length === 0}
-                                            onClick={() => { setPermissionDrafts({}); setProfileDrafts({}); setUserPictureDrafts({}); showFeedback('permissions', 'info', 'Unsaved user changes reset.'); }}>Reset changes</button>
+                                            onClick={() => { setPermissionDrafts({}); setFreezeDrafts({}); setProfileDrafts({}); setUserPictureDrafts({}); showFeedback('permissions', 'info', 'Unsaved user changes reset.'); }}>Reset changes</button>
                                         <button className="submit-btn" type="button" disabled={busy || permissionChanges.length === 0}
                                             onClick={() => { void publishPermissions(); }}>{saving && activeForm === 'permissions' ? 'Publishing…' : 'Publish Changes'}</button>
                                     </div>

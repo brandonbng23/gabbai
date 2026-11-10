@@ -149,7 +149,7 @@ test('optional membership migration preserves profiles and discarded accounts su
     } finally { db.close(); }
     const legacy = new DatabaseSync(path);
     try {
-        legacy.exec('PRAGMA foreign_keys = OFF');
+        legacy.exec('PRAGMA foreign_keys = OFF; ALTER TABLE users DROP COLUMN frozen');
         legacy.exec(readFileSync(new URL('../backend/database/migrations/007_guest_role.sql', import.meta.url), 'utf8'));
         legacy.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 13');
     } finally { legacy.close(); }
@@ -219,7 +219,7 @@ test('code migration backfills existing shuls and preserves letter codes across 
     } finally { db.close(); }
     const legacy = new DatabaseSync(path);
     try {
-        legacy.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 10;');
+        legacy.exec('ALTER TABLE users DROP COLUMN frozen; DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 10;');
     } finally { legacy.close(); }
     db = openDatabase(path);
     try {
@@ -256,7 +256,7 @@ test('numeric shul codes migrate to letters while retaining DEMO and membership'
     } finally { db.close(); }
     const raw = new DatabaseSync(path);
     try {
-        raw.exec('DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 11;');
+        raw.exec('ALTER TABLE users DROP COLUMN frozen; DROP TABLE shul_codes; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 11;');
         raw.exec(readFileSync(new URL('../backend/database/migrations/010_shul_codes.sql', import.meta.url), 'utf8'));
         raw.prepare('INSERT INTO shul_codes (shul_id, code) VALUES (?, ?)').run(shul.id, '0123');
     } finally { raw.close(); }
@@ -288,7 +288,7 @@ test('demo code repair preserves edited user profiles and unrelated shul codes',
         const codes = new Set(raw.prepare('SELECT code FROM shul_codes').all().map(row => row.code));
         const wrong = ['WTUL', 'TEST', 'ABCD'].find(code => !codes.has(code));
         raw.prepare('UPDATE shul_codes SET code = ? WHERE shul_id = ?').run(wrong, demo.shulId);
-        raw.exec('DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 12');
+        raw.exec('ALTER TABLE users DROP COLUMN frozen; DROP TABLE IF EXISTS auth_attempts; DROP TABLE IF EXISTS user_sessions; DROP TABLE IF EXISTS user_credentials; DELETE FROM schema_migrations WHERE version >= 12');
     } finally { raw.close(); }
     db = openDatabase(path);
     try {

@@ -89,7 +89,7 @@ function decodeShul(row) {
 function decodeUser(row) {
     if (!row) return null;
     return { id: row.id, shulId: row.shul_id, firstName: row.first_name, lastName: row.last_name,
-        hebrewName: row.hebrew_name, email: row.email, phone: row.phone, role: row.role, title: row.title,
+        hebrewName: row.hebrew_name, email: row.email, phone: row.phone, role: row.role, title: row.title, frozen: Boolean(row.frozen),
         ...(row.picture_version ? { pictureUrl: pictureUrl('users', row.id, row.picture_version) } : {}),
         assignedReadings: JSON.parse(row.assigned_readings_json ?? '[]'),
         settings: JSON.parse(row.settings_json), createdAt: row.created_at, updatedAt: row.updated_at };
@@ -120,7 +120,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 30) throw new Error('Database schema is newer than this application');
+            if (version > 31) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -252,6 +252,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(shuls)').all().some(column => column.name === 'torah_service_day'))
                     db.exec(readFileSync(new URL('./migrations/030_torah_service_time.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(30);
+            }
+            if (version < 31) {
+                if (!db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'frozen'))
+                    db.exec(readFileSync(new URL('./migrations/031_frozen_accounts.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(31);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -485,7 +490,8 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         },
         setPasswordHash(userId, passwordHash, session) {
             return transaction(() => {
-                requireRecord(getUser(userId), 'User');
+                const user = requireRecord(getUser(userId), 'User');
+                if (user.frozen) throw Object.assign(new Error('This account is frozen and cannot change its password.'), { status: 403 });
                 if (session) {
                     const current = db.prepare('SELECT password_hash FROM user_credentials WHERE user_id = ?').get(userId)?.password_hash ?? null;
                     if (current !== session.expectedHash) {
@@ -571,23 +577,31 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return transaction(() => {
                 const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
                 const actor = getUser(actorId);
-                if (!actor || actor.role !== 'admin' || actor.shulId !== shulId)
+                if (!actor || actor.frozen || actor.role !== 'admin' || actor.shulId !== shulId)
                     fail(403, 'Only this shul’s administrators can change its users.');
                 if (!Array.isArray(changes) || changes.length === 0 || changes.length > 1000)
                     throw new TypeError('Provide between 1 and 1000 user changes.');
                 const seen = new Set();
                 for (const change of changes) {
-                    validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl'], 'user change');
+                    validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl', 'frozen', 'previousFrozen'], 'user change');
                     if (typeof change.userId !== 'string' || seen.has(change.userId)
                         || !['member', 'admin', 'guest'].includes(change.previousRole)
                         || ('role' in change && ![null, 'member', 'admin'].includes(change.role))
-                        || (!('role' in change) && !('profile' in change) && !('picture' in change)))
+                        || (!('role' in change) && !('profile' in change) && !('picture' in change) && !('frozen' in change)))
                         throw new TypeError('Choose a valid, unique user and action.');
                     seen.add(change.userId);
                     const target = getUser(change.userId);
                     if (!target || target.shulId !== shulId) fail(404, 'User no longer belongs to this shul.');
-                    if (target.id === actorId) fail(400, 'You cannot change your own shul role or association.');
+                    if (target.id === actorId) fail(400, 'You cannot change your own shul role, association, or frozen status.');
                     if (target.role !== change.previousRole) fail(409, 'A user’s role has changed. Reload the page before publishing.');
+                    if ('frozen' in change) {
+                        if (typeof change.frozen !== 'boolean' || typeof change.previousFrozen !== 'boolean')
+                            throw new TypeError('Provide the new and previous frozen status.');
+                        if (target.frozen !== change.previousFrozen) fail(409, 'A user’s frozen status has changed. Reload the page before publishing.');
+                        if (change.role === null) throw new TypeError('Freeze an account separately from removing it from the shul.');
+                        db.prepare("UPDATE users SET frozen = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+                            .run(Number(change.frozen), target.id);
+                    } else if ('previousFrozen' in change) throw new TypeError('Provide a frozen status change with its previous value.');
                     if ('profile' in change) {
                         if (target.role === 'admin' || change.role === null)
                             fail(400, 'Only member and guest profiles can be edited.');
@@ -661,6 +675,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (typeof emailConfirmation !== 'boolean') throw new TypeError('Email confirmation must be true or false.');
             return transaction(() => {
                 // Validate availability while holding the write lock, before creating a guest.
+                if (readerId && getUser(readerId)?.frozen) throw Object.assign(new Error('This account is frozen and cannot register readings.'), { status: 403 });
                 validateReading();
                 let id = readerId;
                 if (guest) {
@@ -668,6 +683,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                     const values = userValues({ ...guest, shulId, role: 'guest' });
                     const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
                     const existing = existingId ? getUser(existingId) : null;
+                    if (existing?.frozen) throw Object.assign(new Error('This guest account is frozen and cannot register readings. Contact the shul administrator.'), { status: 403 });
                     if (existing) {
                         // Email identifies a guest even if later forms use different names or omit Hebrew details.
                         if (existing.role !== 'guest' || existing.shulId !== shulId) {

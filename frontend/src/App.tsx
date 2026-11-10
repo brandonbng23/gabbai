@@ -133,6 +133,7 @@ function App() {
               <Navbar user={user}></Navbar>
               <Aside user={user} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(value => !value)} />
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-with-sidebar' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
+              {user?.frozen && <p className="page-message" role="status">Your account is frozen. You can view the app, but registrations and account changes are disabled. Contact your shul administrator.</p>}
               {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : loading ? <LoadingSkeleton page variant="messages" /> : error ? <p className="page-message" role="alert">{error}</p> : null) : isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />

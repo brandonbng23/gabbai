@@ -172,7 +172,7 @@ export function createApp(database, {
         }
         if (!app.locals.database.getShul(req.params.id)) return res.status(404).json({ error: "Shul not found" });
         return res.json(app.locals.database.listShulUsers(req.params.id).map(
-            ({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings }) => ({ id, firstName, lastName, email, role, title, assignedReadings, ...(pictureUrl ? { pictureUrl } : {}) })
+            ({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings, frozen }) => ({ id, firstName, lastName, email, role, title, assignedReadings, frozen, ...(pictureUrl ? { pictureUrl } : {}) })
         ));
     });
 
@@ -198,12 +198,12 @@ export function createApp(database, {
             if (!Array.isArray(req.body.changes) || !req.body.changes.length || req.body.changes.length > 1000)
                 throw new TypeError('Provide between 1 and 1000 user changes.');
             const changes = req.body.changes.map(change => {
-                validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl'], 'user change');
+                validateKeys(change, ['userId', 'role', 'previousRole', 'profile', 'previousProfile', 'picture', 'previousPictureUrl', 'frozen', 'previousFrozen'], 'user change');
                 return { ...change, ...('picture' in change ? { picture: decodePicture(change.picture) } : {}) };
             });
             const users = database.updateShulUsers(req.params.id, actor.id, changes);
-            return res.json(users.map(({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings }) =>
-                ({ id, firstName, lastName, email, role, title, assignedReadings, ...(pictureUrl ? { pictureUrl } : {}) })));
+            return res.json(users.map(({ id, firstName, lastName, email, role, title, pictureUrl, assignedReadings, frozen }) =>
+                ({ id, firstName, lastName, email, role, title, assignedReadings, frozen, ...(pictureUrl ? { pictureUrl } : {}) })));
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
             if (error.message?.includes('UNIQUE constraint failed: users.email'))

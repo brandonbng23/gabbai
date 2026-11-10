@@ -25,6 +25,7 @@ export interface User {
     email: string;
     phone: string;
     role: 'member' | 'admin' | 'guest';
+    frozen: boolean;
     title: string;
     pictureUrl?: string;
     settings: Record<string, unknown> & { significantPortions?: SignificantPortion[] };
@@ -32,7 +33,7 @@ export interface User {
     assignedReadings: UserReading[];
 }
 
-export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl' | 'assignedReadings'>;
+export type ShulUser = Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role' | 'title' | 'pictureUrl' | 'assignedReadings'> & { frozen?: boolean };
 
 export interface GuestReading extends UserReading {
     registrationType: 'guest';

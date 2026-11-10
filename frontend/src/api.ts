@@ -302,6 +302,8 @@ export async function getShulUsers(id: string, signal: AbortSignal): Promise<Shu
 export interface ShulUserChange {
     userId: string;
     previousRole: ShulUser['role'];
+    frozen?: boolean;
+    previousFrozen?: boolean;
     role?: 'admin' | 'member' | null;
     profile?: Partial<UserProfile>;
     previousProfile?: Partial<UserProfile>;

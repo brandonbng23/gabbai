@@ -29,6 +29,11 @@ export function installAuthentication(app, database, { development, preview, fal
             const origin = req.get('origin');
             if ((origin && origin !== `${req.protocol}://${req.host}`) || req.get('sec-fetch-site') === 'cross-site')
                 return res.status(403).json({ error: 'This request must come from Gabbai.' });
+            // Keep sessions usable for viewing, but enforce the current freeze state on every write.
+            if (req.currentUserId && database.getUser(req.currentUserId)?.frozen
+                && !['/auth/signin', '/auth/signout', '/auth/demo'].includes(req.path.replace(/\/$/, ''))) {
+                return res.status(403).json({ error: 'Your account is frozen. You can view the app, but registrations and account changes are disabled. Contact your shul administrator.' });
+            }
         }
         next();
     });
