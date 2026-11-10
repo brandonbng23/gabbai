@@ -42,7 +42,7 @@ function App() {
     const readingStars = useStarredReadings(user?.id, user?.shulId ?? undefined);
     const isRegistrationPage = window.location.pathname.replace(/\/$/, "") === "/registration";
     const isShulPage = window.location.pathname.replace(/\/$/, "") === "/shul";
-    const isShulSettingsPage = window.location.pathname.replace(/\/$/, "") === "/shulSettings";
+    const isShulSettingsPage = ['/shulManagement', '/shulSettings'].includes(window.location.pathname.replace(/\/$/, ''));
     const isUserSettingsPage = window.location.pathname.replace(/\/$/, "") === "/userSettings";
     const isUserViewPage = window.location.pathname.replace(/\/$/, "") === "/userView";
     const isUserReadingsPage = window.location.pathname.replace(/\/$/, '') === '/userReadings';

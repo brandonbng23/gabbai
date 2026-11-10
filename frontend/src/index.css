@@ -7035,3 +7035,67 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .shul-event-edit-form {
     scroll-margin-top: 150px;
 }
+.shul-admin-view:not([hidden]) {
+    display: contents;
+}
+
+.shul-admin-view[hidden] {
+    display: none;
+}
+
+.shul-admin-switch {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    width: min(460px, 100%);
+    margin: 0 auto 24px;
+    padding: 4px;
+    border: 1px solid var(--settings-border);
+    border-radius: 999px;
+    background: #262527;
+}
+
+.shul-admin-switch::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 4px auto 4px 4px;
+    width: calc(50% - 4px);
+    border-radius: inherit;
+    background: var(--settings-accent);
+    transition: transform 250ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.shul-admin-switch-settings::before {
+    transform: translateX(100%);
+}
+
+.shul-admin-switch button {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--settings-muted);
+    font: 600 15px/1.4 Fustat, sans-serif;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.shul-admin-switch button[aria-pressed='true'] {
+    color: #1a2a3e;
+}
+
+.shul-admin-switch button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shul-admin-switch::before,
+    .shul-admin-switch button {
+        transition: none;
+    }
+}

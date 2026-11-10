@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 
-const sections = [
+const settingsSections = [
     { id: 'shul-info-heading', label: 'Shul Info' },
-    { id: 'shul-events-heading', label: 'Events' },
-    { id: 'adjustments-heading', label: 'Reading Adjustments' },
     { id: 'schedule-heading', label: 'Schedule' },
-    { id: 'permissions-heading', label: 'Users & Permissions' },
     { id: 'notification-settings-heading', label: 'Communication' },
+];
+const managementSections = [
+    { id: 'adjustments-heading', label: 'Reading Adjustments' },
+    { id: 'shul-events-heading', label: 'Events' },
+    { id: 'permissions-heading', label: 'Users & Permissions' },
 ];
 
 // Experimental section navigation; removing this component restores the original page.
-export default function ShulSettingsNavigation() {
+export default function ShulSettingsNavigation({ view }: { view: 'management' | 'settings' }) {
+    const sections = view === 'management' ? managementSections : settingsSections;
     const navRef = useRef<HTMLElement>(null);
     const [activeSection, setActiveSection] = useState(sections[0].id);
     const [collapseMode, setCollapseMode] = useState<'expanded' | 'collapsed' | 'top-expanded'>('expanded');
@@ -81,7 +84,7 @@ export default function ShulSettingsNavigation() {
             document.removeEventListener('touchstart', resumeScrollTracking);
             document.removeEventListener('keydown', onKeyDown);
         };
-    }, []);
+    }, [sections]);
 
     return <nav ref={navRef} className={`shul-settings-navigation${collapsed ? ' shul-settings-navigation-collapsed' : ''}`} aria-label="Manage shul sections">
         <button type="button" className="shul-settings-navigation-toggle"

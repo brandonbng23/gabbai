@@ -56,7 +56,7 @@ test('combined startup proxies saved profiles and stops both servers', { timeout
         await delay(100);
     }
     assert.ok(ready, output);
-    for (const path of ['/schedule', '/schedule/', '/messages', '/shulSettings', '/userReadings', '/signin', '/signup']) {
+    for (const path of ['/schedule', '/schedule/', '/messages', '/shulManagement', '/shulManagement/', '/shulSettings', '/userReadings', '/signin', '/signup']) {
         assert.equal((await fetch(`${base}${path}`)).status, 200, `The ${path} interface must load`);
     }
     const repoPath = fileURLToPath(new URL('../', import.meta.url));

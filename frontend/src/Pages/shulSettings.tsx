@@ -21,6 +21,7 @@ import ShulSettingsNavigation from '../Components/shulSettingsNavigation.tsx';
 import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
 type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
+type AdministrationView = 'management' | 'settings';
 type SubmissionFeedback = { tone: 'progress' | 'success' | 'error' | 'info'; text: string };
 
 function SubmissionMessage({ message, onDismiss }: { message: SubmissionFeedback | null; onDismiss?: () => void }) {
@@ -91,6 +92,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     onReadingUpdated: (reading: ParshaObj) => void;
 }): React.JSX.Element {
     const settings = shul.settings;
+    const [view, setView] = useState<AdministrationView>(() => window.location.pathname.replace(/\/$/, '') === '/shulSettings' ? 'settings' : 'management');
+    function switchView(next: AdministrationView) {
+        if (next === view) return;
+        const url = new URL(window.location.href);
+        url.pathname = next === 'management' ? '/shulManagement' : '/shulSettings';
+        url.hash = '';
+        window.history.pushState(null, '', url);
+        setView(next);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    }
     
 
     const [restoring, setRestoring] = useState<'info' | 'schedule' | null>(null);
@@ -730,14 +741,19 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             <header className="account-page-header">
                 <div>
                     <span className="section-eyebrow">MANAGE SHUL</span>
-                    <h1>Administration Settings</h1>
-                    <p>Manage your shul’s details, set your schedule settings, and control permissions.</p>
+                    <h1>{view === 'management' ? 'Shul Management' : 'Shul Settings'}</h1>
+                    <p>{view === 'management' ? 'Manage reading assignments, featured events, and your congregation.' : 'Set your shul’s details, reading traditions, and communication preferences.'}</p>
                 </div>
             </header>
 
             <main className="account-page-content">
-                <ShulSettingsNavigation />
+                <div className={`shul-admin-switch${view === 'settings' ? ' shul-admin-switch-settings' : ''}`} role="group" aria-label="Shul administration view">
+                    <button type="button" aria-pressed={view === 'management'} onClick={() => switchView('management')}>Shul Management</button>
+                    <button type="button" aria-pressed={view === 'settings'} onClick={() => switchView('settings')}>Shul Settings</button>
+                </div>
+                <ShulSettingsNavigation key={view} view={view} />
                 <div className="account-page-sections">
+                    <div className="shul-admin-view" hidden={view !== 'settings'}>
                     <aside className="summary-card" aria-label="Published shul information">
                         <div className="summary-card-heading shul-profile-heading">
                             <ProfilePicture src={shul.pictureUrl} name={shul.name} square />
@@ -868,9 +884,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
-                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
-                        onChanged={onEventsChanged} onRetry={onEventsRetry} />
-
+                    </div>
+                    <div className="shul-admin-view" hidden={view !== 'management'}>
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
@@ -959,6 +974,10 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
+                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
+                        onChanged={onEventsChanged} onRetry={onEventsRetry} />
+                    </div>
+                    <div className="shul-admin-view" hidden={view !== 'settings'}>
                     <section className="content-panel" aria-labelledby="schedule-heading">
                         <div className="settings-section-header">
                             <div><h2 id="schedule-heading">Schedule Settings</h2><p>Set reading preferences to reflect your congregation’s traditions.</p></div>
@@ -1320,6 +1339,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
+                    </div>
+                    <div className="shul-admin-view" hidden={view !== 'management'}>
                     <section className="content-panel" aria-labelledby="permissions-heading">
                         <div className="settings-section-header">
                             <div><h2 id="permissions-heading">Users &amp; Permissions</h2><p>Guests, members, and administrators of {shul.name}. Frozen accounts can sign in and view the app, but cannot register or make account changes.</p></div>
@@ -1472,7 +1493,10 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                             </div>
                         </div>
                     </section>
+                    </div>
+                    <div className="shul-admin-view" hidden={view !== 'settings'}>
                     <NotificationSettings shulId={shul.id} />
+                    </div>
                 </div>
             </main>
         </div>
