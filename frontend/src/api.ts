@@ -151,6 +151,7 @@ export interface ReadingReaderChange {
     desc: string;
     aliyah: number;
     readerId: string | null;
+    guest?: UserProfile;
 }
 
 export interface ReadingNoteChange {

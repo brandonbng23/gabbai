@@ -294,7 +294,7 @@ export function createApp(database, {
             const seen = new Set();
             const affected = new Set();
             for (const change of changes) {
-                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in change ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+                validateKeys(change, 'aliyahCount' in change ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in change ? ['dateString', 'desc', 'aliyah', 'readerId', 'guest'] : 'note' in change ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in change ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
                 const { dateString, desc, aliyah, locked } = change;
                 if (typeof dateString !== 'string' || typeof desc !== 'string' || (!('aliyahCount' in change) && !('manualOccasions' in change) && !('readerId' in change) && !('note' in change) && typeof locked !== 'boolean')
                     || (aliyah !== undefined && (!Number.isInteger(aliyah) || aliyah < 1 || aliyah > 9))) {
@@ -328,6 +328,7 @@ export function createApp(database, {
             return res.json(batch ? updated : updated[0]);
         } catch (error) {
             if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            if (error.status) return res.status(error.status).json({ error: error.message });
             return next(error);
         }
     }

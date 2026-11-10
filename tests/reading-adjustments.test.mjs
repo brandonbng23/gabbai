@@ -7,6 +7,16 @@ const reading = {
     lockedArr: Array(9).fill(false), psukim: ['one', 'two', 'three', 'null', 'null', 'null', 'null', 'maftir', 'haftarah'],
 };
 
+test('guest reader drafts preview as guests and publish their full profile even with a null reader ID', () => {
+    const guest = { title: 'Mr.', firstName: 'Guest', lastName: 'Reader', hebrewName: 'Moshe', email: 'guest@example.com', phone: '555-0100' };
+    const pending = { id: 'pending-guest', ...guest, role: 'guest', assignedReadings: [] };
+    const draft = { dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: null, guest, reader: pending };
+    const drafts = { [JSON.stringify([reading.dateString, reading.desc, 1])]: draft };
+    assert.equal(previewReadingLocks(reading, {}, {}, drafts).readers[0], pending);
+    assert.deepEqual(pendingReadingReaders(drafts, [reading]), [{ dateString: reading.dateString, desc: reading.desc, aliyah: 1, readerId: null, guest }]);
+    assert.deepEqual(stageReadingReader(drafts, reading, 1, null), {}, 'Removing an unpublished guest cancels its draft');
+});
+
 test('note drafts preview independently, preserve typed spaces, and revert to saved notes', () => {
     const saved = { ...reading, aliyahNotes: ['Saved note', ...Array(8).fill('')] };
     let drafts = stageReadingNote({}, saved, 1, 'Use special ');

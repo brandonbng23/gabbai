@@ -6932,3 +6932,18 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     color: #8bc8ff;
     fill: #8bc8ff;
 }
+.user-dropdown .dropdown-guest-option {
+    color: #8bc8ff;
+    font-weight: 600;
+}
+
+.user-dropdown .dropdown-guest-divider {
+    margin: 4px 8px;
+    border: 0;
+    border-top: 1px solid var(--settings-border, #646167);
+    opacity: 1;
+}
+
+.guest-reader-editor {
+    margin-inline: 0;
+}

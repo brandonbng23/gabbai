@@ -1,10 +1,11 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import type { ShulUser } from "../api.ts";
 
-export function UserDropDown({ options = [], selected, onSelect, disabled = false }: {
+export function UserDropDown({ options = [], selected, onSelect, onGuest, disabled = false }: {
     options: ShulUser[];
     selected: ShulUser | null;
     onSelect: (reader: ShulUser | null) => void;
+    onGuest?: () => void;
     disabled?: boolean;
 }): React.JSX.Element {
     const [expanded, setExpanded] = useState(false);
@@ -57,6 +58,10 @@ export function UserDropDown({ options = [], selected, onSelect, disabled = fals
                                 if (event.key === 'Enter') event.preventDefault();
                             }} />
                     </div>
+                    {onGuest && <><button type="button" className="dropdown-guest-option" onClick={() => {
+                        setExpanded(false);
+                        onGuest();
+                    }}>Assign a Guest</button><hr className="dropdown-guest-divider" /></>}
                     {filteredOptions.map(user => (
                         <button key={user.id} type="button" onClick={() => {
                             onSelect(user);

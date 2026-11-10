@@ -285,7 +285,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             ? [previousReader.title, previousReader.firstName, previousReader.lastName].filter(Boolean).join(' ')
             : 'the assigned reader';
         const target = `${aliyahLabels[change.aliyah - 1]} of ${change.desc} (${readingDates.get(readingKey(change)) ?? change.dateString})`;
-        if (change.readerId === null)
+        if (change.readerId === null && !change.guest)
             readingAdjustmentChangeLog.push(`Remove ${previousName} from ${target}.`);
         else if (previousReader)
             readingAdjustmentChangeLog.push(`Replace ${previousName} with ${readerName} for ${target}.`);
@@ -439,7 +439,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             const byId = new Map(updated.map(user => [user.id, user]));
             setReaderDrafts(previous => Object.fromEntries(Object.entries(previous)
                 .filter(([, draft]) => !draft.readerId || byId.has(draft.readerId))
-                .map(([key, draft]) => [key, { ...draft, reader: draft.readerId ? byId.get(draft.readerId)! : null }])));
+                .map(([key, draft]) => [key, { ...draft, reader: draft.guest ? draft.reader : draft.readerId ? byId.get(draft.readerId)! : null }])));
             schedule.forEach(reading => {
                 if (reading.readers.some(Boolean)) onReadingUpdated({ ...reading,
                     readers: reading.readers.map(reader => reader ? byId.get(reader.id) ?? null : null) });
@@ -492,6 +492,16 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         clearFeedback('readings');
     }
 
+    function changeReadingGuest(reading: ParshaObj, aliyah: number, guest: UserProfile): void {
+        if (busy) return;
+        const key = JSON.stringify([reading.dateString, reading.desc, aliyah]);
+        const reader: ShulUser = { id: `pending-guest:${key}`, ...guest, role: 'guest', assignedReadings: [] };
+        setReaderDrafts(previous => ({ ...previous, [key]: {
+            dateString: reading.dateString, desc: reading.desc, aliyah, readerId: null, guest, reader,
+        } }));
+        clearFeedback('readings');
+    }
+
     function changeReadingNote(reading: ParshaObj, aliyah: number, note: string): void {
         if (busy) return;
         const saved = schedule.find(item => readingKey(item) === readingKey(reading));
@@ -527,6 +537,13 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         showFeedback('readings', 'progress', 'Publishing reading adjustments…');
         try {
             const updated = await publishReadingLocks(shul.id, [...countChanges, ...readingChanges, ...occasionChanges, ...readerChanges, ...noteChanges]);
+            setUsers(previous => {
+                const byId = new Map(previous.map(user => [user.id, user]));
+                for (const reading of updated) for (const reader of reading.readers) {
+                    if (reader) byId.set(reader.id, { ...byId.get(reader.id), ...reader });
+                }
+                return [...byId.values()];
+            });
             updated.forEach(onReadingUpdated);
             setReadingDrafts({});
             setOccasionDrafts({});
@@ -883,6 +900,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                     onCountChange={changeReadingCount}
                                                     onOccasionsChange={changeReadingOccasions}
                                                     onReaderChange={changeReadingReader}
+                                                    onGuestChange={changeReadingGuest}
                                                     onNoteChange={changeReadingNote}
                                                     noteApplications={noteEdits.applications}
                                                     onApplyNoteScope={applyNoteToScope}
@@ -904,6 +922,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                         onCountChange={changeReadingCount}
                                                         onOccasionsChange={changeReadingOccasions}
                                                         onReaderChange={changeReadingReader}
+                                                        onGuestChange={changeReadingGuest}
                                                         onNoteChange={changeReadingNote}
                                                         noteApplications={noteEdits.applications}
                                                         onApplyNoteScope={applyNoteToScope}

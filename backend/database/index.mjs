@@ -291,12 +291,41 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             .run(id, png, randomUUID());
     }
 
+    function guestReaderValues(shulId, guest) {
+        validateKeys(guest, ['title', 'firstName', 'lastName', 'hebrewName', 'email', 'phone'], 'guest');
+        for (const value of Object.values(guest)) {
+            if (typeof value !== 'string' || value.length > 254) throw new TypeError('Guest fields must be strings of at most 254 characters.');
+        }
+        if (!userTitles.includes(guest.title)) throw new TypeError('Choose a title from the list.');
+        return userValues({ ...guest, shulId, role: 'guest' });
+    }
+
+    function saveGuestReader(shulId, guest) {
+        const values = guestReaderValues(shulId, guest);
+        const existingId = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(values[4])?.id;
+        if (existingId) {
+            const existing = getUser(existingId);
+            if (existing.frozen) throw Object.assign(new Error('This guest account is frozen and cannot register readings.'), { status: 403 });
+            if (existing.shulId !== shulId || existing.role !== 'guest')
+                throw Object.assign(new Error('This email belongs to a member, administrator, or another shul. Choose their profile or use another email.'), { status: 409 });
+            db.prepare(`UPDATE users SET first_name = ?, last_name = ?, hebrew_name = ?, email = ?, phone = ?, title = ?,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`)
+                .run(values[1], values[2], values[3], values[4], values[5], values[7], existingId);
+            return existingId;
+        }
+        const id = randomUUID();
+        db.prepare(`INSERT INTO users (id, shul_id, first_name, last_name, hebrew_name, email, phone, role, title)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+        db.prepare("INSERT INTO user_settings (user_id, settings_json) VALUES (?, '{}')").run(id);
+        return id;
+    }
+
     function setReadingLocks(shulId, patches) {
         if (!Array.isArray(patches) || patches.length === 0 || patches.length > 1000) {
             throw new TypeError('Provide between 1 and 1000 reading lock changes');
         }
         const values = patches.map(patch => {
-            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId'] : 'note' in patch ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
+            validateKeys(patch, 'aliyahCount' in patch ? ['dateString', 'desc', 'aliyahCount'] : 'readerId' in patch ? ['dateString', 'desc', 'aliyah', 'readerId', 'guest'] : 'note' in patch ? ['dateString', 'desc', 'aliyah', 'note'] : 'manualOccasions' in patch ? ['dateString', 'desc', 'manualOccasions'] : ['dateString', 'desc', 'aliyah', 'locked'], 'reading adjustment');
             const { dateString, desc, locked, aliyah = 0 } = patch;
             if (typeof dateString !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
                 || !Number.isFinite(Date.parse(dateString))
@@ -325,6 +354,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             }
             if ('readerId' in patch) {
                 if (aliyah < 1) throw new TypeError('A reader must be assigned to an aliyah from 1 to 9');
+                if ('guest' in patch) {
+                    if (patch.readerId !== null) throw new TypeError('Choose a guest or an existing reader, not both.');
+                    guestReaderValues(shulId, patch.guest);
+                    return { guestReader: [shulId, dateString, desc, aliyah, patch.guest] };
+                }
                 if (patch.readerId !== null) {
                     const reader = typeof patch.readerId === 'string' ? getUser(patch.readerId) : null;
                     if (!reader || reader.shulId !== shulId) throw new TypeError('Choose a user from this shul');
@@ -358,6 +392,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const removeNote = db.prepare(`DELETE FROM reading_aliyah_notes
                 WHERE shul_id = ? AND reading_date = ? AND reading_name = ? AND aliyah = ?`);
             for (const value of values) {
+                if (value.guestReader) {
+                    const [shulId, dateString, desc, aliyah, guest] = value.guestReader;
+                    readerStatement.run(shulId, dateString, desc, aliyah, saveGuestReader(shulId, guest));
+                    continue;
+                }
                 if (value.note) {
                     if (value.note[4] === '') removeNote.run(...value.note.slice(0, 4));
                     else noteStatement.run(...value.note);

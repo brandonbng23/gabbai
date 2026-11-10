@@ -249,8 +249,8 @@ export function pendingReadingReaders(drafts: ReaderDrafts, schedule: ParshaObj[
     const saved = new Map(schedule.map(reading => [readingKey(reading), reading]));
     return Object.values(drafts).filter(change => {
         const reading = saved.get(readingKey(change));
-        return !reading || (reading.readers[change.aliyah - 1]?.id ?? null) !== change.readerId;
-    }).map(({ dateString, desc, aliyah, readerId }) => ({ dateString, desc, aliyah, readerId }));
+        return Boolean(change.guest) || !reading || (reading.readers[change.aliyah - 1]?.id ?? null) !== change.readerId;
+    }).map(({ dateString, desc, aliyah, readerId, guest }) => ({ dateString, desc, aliyah, readerId, ...(guest ? { guest } : {}) }));
 }
 
 export type CountDrafts = Record<string, ReadingCountChange>;

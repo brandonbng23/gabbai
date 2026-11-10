@@ -4,6 +4,8 @@ import type { NoteApplication, NoteScope } from '../readingAdjustments.ts';
 import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { UserDropDown } from "./dropdown.tsx";
+import { GuestReaderEditor } from './guestReaderEditor.tsx';
+import type { UserProfile } from '../api.ts';
 import { ReaderCard } from "./userCard.tsx";
 import type { ShulUser } from "../api.ts";
 import { ALIYAH_NOTE_MAX_LENGTH } from '../../../interfaces/readingNote.mts';
@@ -17,6 +19,7 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
     onToggleLock: () => void;
     users: ShulUser[];
     onAssignReader: (reader: ShulUser | null) => void;
+    onAssignGuest: (guest: UserProfile) => void;
     onNoteChange: (note: string) => void;
     noteScope?: NoteScope;
     onApplyNote: (note: string, scope: NoteScope) => void;
@@ -29,8 +32,10 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
     const noteButton = useRef<HTMLButtonElement>(null);
     const [noteEditorOpen, setNoteEditorOpen] = useState(false);
     const [readerCardOpen, setReaderCardOpen] = useState(false);
+    const [guestEditorOpen, setGuestEditorOpen] = useState(false);
     const [hovered, setHovered] = useState<boolean>(false);
     const hasReader = props.reader != null;
+    const pendingGuest = props.reader?.id.startsWith('pending-guest:') ?? false;
     const readerName = props.reader ? `${props.reader.firstName} ${props.reader.lastName}`.trim() : '';
 
     useEffect(() => {
@@ -50,7 +55,7 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
     );
 
     return (
-        <div className={`admin-aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <><div className={`admin-aliyah${hovered ? "-hover" : ""}`} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
             <div style={{ width: "7%"}}>
                 <div className="aliyah-status-icon">
                     {!hasReader ?
@@ -90,11 +95,11 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
                                 setReaderCardOpen(false);
                             }
                         }}>
-                        <button type="button" className="assigned-reader-trigger"
+                        {pendingGuest ? <span>{readerName} (guest)</span> : <button type="button" className="assigned-reader-trigger"
                             aria-expanded={readerCardOpen} aria-controls={readerCardId}
-                            onClick={() => setReaderCardOpen(true)}>{readerName}</button>
+                            onClick={() => setReaderCardOpen(true)}>{readerName}</button>}
                         <div id={readerCardId} role="group" aria-label={`Details for ${readerName}`}
-                            className="assigned-reader-preview" hidden={!readerCardOpen}>
+                            className="assigned-reader-preview" hidden={!readerCardOpen || pendingGuest}>
                             {props.reader && <ReaderCard user={props.reader} />}
                         </div>
                     </div>
@@ -110,7 +115,11 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
                     </button>
                 </div>
                 : <UserDropDown options={props.users}
-                    selected={props.reader} onSelect={props.onAssignReader} disabled={props.readerDisabled} />}
+                    onGuest={() => setGuestEditorOpen(true)}
+                    selected={props.reader} onSelect={reader => {
+                        setGuestEditorOpen(false);
+                        props.onAssignReader(reader);
+                    }} disabled={props.readerDisabled} />}
             </div>
 
             <div className="admin-aliyah-verse-count">
@@ -171,10 +180,16 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
                 </div>
             </div>}
         </div>
+        {guestEditorOpen && <GuestReaderEditor readingName={props.readingName} aliyah={aliyahLabels[props.a - 1]}
+            disabled={props.readerDisabled} onClose={() => setGuestEditorOpen(false)} onAssign={guest => {
+                props.onAssignGuest(guest);
+                setGuestEditorOpen(false);
+            }} />}
+        </>
     )
 }
 
-export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onCountChange, onNoteChange, noteApplications, onApplyNoteScope }: {
+export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onGuestChange, onCountChange, onNoteChange, noteApplications, onApplyNoteScope }: {
     reading: ParshaObj;
     savedOccasions: string[];
     disabled: boolean;
@@ -183,6 +198,7 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
     onOccasionsChange: (reading: ParshaObj, labels: string[]) => void;
     onCountChange: (reading: ParshaObj, count: number | null) => void;
     onReaderChange: (reading: ParshaObj, aliyah: number, reader: ShulUser | null) => void;
+    onGuestChange: (reading: ParshaObj, aliyah: number, guest: UserProfile) => void;
     onNoteChange: (reading: ParshaObj, aliyah: number, note: string) => void;
     noteApplications: Record<string, NoteApplication>;
     onApplyNoteScope: (reading: ParshaObj, aliyah: number, note: string, scope: NoteScope) => void;
@@ -424,6 +440,7 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
                                                 readerDisabled={disabled}
                                                 users={users}
                                                 onAssignReader={reader => onReaderChange(reading, index + 1, reader)}
+                                                onAssignGuest={guest => onGuestChange(reading, index + 1, guest)}
                                                 onToggleLock={() => onLockChange(reading, !reading.lockedArr[index], index + 1)}
                                                 available={!(reading.readers[index] || locked || reading.lockedArr[index])}
                                                 reader={reading.readers[index]}
