@@ -7181,3 +7181,14 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .analytics-reading-link:hover { text-decoration: underline; }
 .analytics-reading-link:focus-visible { outline: 2px solid #8bc8ff; outline-offset: 3px; border-radius: 2px; }
 .reading-result { scroll-margin-top: var(--shul-section-offset, 160px); }
+.analytics-opening-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+}
+
+.analytics-opening-names {
+    color: var(--settings-muted);
+    font-size: 12px;
+}

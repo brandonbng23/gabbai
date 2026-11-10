@@ -5,6 +5,7 @@ import { shulAnalytics } from '../shulAnalytics.ts';
 import { localToday } from '../scheduleHighlights.ts';
 import { formatEventDate } from '../../../interfaces/shulEvent.mts';
 import { readingAdjustmentAnchor } from '../readingAnchor.ts';
+import { availableAliyot } from '../quickStartReadings.ts';
 
 const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shvi’i', 'Maftir', 'Haftarah'];
 
@@ -90,7 +91,12 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                 {stats.readingCount > 0 && <div className="analytics-open-readings">
                     <h3>Next readings with open aliyot</h3>
                     {stats.attention.length ? <ul className="analytics-attention">{stats.attention.map(({ reading, open }) => <li key={`${reading.dateString}:${reading.desc}`}>
-                        <div><AdjustmentLink reading={reading} onSelect={onSelectReading} /><span>{reading.gregDate}</span></div>
+                        <div>
+                            <div className="analytics-opening-line"><AdjustmentLink reading={reading} onSelect={onSelectReading} />
+                                <span className="analytics-opening-names">Open: {availableAliyot(reading).map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(', ')}</span>
+                            </div>
+                            <span>{reading.gregDate}</span>
+                        </div>
                         <span className="analytics-open-count">{open} {open === 1 ? 'aliyah' : 'aliyot'} open</span>
                     </li>)}</ul> : <div className="analytics-feedback">All unlocked aliyot in this range are assigned.</div>}
                 </div>}
