@@ -1,3 +1,4 @@
+import { ShulDonationsEditor } from '../Components/shulDonationsEditor.tsx';
 import { useShulLinkAnalytics } from '../shulLinkAnalytics.ts';
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
@@ -195,7 +196,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const [phone, setPhone] = useState<string>(shul.phone);
     const [email, setEmail] = useState<string>(shul.email);
     const [website, setWebsite] = useState<string>(shul.websiteUrl);
-    const [donation, setDonation] = useState<string>(shul.donationUrl);
     const [torahServiceDay, setTorahServiceDay] = useState(shul.torahServiceDay);
     const [torahServiceTime, setTorahServiceTime] = useState(shul.torahServiceTime);
     const serviceTimeChanged = torahServiceDay !== shul.torahServiceDay || torahServiceTime !== shul.torahServiceTime;
@@ -239,7 +239,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         { id: 'phone', label: 'Phone', value: phone, savedValue: shul.phone, setValue: setPhone, type: 'tel' },
         { id: 'email', label: 'Email', value: email, savedValue: shul.email, setValue: setEmail, type: 'email' },
         { id: 'website', label: 'Website URL', value: website, savedValue: shul.websiteUrl, setValue: setWebsite, type: 'url' },
-        { id: 'donation', label: 'Donation URL', value: donation, savedValue: shul.donationUrl, setValue: setDonation, type: 'url' },
     ];
     const contactChangeLog = contactFields
         .filter((field) => field.value !== field.savedValue)
@@ -592,7 +591,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         setPhone(values.phone);
         setEmail(values.email);
         setWebsite(values.websiteUrl);
-        setDonation(values.donationUrl);
         setTorahServiceDay(values.torahServiceDay);
         setTorahServiceTime(values.torahServiceTime);
     }
@@ -681,7 +679,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
         showFeedback('info', 'progress', 'Publishing changes…');
         try {
             const updated = await updateShul(shul.id, {
-                name, address, phone, email, websiteUrl: website, donationUrl: donation,
+                name, address, phone, email, websiteUrl: website,
                 torahServiceDay, torahServiceTime,
                 ...(pictureDraft !== undefined ? { picture: pictureDraft } : {}),
             });
@@ -691,7 +689,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             setPhone(updated.phone);
             setEmail(updated.email);
             setWebsite(updated.websiteUrl);
-            setDonation(updated.donationUrl);
             setTorahServiceDay(updated.torahServiceDay);
             setTorahServiceTime(updated.torahServiceTime);
             onSaved(updated);
@@ -1513,6 +1510,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     <div className="shul-admin-view" hidden={view !== 'management'}>
                     <ShulEventsEditor linkAnalytics={linkAnalytics} shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
                         onChanged={onEventsChanged} onRetry={onEventsRetry} />
+                    <ShulDonationsEditor key={shul.id} shul={shul} onSaved={onSaved} />
                     </div>
                 </div>
             </main>

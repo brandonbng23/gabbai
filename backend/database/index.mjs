@@ -1,3 +1,4 @@
+import { defaultDonationSettings, validateDonationDisplaySettings } from '../../interfaces/donation.mts';
 import { validatePicture } from '../pictures.mjs';
 import { validateAliyahNote } from '../../interfaces/readingNote.mts';
 import { validateSignificantPortions } from '../../interfaces/significantPortions.mts';
@@ -14,7 +15,7 @@ import { createMessagingRepository } from './messages.mjs';
 import { createNotificationRepository } from './notifications.mjs';
 
 export const defaultDatabasePath = fileURLToPath(new URL('../../data/gabbai.sqlite', import.meta.url));
-const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime'];
+const shulFields = ['name', 'websiteUrl', 'donationUrl', 'email', 'phone', 'address', 'torahServiceDay', 'torahServiceTime', 'donationButtonText', 'donationHeadline', 'donationMessage', 'donationHighlightEnabled', 'donationBannerEnabled'];
 const userFields = ['shulId', 'firstName', 'lastName', 'hebrewName', 'email', 'phone', 'role', 'title'];
 
 function normalizeShulCode(value) {
@@ -62,8 +63,12 @@ function shulValues(input) {
     if (!['Friday', 'Saturday'].includes(day)) throw new TypeError('Torah service day must be Friday or Saturday.');
     if (typeof time !== 'string' || (time !== '' && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)))
         throw new TypeError('Choose a valid Torah service time.');
-    const normalized = { ...input, torahServiceDay: day, torahServiceTime: time };
-    return shulFields.map(key => text(normalized[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
+    const donationButtonText = text(input.donationButtonText ?? 'Make a donation', 'Donation button text', true);
+    if (donationButtonText.length > 60) throw new TypeError('Donation button text cannot exceed 60 characters.');
+    const donation = validateDonationDisplaySettings(Object.fromEntries(Object.keys(defaultDonationSettings).filter(key => Object.hasOwn(input, key)).map(key => [key, input[key]])));
+    const normalized = { ...input, ...donation, torahServiceDay: day, torahServiceTime: time, donationButtonText };
+    return shulFields.map(key => ['donationHighlightEnabled', 'donationBannerEnabled'].includes(key)
+        ? Number(normalized[key]) : text(normalized[key] ?? (key === 'name' ? undefined : ''), key, key === 'name'));
 }
 
 function userValues(input) {
@@ -80,7 +85,9 @@ function pictureUrl(kind, id, version) {
 
 function decodeShul(row) {
     if (!row) return null;
-    return { id: row.id, code: row.join_code, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url,
+    return { id: row.id, code: row.join_code, name: row.name, websiteUrl: row.website_url, donationUrl: row.donation_url, donationButtonText: row.donation_button_text,
+        donationHeadline: row.donation_headline, donationMessage: row.donation_message,
+        donationHighlightEnabled: Boolean(row.donation_highlight_enabled), donationBannerEnabled: Boolean(row.donation_banner_enabled),
         email: row.email, phone: row.phone, address: row.address,
         torahServiceDay: row.torah_service_day, torahServiceTime: row.torah_service_time,
         ...(row.picture_version ? { pictureUrl: pictureUrl('shuls', row.id, row.picture_version) } : {}),
@@ -121,7 +128,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 33) throw new Error('Database schema is newer than this application');
+            if (version > 35) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -268,6 +275,16 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 if (!db.prepare('PRAGMA table_info(shul_events)').all().some(column => column.name === 'registration_clicks'))
                     db.exec('ALTER TABLE shul_events ADD COLUMN registration_clicks INTEGER NOT NULL DEFAULT 0 CHECK (registration_clicks >= 0)');
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(33);
+            }
+            if (version < 34) {
+                if (!db.prepare('PRAGMA table_info(shuls)').all().some(column => column.name === 'donation_button_text'))
+                    db.exec(readFileSync(new URL('./migrations/034_donation_button_text.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(34);
+            }
+            if (version < 35) {
+                if (!db.prepare('PRAGMA table_info(shuls)').all().some(column => column.name === 'donation_headline'))
+                    db.exec(readFileSync(new URL('./migrations/035_donation_display.sql', import.meta.url), 'utf8'));
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(35);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');
@@ -515,7 +532,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         },
         getInitialShulVersion(id) {
             const row = db.prepare('SELECT * FROM shul_initial_versions WHERE shul_id = ?').get(id);
-            return row ? { info: { torahServiceDay: 'Saturday', torahServiceTime: '', ...JSON.parse(row.info_json) }, settings: JSON.parse(row.settings_json),
+            return row ? { info: { ...defaultDonationSettings, donationButtonText: 'Make a donation', torahServiceDay: 'Saturday', torahServiceTime: '', ...JSON.parse(row.info_json) }, settings: JSON.parse(row.settings_json),
                 source: row.source, capturedAt: row.captured_at } : null;
         },
         getUser,
@@ -706,11 +723,11 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const settings = mergeShulSettings(defaultShulSettings(input.settings?.hebYear), input.settings ?? {});
             const id = randomUUID();
             return transaction(() => {
-                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address, torah_service_day, torah_service_time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
+                db.prepare(`INSERT INTO shuls (id, name, website_url, donation_url, email, phone, address, torah_service_day, torah_service_time, donation_button_text, donation_headline, donation_message, donation_highlight_enabled, donation_banner_enabled)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, ...values);
                 assignShulCode(db, id);
                 db.prepare('INSERT INTO shul_settings (shul_id, settings_json) VALUES (?, ?)').run(id, JSON.stringify(settings));
-                const info = Object.fromEntries(shulFields.map((key, index) => [key, values[index]]));
+                const info = Object.fromEntries(shulFields.map((key, index) => [key, ['donationHighlightEnabled', 'donationBannerEnabled'].includes(key) ? Boolean(values[index]) : values[index]]));
                 db.prepare(`INSERT INTO shul_initial_versions (shul_id, info_json, settings_json, source)
                     VALUES (?, ?, ?, 'creation')`).run(id, JSON.stringify(info), JSON.stringify(settings));
                 return getShul(id);
@@ -798,7 +815,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             return transaction(() => {
                 const current = requireRecord(getShul(id), 'Shul');
                 const values = shulValues({ ...current, ...patch });
-                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?, torah_service_day = ?, torah_service_time = ?,
+                db.prepare(`UPDATE shuls SET name = ?, website_url = ?, donation_url = ?, email = ?, phone = ?, address = ?, torah_service_day = ?, torah_service_time = ?, donation_button_text = ?, donation_headline = ?, donation_message = ?, donation_highlight_enabled = ?, donation_banner_enabled = ?,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).run(...values, id);
                 if ('picture' in patch) writePicture('shuls', id, patch.picture);
                 return getShul(id);

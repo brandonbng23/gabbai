@@ -137,7 +137,7 @@ function App() {
             <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-with-sidebar' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
               {user?.frozen && <p className="page-message" role="status">Your account is frozen. You can view the app, but registrations and account changes are disabled. Contact your shul administrator.</p>}
               {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : loading ? <LoadingSkeleton page variant="messages" /> : error ? <p className="page-message" role="alert">{error}</p> : null) : isRegistrationPage ? (
-                <AliyahRegistration shulId={shulId} donationUrl={shul?.donationUrl} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
+                <AliyahRegistration shulId={shulId} donationUrl={shul?.donationUrl} donationSettings={shul ?? undefined} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserReadingsPage && user ? <UserReadings key={viewedUserId || user.id} user={user}
                   userId={viewedUserId || user.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
@@ -160,7 +160,7 @@ function App() {
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
                 : <p className="page-message" role="alert">Only shul administrators can access these settings.</p>
               ) : isShulPage ? <MyShul shul={shul} events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error} /> : isSchedulePage ? <SchedulePage
-                  firstName={user?.firstName} shulId={shulId} donationUrl={shul.donationUrl} readings={schedule}
+                  firstName={user?.firstName} shulId={shulId} donationUrl={shul.donationUrl} donationSettings={shul} readings={schedule}
                   significantParshiyot={user?.settings.significantPortions}
                   events={shulEvents.events} eventsLoading={shulEvents.loading} eventsError={shulEvents.error}
                   loading={scheduleLoading} error={scheduleError}

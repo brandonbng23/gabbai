@@ -10,6 +10,7 @@ const managementSections = [
     { id: 'adjustments-heading', label: 'Reading Adjustments' },
     { id: 'permissions-heading', label: 'Users & Permissions' },
     { id: 'shul-events-heading', label: 'Events' },
+    { id: 'shul-donations-heading', label: 'Donations' },
 ];
 
 // Experimental section navigation; removing this component restores the original page.

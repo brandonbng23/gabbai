@@ -1,9 +1,5 @@
-// Edit the donation highlight's wording here.
-const donationMessage = {
-    title: 'Support our community',
-    message: 'Share this honor with your shul\'s future. Your genorosity ensures the next generation of Torah readers at your shul.',
-    action: 'Make a donation',
-};
+import { withDonationDefaults } from '../../../interfaces/donation.mts';
+import type { DonationDisplaySettings } from '../../../interfaces/donation.mts';
 
 export function donationHighlightLink(shulId?: string, donationUrl?: string): string | undefined {
     if (!shulId || !donationUrl) return;
@@ -14,21 +10,23 @@ export function donationHighlightLink(shulId?: string, donationUrl?: string): st
     } catch { /* No donation card until the shul has a valid donation link. */ }
 }
 
-export function DonationHighlight({ href }: { href: string }) {
-    return <a className="highlight-parsha-card" href={href} target="_blank" rel="noopener noreferrer">
+export function DonationHighlight({ href, settings, preview = false }: { href: string; settings?: DonationDisplaySettings; preview?: boolean }) {
+    const text = withDonationDefaults(settings);
+    return <a className="highlight-parsha-card" href={preview ? undefined : href} target="_blank" rel="noopener noreferrer">
         <span className="highlight-kind">From your shul</span>
-        <strong className="highlight-card-name">{donationMessage.title}</strong>
-        <span>{donationMessage.message}</span>
-        <span className="highlight-occasion">{donationMessage.action} ↗</span>
+        <strong className="highlight-card-name">{text.donationHeadline}</strong>
+        <span>{text.donationMessage}</span>
+        <span className="highlight-occasion">Make a donation ↗</span>
     </a>;
 }
 
-export function RegistrationDonationBanner({ href }: { href: string }) {
+export function RegistrationDonationBanner({ href, settings, preview = false }: { href: string; settings?: DonationDisplaySettings; preview?: boolean }) {
+    const text = withDonationDefaults(settings);
     return <aside className="registration-donation-banner" aria-labelledby="registration-donation-heading">
         <div className="registration-donation-copy">
-            <h2 id="registration-donation-heading">{donationMessage.title}</h2>
-            <p>{donationMessage.message}</p>
+            <h2 id="registration-donation-heading">{text.donationHeadline}</h2>
+            <p>{text.donationMessage}</p>
         </div>
-        <a className="registration-donation-link" href={href} target="_blank" rel="noopener noreferrer">{donationMessage.action} ↗</a>
+        <a className="registration-donation-link" href={preview ? undefined : href} target="_blank" rel="noopener noreferrer">Make a donation ↗</a>
     </aside>;
 }

@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { openDatabase } from '../backend/database/index.mjs';
 import { createApp } from '../backend/app.mjs';
+import { defaultDonationSettings, withDonationDefaults } from '../interfaces/donation.mts';
 
 const input = { name: 'Dinner', date: '2026-12-04', time: '18:30', location: 'Hall',
     registrationLink: 'https://example.com/register?event=dinner', details: '' };
@@ -16,6 +17,20 @@ function fixture(db) {
     const event = db.createShulEvent(shul.id, admin.id, input);
     return { shul, admin, event };
 }
+
+test('donation wording and visibility apply automatically without publishing donation settings', t => {
+    const db = openDatabase(':memory:');
+    t.after(() => db.close());
+    const { shul } = fixture(db);
+    for (const source of [shul, db.getShul(shul.id), db.getInitialShulVersion(shul.id).info]) {
+        for (const [key, value] of Object.entries(defaultDonationSettings)) assert.equal(source[key], value);
+    }
+    const updated = db.updateShul(shul.id, { name: 'Renamed shul' });
+    for (const [key, value] of Object.entries(defaultDonationSettings)) assert.equal(updated[key], value);
+    assert.deepEqual(withDonationDefaults({ donationHeadline: '', donationMessage: ' ' }), defaultDonationSettings);
+    const custom = { ...defaultDonationSettings, donationHeadline: 'Our headline', donationMessage: 'Our message', donationBannerEnabled: false };
+    assert.deepEqual(withDonationDefaults(custom), custom);
+});
 
 test('upgrading an existing event database preserves events and starts counters at zero', t => {
     const directory = mkdtempSync(join(tmpdir(), 'gabbai-link-migration-'));
@@ -27,11 +42,16 @@ test('upgrading an existing event database preserves events and starts counters 
     const legacy = new DatabaseSync(path);
     legacy.exec('ALTER TABLE shul_events DROP COLUMN registration_clicks');
     legacy.exec('DROP TABLE shul_link_clicks');
-    legacy.exec('DELETE FROM schema_migrations WHERE version = 33');
+    legacy.exec('ALTER TABLE shuls DROP COLUMN donation_button_text');
+    for (const column of ['donation_headline', 'donation_message', 'donation_highlight_enabled', 'donation_banner_enabled'])
+        legacy.exec(`ALTER TABLE shuls DROP COLUMN ${column}`);
+    legacy.exec('DELETE FROM schema_migrations WHERE version >= 33');
     legacy.close();
     db = openDatabase(path);
     try {
         assert.deepEqual(db.listShulEvents(shul.id), [event]);
+        assert.equal(db.getShul(shul.id).donationButtonText, 'Make a donation');
+        for (const [key, value] of Object.entries(defaultDonationSettings)) assert.equal(db.getShul(shul.id)[key], value);
         assert.equal(db.getShulLinkAnalytics(shul.id, admin.id, '2026-12-01').eventRegistrationByEvent[event.id], 0);
         db.eventRegistrationDestination(shul.id, event.id);
         assert.equal(db.getShulLinkAnalytics(shul.id, admin.id, '2026-12-01').eventRegistrationClicks, 1);
@@ -52,12 +72,28 @@ test('persistent shul and event counts survive edits, reopening, and event delet
     assert.equal(db.eventRegistrationDestination(shul.id, event.id), input.registrationLink);
     db.eventRegistrationDestination(shul.id, event.id);
     assert.equal(db.donationDestination(shul.id), shul.donationUrl);
+    db.updateShul(shul.id, { donationButtonText: 'Support our Torah readers' });
+    db.updateShul(shul.id, { donationHeadline: 'Sustain our shul', donationMessage: 'Help our next generation learn to read Torah.',
+        donationHighlightEnabled: false, donationBannerEnabled: true });
+    for (const patch of [{ donationHeadline: '' }, { donationMessage: ' ' }, { donationMessage: 'a'.repeat(501) },
+        { donationHeadline: 'a'.repeat(101) }, { donationHighlightEnabled: 0 }, { donationBannerEnabled: 'false' }])
+        assert.throws(() => db.updateShul(shul.id, patch), TypeError);
+    assert.throws(() => db.updateShul(shul.id, { donationButtonText: ' ' }), TypeError);
+    assert.throws(() => db.updateShul(shul.id, { donationButtonText: 'a'.repeat(61) }), TypeError);
     db.updateShulEvent(shul.id, admin.id, event.id, { ...input, name: 'Renamed' });
     assert.equal(stats().eventRegistrationByEvent[event.id], 2);
     db.close();
     db = openDatabase(path);
     try {
         assert.equal(stats().donationClicks, 1);
+        assert.equal(db.getShul(shul.id).donationButtonText, 'Support our Torah readers');
+        assert.equal(db.getShul(shul.id).donationHeadline, 'Sustain our shul');
+        assert.equal(db.getShul(shul.id).donationMessage, 'Help our next generation learn to read Torah.');
+        assert.equal(db.getShul(shul.id).donationHighlightEnabled, false);
+        assert.equal(db.getShul(shul.id).donationBannerEnabled, true);
+        db.updateShul(shul.id, { donationBannerEnabled: false });
+        assert.equal(db.getShul(shul.id).donationHighlightEnabled, false);
+        assert.equal(db.getShul(shul.id).donationBannerEnabled, false);
         assert.equal(stats().eventRegistrationClicks, 2);
         assert.equal(stats().eventRegistrationByEvent[event.id], 2);
         db.deleteShulEvent(shul.id, admin.id, event.id);
@@ -106,13 +142,25 @@ test('public tracked redirects count GET opens, skip HEAD/prefetch, and keep ana
     assert.equal((await follow(`/events/${otherEvent.id}/register`)).status, 404);
     assert.equal((await follow('/analytics/links', { headers: { Cookie: 'gabbai_session=' } })).status, 401);
     assert.equal((await follow('/analytics/links')).status, 403);
+    const editLabel = () => fetch(base, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donationHeadline: 'Give to our community', donationMessage: 'Help support Torah learning.',
+            donationHighlightEnabled: true, donationBannerEnabled: false }) });
+    assert.equal((await editLabel()).status, 403);
     db.updateUser(member.id, { role: 'admin' });
+    const labelResponse = await editLabel();
+    assert.equal(labelResponse.status, 200);
+    const updated = await labelResponse.json();
+    assert.equal(updated.donationHeadline, 'Give to our community');
+    assert.equal(updated.donationMessage, 'Help support Torah learning.');
+    assert.equal(updated.donationHighlightEnabled, true);
+    assert.equal(updated.donationBannerEnabled, false);
+    assert.equal((await follow('/donate')).headers.get('location'), shul.donationUrl);
     const statsResponse = await follow('/analytics/links');
     assert.equal(statsResponse.status, 200);
     assert.equal(statsResponse.headers.get('cache-control'), 'no-store');
     const stats = await statsResponse.json();
     assert.equal(stats.eventRegistrationClicks, 1);
-    assert.equal(stats.donationClicks, 1);
+    assert.equal(stats.donationClicks, 2);
     assert.equal(stats.eventRegistrationByEvent[event.id], 1);
     assert.equal((await fetch(base.replace(shul.id, other.id) + '/analytics/links')).status, 403);
     assert.throws(() => db.getShulLinkAnalytics(other.id, admin.id, '2026-12-01'), error => error.status === 403);
@@ -121,5 +169,5 @@ test('public tracked redirects count GET opens, skip HEAD/prefetch, and keep ana
     assert.equal((await follow('/donate')).status, 404);
     db.updateShulEvent(shul.id, admin.id, event.id, { ...input, registrationLink: '' });
     assert.equal((await follow(eventPath)).status, 404);
-    assert.equal(db.getShulLinkAnalytics(shul.id, admin.id, '2026-12-01').donationClicks, 1);
+    assert.equal(db.getShulLinkAnalytics(shul.id, admin.id, '2026-12-01').donationClicks, 2);
 });

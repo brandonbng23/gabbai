@@ -1,3 +1,4 @@
+import type { DonationDisplaySettings } from '../../../interfaces/donation.mts';
 import { useEffect, useState } from 'react';
 import type { SubmitEvent } from 'react';
 import { userTitles } from '../../../interfaces/titles.mts';
@@ -12,6 +13,7 @@ import { donationHighlightLink, RegistrationDonationBanner } from '../Components
 interface RegistrationProps {
     shulId?: string;
     donationUrl?: string;
+    donationSettings?: DonationDisplaySettings;
     schedule: ParshaObj[];
     loading: boolean;
     error: string | null;
@@ -21,7 +23,7 @@ interface RegistrationProps {
 const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', "Revi'i", 'Chamishi', 'Shishi', "Shvi'i", 'Maftir', 'Haftarah'];
 const englishLabels = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh'];
 
-export default function AliyahRegistration({ shulId, donationUrl, schedule, loading, error, user }: RegistrationProps) {
+export default function AliyahRegistration({ shulId, donationUrl, donationSettings, schedule, loading, error, user }: RegistrationProps) {
     const donationLink = donationHighlightLink(shulId, donationUrl);
     const [mode, setMode] = useState<'profile' | 'guest'>('profile');
     const [submitting, setSubmitting] = useState(false);
@@ -258,7 +260,7 @@ export default function AliyahRegistration({ shulId, donationUrl, schedule, load
                             {quotaError && <p role="status">{quotaError}</p>}
                             {policyError ? <p role="status">{policyError}</p> : emailPolicy && !emailPolicy.emailAvailable && <p>Email is currently unavailable. Registration and inbox confirmations still work.</p>}
                         </section>
-                        {donationLink && canRegister && <RegistrationDonationBanner href={donationLink} />}
+                        {donationLink && donationSettings?.donationBannerEnabled !== false && canRegister && <RegistrationDonationBanner href={donationLink} settings={donationSettings} />}
                         <div className="registration-actions">
                           <p id="registration-status" role="status">
                             {locked ? 'Your shul has locked this aliyah. Choose another aliyah from the schedule.'

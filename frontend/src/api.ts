@@ -1,3 +1,4 @@
+import type { DonationDisplaySettings } from '../../interfaces/donation.mts';
 import type { UserTitle } from '../../interfaces/titles.mts';
 import type { User, ShulUser } from '../../interfaces/user.mts';
 import type { Yontifs } from '../../interfaces/yontifs.mts';
@@ -179,11 +180,12 @@ export interface ShulSummary {
     name: string;
 }
 
-export interface Shul extends ShulSummary {
+export interface Shul extends ShulSummary, DonationDisplaySettings {
     code: string;
     pictureUrl?: string;
     websiteUrl: string;
     donationUrl: string;
+    donationButtonText: string;
     email: string;
     phone: string;
     address: string;
@@ -248,7 +250,7 @@ export async function updateCurrentUser(changes: Partial<UserProfile> & { pictur
     return response.json();
 }
 
-export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl' | 'torahServiceDay' | 'torahServiceTime'>;
+export type ShulInfo = Pick<Shul, 'name' | 'address' | 'phone' | 'email' | 'websiteUrl' | 'donationUrl' | 'donationButtonText' | keyof DonationDisplaySettings | 'torahServiceDay' | 'torahServiceTime'>;
 
 export interface InitialShulVersion {
     info: ShulInfo;
@@ -266,7 +268,7 @@ export async function getInitialShulVersion(id: string): Promise<InitialShulVers
     return response.json();
 }
 
-export async function updateShul(id: string, info: ShulInfo & { picture?: string | null }): Promise<Shul> {
+export async function updateShul(id: string, info: Partial<ShulInfo> & { picture?: string | null }): Promise<Shul> {
     const response = await fetch(`/api/shuls/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

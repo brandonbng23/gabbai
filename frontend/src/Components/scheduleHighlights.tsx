@@ -1,3 +1,4 @@
+import type { DonationDisplaySettings } from '../../../interfaces/donation.mts';
 import { useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SignificantPortion } from '../../../interfaces/significantPortions.mts';
@@ -32,8 +33,8 @@ function HighlightRow({ items, prompt, label }: { items: ReactNode[]; prompt?: R
     </div>;
 }
 
-export function ScheduleHighlights({ readings, saved, events, eventsLoading, eventsError, signedIn, onSelect, shulId, donationUrl }: {
-    shulId?: string; donationUrl?: string;
+export function ScheduleHighlights({ readings, saved, events, eventsLoading, eventsError, signedIn, onSelect, shulId, donationUrl, donationSettings }: {
+    shulId?: string; donationUrl?: string; donationSettings?: DonationDisplaySettings;
     readings: ParshaObj[]; saved: SignificantPortion[]; events: ShulEvent[];
     eventsLoading: boolean; eventsError: string; signedIn: boolean;
     onSelect: (reading: ParshaObj) => void;
@@ -41,7 +42,7 @@ export function ScheduleHighlights({ readings, saved, events, eventsLoading, eve
     const [expanded, setExpanded] = useState(false);
     const extraId = useId();
     const highlights = scheduleHighlights(readings, saved, events, localToday());
-    const donationLink = donationHighlightLink(shulId, donationUrl);
+    const donationLink = donationSettings?.donationHighlightEnabled === false ? undefined : donationHighlightLink(shulId, donationUrl);
     const firstRowCount = 5 - (signedIn ? 1 : 0) - (donationLink ? 1 : 0);
     function card(item: ScheduleHighlight) {
         if (item.kind === 'event') return <li key={item.id}><EventCard event={item.event} compact /></li>;
@@ -64,7 +65,7 @@ export function ScheduleHighlights({ readings, saved, events, eventsLoading, eve
         <span className="highlight-occasion">Add a parsha →</span>
     </a></li> : undefined;
     const firstRow = highlights.slice(0, firstRowCount).map(card);
-    if (donationLink) firstRow.unshift(<li key="donation"><DonationHighlight href={donationLink} /></li>);
+    if (donationLink) firstRow.unshift(<li key="donation"><DonationHighlight href={donationLink} settings={donationSettings} /></li>);
     if (!signedIn && !highlights.length && !donationLink && !eventsLoading && !eventsError) return null;
     return <section className="schedule-highlights" aria-labelledby="schedule-highlights-heading">
         <h2 id="schedule-highlights-heading">Highlights</h2>
