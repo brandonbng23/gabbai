@@ -12,6 +12,7 @@
     "test:auth": "node --test tests/auth.test.mjs",
     "test:messages": "node --test tests/messages.test.mjs tests/demo-messages.test.mjs",
     "test:email": "node --test tests/emailTemplate.test.mjs tests/gmail.test.mjs tests/gmailOAuth.test.mjs tests/notifications.test.mjs",
+    "email:verify": "node scripts/verify-email.mjs",
     "test:dev": "node --test tests/dev.test.mjs",
     "start": "node index.js",
     "postinstall": "npm --prefix frontend ci --include=dev && npm run build",

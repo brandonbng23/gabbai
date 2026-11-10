@@ -1,3 +1,5 @@
+# Public demo: preview mode deliberately disables all outgoing email.
+# For real accounts and email, use render.production.yaml and backend/EMAIL.md.
 services:
   - type: web
     name: gabbai-preview

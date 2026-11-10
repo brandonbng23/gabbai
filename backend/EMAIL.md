@@ -117,7 +117,7 @@ app password are stripped. Keep these values server-side, outside Git and any
 For either method, check authentication without sending a message:
 
 ```sh
-node --env-file=.env scripts/verify-email.mjs
+npm run email:verify
 ```
 
 The normal startup commands (`npm run dev`, `npm run dev:backend`, and `npm start`)
@@ -136,6 +136,58 @@ Platform inbox messages remain active without Gmail. Tests use fake transports
 and do not send email.
 
 Reference: [Nodemailer Gmail setup](https://nodemailer.com/guides/using-gmail).
+
+## Render deployment
+
+The existing `render.yaml` is a public demo with `GABBAI_PREVIEW_MODE=true`.
+Preview mode always disables outgoing emails, even when Gmail credentials are
+configured. Keep the demo in preview mode; deploy real accounts separately.
+
+For a production deployment, select `render.production.yaml` as the Blueprint
+path. This optional configuration creates a **paid Starter web service and a
+1 GB persistent disk**. It keeps the server running for scheduled emails and
+stores profiles, email queues, and quotas in `/var/data/gabbai.sqlite` across
+restarts. Creating this service does not migrate a demo or existing database.
+No infrastructure is changed by adding the Blueprint to the repository.
+
+In the production service’s Render Environment settings, configure:
+
+```dotenv
+GABBAI_PREVIEW_MODE=false
+GABBAI_TRUST_PROXY=true
+GMAIL_ENABLED=true
+GMAIL_AUTH_MODE=oauth2
+GMAIL_USER=your-authorized-gmail-address
+GMAIL_CLIENT_ID=your-google-client-id
+GMAIL_CLIENT_SECRET=your-google-client-secret
+GMAIL_REFRESH_TOKEN=your-authorized-refresh-token
+```
+
+Generate the refresh token locally using the OAuth instructions above, then
+copy the values privately into Render. Do not commit `.env` or paste tokens into
+logs. Render does not automatically receive your local `.env`. Google OAuth
+apps in Testing may require reauthorization when their refresh token expires.
+
+The OAuth transport sends through the Gmail API over HTTPS, including on Render’s
+Free plan. Free services block SMTP ports 25, 465, and 587, so Gmail app passwords
+will not work there. When no auth mode is specified, Render defaults to `oauth2`;
+an explicit `GMAIL_AUTH_MODE` still takes precedence. A Free service also spins
+down when idle and cannot retain this app’s SQLite outbox across restarts, so it
+cannot provide reliable scheduled delivery with the current SQLite architecture.
+
+After saving the environment settings and redeploying, run `npm run email:verify`
+from the Render service’s Shell. This authenticates without sending an email and
+reports if preview mode or missing credentials prevent delivery. Then make a
+registration using an address you control and request a confirmation for an
+end-to-end delivery check. The existing Friday/Saturday pause and quotas apply.
+
+Email links use `GABBAI_PUBLIC_URL` if configured, otherwise Render’s
+`RENDER_EXTERNAL_URL`. Set `GABBAI_PUBLIC_URL` when using a custom domain.
+
+References: [Render Free service restrictions](https://render.com/docs/free),
+[persistent disks](https://render.com/docs/disks),
+[environment variables](https://render.com/docs/configure-environment-variables),
+[default Render URLs](https://render.com/docs/environment-variables).
 
 ## Persistence, scheduling, and failure behavior
 

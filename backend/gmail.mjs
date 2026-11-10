@@ -10,7 +10,8 @@ export function createGmailMailer({ env = process.env, createTransport = nodemai
     const validAddress = value => typeof value === 'string' && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(value);
     if (!validAddress(user)) throw new Error('Set a valid GMAIL_USER before enabling Gmail.');
     if (/[\r\n]/.test(name)) throw new Error('GMAIL_FROM_NAME must be a single line.');
-    const mode = env.GMAIL_AUTH_MODE?.trim() || 'app_password';
+    // Render's free services block SMTP; the Gmail HTTPS API works on every plan.
+    const mode = env.GMAIL_AUTH_MODE?.trim() || (env.RENDER === 'true' ? 'oauth2' : 'app_password');
     if (!['app_password', 'oauth2'].includes(mode)) throw new Error('GMAIL_AUTH_MODE must be app_password or oauth2.');
     const clientId = env.GMAIL_CLIENT_ID?.trim();
     const clientSecret = env.GMAIL_CLIENT_SECRET?.trim();
@@ -38,7 +39,7 @@ export function createGmailMailer({ env = process.env, createTransport = nodemai
             if (typeof subject !== 'string' || !subject.trim() || subject.length > 200 || /[\r\n]/.test(subject)) throw new TypeError('Provide a subject of 1–200 characters without newlines.');
             if (typeof text !== 'string' || !text.trim() || text.length > 2000000) throw new TypeError('Provide email text of 1–2000000 characters.');
             let result;
-            const templateOptions = { publicUrl: env.GABBAI_PUBLIC_URL };
+            const templateOptions = { publicUrl: env.GABBAI_PUBLIC_URL?.trim() || env.RENDER_EXTERNAL_URL };
             const message = {
                 from: { name, address: user }, to, subject: subject.trim(),
                 text: emailText(text, templateOptions), html: emailTemplate(subject.trim(), text, templateOptions),

@@ -37,3 +37,13 @@ test('startup works without an optional .env and surfaces other configuration re
     `, join(directory, 'missing.env'), directory], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
 });
+
+test('email verification explains that Render preview mode suppresses delivery before contacting Gmail', () => {
+    const result = spawnSync(process.execPath, ['scripts/verify-email.mjs'], {
+        cwd: new URL('../', import.meta.url),
+        env: { ...process.env, GABBAI_PREVIEW_MODE: 'true', GMAIL_ENABLED: 'true' }, encoding: 'utf8',
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /disabled in preview mode/);
+    assert.match(result.stderr, /GABBAI_PREVIEW_MODE=false/);
+});

@@ -63,3 +63,23 @@ test('Unexpected success responses are uncertain and verification errors are san
     await assert.rejects(mailer.send(email), /status is unknown/);
     await assert.rejects(mailer.verify(), error => !error.message.includes('secret'));
 });
+
+test('email links use the Render URL with an explicit public URL taking precedence', async () => {
+    for (const [publicUrl, expected] of [[undefined, 'https://gabbai.onrender.com/messages'], ['https://custom.example', 'https://custom.example/messages']]) {
+        const mailer = createGmailMailer({ env: { ...env, RENDER_EXTERNAL_URL: 'https://gabbai.onrender.com', GABBAI_PUBLIC_URL: publicUrl },
+            createTransport: () => ({ async sendMail(message) {
+                assert.ok(message.text.includes(expected));
+                assert.ok(message.html.includes(expected));
+                return { accepted: [email.to], messageId: 'render-url-test' };
+            } }) });
+        await mailer.send(email);
+    }
+});
+
+test('Render can explicitly use SMTP on a plan that supports it', () => {
+    let configured = false;
+    const mailer = createGmailMailer({ env: { ...env, RENDER: 'true', GMAIL_AUTH_MODE: 'app_password' },
+        createTransport() { configured = true; return {}; } });
+    assert.equal(mailer.enabled, true);
+    assert.equal(configured, true);
+});

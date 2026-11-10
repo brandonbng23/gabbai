@@ -101,6 +101,26 @@ test('OAuth delivery distinguishes API rejections from uncertain sends and sanit
     }
 });
 
+test('Render defaults to the Gmail HTTPS API and never attempts an SMTP connection', async () => {
+    const requests = [];
+    const mailer = createGmailMailer({ env: { ...env, RENDER: 'true', GMAIL_AUTH_MODE: '' },
+        createTransport() { assert.fail('Render default must not open SMTP'); },
+        fetchImpl: async (url, options) => {
+            requests.push(url);
+            assert.ok(url.startsWith('https://'));
+            if (url === 'https://oauth2.googleapis.com/token') return Response.json({ access_token: 'token', expires_in: 3600 });
+            if (url === 'https://openidconnect.googleapis.com/v1/userinfo') return Response.json({ email: user, email_verified: true });
+            assert.equal(url, 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+            assert.equal(options.method, 'POST');
+            return Response.json({ id: 'render-gmail-test' });
+        } });
+    await mailer.verify();
+    assert.equal(requests.length, 2, 'Verification must not send email');
+    const result = await mailer.send({ to: 'reader@example.com', subject: 'Render test', text: 'Registration confirmed.' });
+    assert.deepEqual(result, { status: 'accepted', id: 'render-gmail-test' });
+    assert.equal(requests.length, 3);
+});
+
 test('OAuth requires its own credentials rather than silently falling back to an app password', () => {
     assert.throws(() => createGmailMailer({ env: { ...env, GMAIL_REFRESH_TOKEN: '', GMAIL_APP_PASSWORD: 'abcdefghijklmnop' } }), /GMAIL_REFRESH_TOKEN/);
     assert.throws(() => createGmailMailer({ env: { ...env, GMAIL_AUTH_MODE: 'invalid' } }), /GMAIL_AUTH_MODE/);

@@ -1,0 +1,39 @@
+# Optional production Blueprint. Uses a paid, always-on service and persistent disk.
+# Deploy separately from the public demo defined in render.yaml.
+services:
+  - type: web
+    name: gabbai
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/test
+    disk:
+      name: gabbai-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24.18.0"
+      - key: NODE_ENV
+        value: production
+      - key: GABBAI_PREVIEW_MODE
+        value: "false"
+      - key: GABBAI_TRUST_PROXY
+        value: "true"
+      - key: GABBAI_DATABASE_PATH
+        value: /var/data/gabbai.sqlite
+      - key: GMAIL_ENABLED
+        value: "true"
+      - key: GMAIL_AUTH_MODE
+        value: oauth2
+      - key: GMAIL_FROM_NAME
+        value: Gabbai
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
