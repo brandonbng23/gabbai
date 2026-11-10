@@ -7099,3 +7099,51 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
         transition: none;
     }
 }
+.shul-analytics .settings-section-header .analytics-range { flex: 0 0 auto; }
+.analytics-range label { display: block; margin-bottom: 4px; color: var(--settings-muted); font-size: 12px; }
+.analytics-range select { padding: 8px 10px; border: 1px solid var(--settings-border); border-radius: 8px; background: #3d3b3f; color: #f6f5f7; font: inherit; font-size: 14px; }
+.shul-analytics .analytics-period,
+.shul-analytics .analytics-explanation { margin: 16px 0; color: var(--settings-muted); font: 400 13px/1.5 Fustat, sans-serif; }
+.analytics-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.analytics-metrics > div { padding: 16px; border: 1px solid var(--settings-border); border-radius: 10px; background: #8bc8ff08; }
+.analytics-metrics dt { color: var(--settings-muted); font-size: 13px; font-weight: 500; }
+.analytics-metrics dd { margin: 6px 0 0; color: #8bc8ff; font-size: 30px; font-weight: 650; line-height: 1.2; }
+.analytics-metrics .analytics-metric-note { margin-top: 8px; color: var(--settings-muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
+.shul-analytics h3 { display: block; margin: 24px 0 12px; padding: 0; border: 0; height: auto; color: #f6f5f7; font: 600 16px/1.4 Fustat, sans-serif; }
+.analytics-subheading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.analytics-subheading h3 { margin: 0; }
+.analytics-legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--settings-muted); font-size: 12px; }
+.analytics-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.analytics-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.analytics-assigned { background: #8bc8ff; }
+.analytics-open { background: #8394a4; }
+.analytics-locked { background: #59565f; }
+.analytics-weeks { display: grid; gap: 12px; margin: 18px 0; padding: 0; list-style: none; }
+.analytics-weeks li { display: grid; grid-template-columns: 120px minmax(0, 1fr) 155px; align-items: center; gap: 12px; }
+.analytics-week-label,
+.analytics-week-count { color: var(--settings-muted); font-size: 12px; }
+.analytics-week-count { text-align: right; }
+.analytics-bar { display: flex; height: 14px; overflow: hidden; border-radius: 999px; background: #3d3b3f; }
+.analytics-bar > span { height: 100%; }
+.analytics-attention { margin: 0; padding: 0; list-style: none; }
+.analytics-attention li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--settings-border); }
+.analytics-attention li > div { min-width: 0; overflow-wrap: anywhere; }
+.analytics-attention strong,
+.analytics-attention li > div > span { display: block; }
+.analytics-attention li > div > span { color: var(--settings-muted); font-size: 12px; }
+.analytics-open-count { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; background: #8bc8ff1a; color: #8bc8ff; font-size: 12px; }
+.analytics-roster { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 0; }
+.analytics-roster > div { padding: 12px; border: 1px solid var(--settings-border); border-radius: 8px; }
+.analytics-roster dt { color: var(--settings-muted); font-size: 12px; font-weight: 400; }
+.analytics-roster dd { margin: 4px 0 0; font-size: 22px; font-weight: 600; }
+.analytics-feedback { margin-top: 16px; color: var(--settings-muted); font-size: 14px; }
+.analytics-feedback[role="alert"] { color: #ffb8b8; }
+@media (max-width: 1000px) {
+    .analytics-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .shul-analytics .settings-section-header { flex-wrap: wrap; }
+    .analytics-weeks li { grid-template-columns: 95px minmax(0, 1fr); gap: 5px 10px; }
+    .analytics-week-count { grid-column: 2; text-align: left; }
+    .analytics-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

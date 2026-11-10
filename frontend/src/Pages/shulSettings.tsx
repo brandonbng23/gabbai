@@ -17,6 +17,7 @@ import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 import NotificationSettings from '../Components/notificationSettings.tsx';
 import { ShulEventsEditor } from '../Components/shulEventsEditor.tsx';
+import { ShulAnalytics } from '../Components/shulAnalytics.tsx';
 import type { ShulEvent } from '../../../interfaces/shulEvent.mts';
 import ShulSettingsNavigation from '../Components/shulSettingsNavigation.tsx';
 import { formatTorahServiceTime } from '../torahServiceTime.ts';
@@ -888,6 +889,8 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
 
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'management'}>
+                    <ShulAnalytics schedule={schedule} loading={scheduleLoading} error={scheduleError}
+                        users={users} usersLoading={usersLoading} usersError={usersError} year={settings.hebYear} />
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
@@ -976,8 +979,6 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                         </form>
                     </section>
 
-                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
-                        onChanged={onEventsChanged} onRetry={onEventsRetry} />
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'settings'}>
                     <section className="content-panel" aria-labelledby="schedule-heading">
@@ -1498,6 +1499,10 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'settings'}>
                     <NotificationSettings shulId={shul.id} />
+                    </div>
+                    <div className="shul-admin-view" hidden={view !== 'management'}>
+                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
+                        onChanged={onEventsChanged} onRetry={onEventsRetry} />
                     </div>
                 </div>
             </main>

@@ -6,9 +6,10 @@ const settingsSections = [
     { id: 'notification-settings-heading', label: 'Communication' },
 ];
 const managementSections = [
+    { id: 'shul-analytics-heading', label: 'Analytics' },
     { id: 'adjustments-heading', label: 'Reading Adjustments' },
-    { id: 'shul-events-heading', label: 'Events' },
     { id: 'permissions-heading', label: 'Users & Permissions' },
+    { id: 'shul-events-heading', label: 'Events' },
 ];
 
 // Experimental section navigation; removing this component restores the original page.
