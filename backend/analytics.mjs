@@ -1,6 +1,7 @@
 import { HDate } from '@hebcal/core';
 import { getShulSchedule } from './schedule.mjs';
 import { monthBounds, monthlyEngagement } from '../core/monthlyEngagement.mts';
+import { localClock } from './notificationPolicy.mjs';
 
 function hebrewYear(dateString) {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -21,6 +22,20 @@ export function compareEngagementMonths(first, second, loadYear) {
 }
 
 export function installAnalyticsRoutes(app, database) {
+    app.get('/api/shuls/:id/analytics/links', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to view link analytics.' });
+        const actor = database.getUser(req.currentUserId);
+        if (!actor || actor.role !== 'admin' || actor.shulId !== req.params.id)
+            return res.status(403).json({ error: 'Only this shul’s administrators can view link analytics.' });
+        try {
+            const config = database.getNotificationSettings(req.params.id);
+            return res.json(database.getShulLinkAnalytics(req.params.id, req.currentUserId, localClock(new Date(), config.timezone).day));
+        } catch (error) {
+            if (error.status) return res.status(error.status).json({ error: error.message });
+            next(error);
+        }
+    });
     app.get('/api/shuls/:id/analytics/monthly', (req, res, next) => {
         res.set('Cache-Control', 'no-store');
         const actor = req.currentUserId ? database.getUser(req.currentUserId) : null;

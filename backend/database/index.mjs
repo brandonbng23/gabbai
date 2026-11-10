@@ -121,7 +121,7 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = OFF');
         transaction(() => {
             const version = db.prepare('SELECT max(version) AS version FROM schema_migrations').get().version ?? 0;
-            if (version > 32) throw new Error('Database schema is newer than this application');
+            if (version > 33) throw new Error('Database schema is newer than this application');
             if (version < 1) {
                 db.exec(readFileSync(new URL('./migrations/001_profiles.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(1);
@@ -262,6 +262,12 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             if (version < 32) {
                 db.exec(readFileSync(new URL('./migrations/032_shul_events.sql', import.meta.url), 'utf8'));
                 db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(32);
+            }
+            if (version < 33) {
+                db.exec(readFileSync(new URL('./migrations/033_shul_link_analytics.sql', import.meta.url), 'utf8'));
+                if (!db.prepare('PRAGMA table_info(shul_events)').all().some(column => column.name === 'registration_clicks'))
+                    db.exec('ALTER TABLE shul_events ADD COLUMN registration_clicks INTEGER NOT NULL DEFAULT 0 CHECK (registration_clicks >= 0)');
+                db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(33);
             }
         });
         if (rebuildUsers) db.exec('PRAGMA foreign_keys = ON');

@@ -1,3 +1,4 @@
+import { useShulLinkAnalytics } from '../shulLinkAnalytics.ts';
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { PictureEditor, ProfilePicture } from '../Components/profilePicture.tsx';
 import type { Shul, ShulInfo, Settings, ShulUser, ShulUserChange, UserProfile } from '../api.js';
@@ -96,6 +97,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const settings = shul.settings;
     const page = useRef<HTMLDivElement>(null);
     const [view, setView] = useState<AdministrationView>(() => window.location.pathname.replace(/\/$/, '') === '/shulSettings' ? 'settings' : 'management');
+    const linkAnalytics = useShulLinkAnalytics(shul.id, view === 'management', events);
     function switchView(next: AdministrationView) {
         if (next === view) return;
         const url = new URL(window.location.href);
@@ -895,7 +897,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'management'}>
                     <ShulAnalytics schedule={schedule} loading={scheduleLoading} error={scheduleError}
-                        shulId={shul.id} active={view === 'management'}
+                        shulId={shul.id} active={view === 'management'} linkAnalytics={linkAnalytics}
                         users={users} usersLoading={usersLoading} usersError={usersError} year={settings.hebYear} onSelectReading={revealReading} />
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">
@@ -1509,7 +1511,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     <NotificationSettings shulId={shul.id} />
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'management'}>
-                    <ShulEventsEditor shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
+                    <ShulEventsEditor linkAnalytics={linkAnalytics} shulId={shul.id} events={events} loading={eventsLoading} error={eventsError}
                         onChanged={onEventsChanged} onRetry={onEventsRetry} />
                     </div>
                 </div>

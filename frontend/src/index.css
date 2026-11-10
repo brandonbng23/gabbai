@@ -7216,3 +7216,8 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .analytics-comparison-bar-1 { background: #8394a4; }
 .analytics-comparison-difference { color: var(--settings-muted); white-space: nowrap; }
 .shul-analytics .analytics-comparison-note { margin-top: 12px; }
+
+.analytics-link-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 600px) {
+    .analytics-link-metrics { grid-template-columns: 1fr; }
+}

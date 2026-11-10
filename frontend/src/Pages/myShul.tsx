@@ -47,7 +47,7 @@ export default function MyShul({ shul, events, eventsLoading, eventsError }: { s
                 {shul.phone && <div><dt>Phone</dt><dd><a href={`tel:${shul.phone}`}>{shul.phone}</a></dd></div>}
                 {shul.email && <div><dt>Email</dt><dd><a href={`mailto:${shul.email}`}>{shul.email}</a></dd></div>}
                 {website && <div><dt>Website</dt><dd><a href={website}>{website}</a></dd></div>}
-                {donation && <div><dt>Donations</dt><dd><a href={donation}>{donation}</a></dd></div>}
+                {donation && <div><dt>Donations</dt><dd><a href={`/api/shuls/${encodeURIComponent(shul.id)}/donate`}>{donation}</a></dd></div>}
                 {!shul.address && !shul.email && !shul.phone && !website && !donation
                     && <div><dt>Contact details</dt><dd className="my-shul-empty">Contact information hasn’t been added yet.</dd></div>}
                 </dl>

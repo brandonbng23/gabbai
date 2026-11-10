@@ -19,6 +19,6 @@ export function EventCard({ event, compact = false }: { event: ShulEvent; compac
         <span className="shul-event-location">{event.location}</span>
         {event.details && <p>{event.details}</p>}
         {compact && <a className="shul-event-details-link" href={`/shul?${new URLSearchParams({ shul: event.shulId })}#shul-event-${event.id}`}>Event details →</a>}
-        {event.registrationLink && <a className="shul-event-register" href={event.registrationLink} target="_blank" rel="noopener noreferrer">Register <span aria-hidden="true">↗</span></a>}
+        {event.registrationLink && <a className="shul-event-register" href={`/api/shuls/${encodeURIComponent(event.shulId)}/events/${encodeURIComponent(event.id)}/register`} target="_blank" rel="noopener noreferrer">Register <span aria-hidden="true">↗</span></a>}
     </article>;
 }

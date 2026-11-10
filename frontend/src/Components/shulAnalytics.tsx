@@ -1,3 +1,4 @@
+import type { LinkAnalyticsState } from '../shulLinkAnalytics.ts';
 import { useState } from 'react';
 import type { ParshaObj } from './parsha.tsx';
 import type { ShulUser } from '../api.ts';
@@ -17,7 +18,8 @@ function AdjustmentLink({ reading, onSelect }: { reading: Pick<ParshaObj, 'dateS
     }}>{reading.desc}</a>;
 }
 
-export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year, onSelectReading, shulId, active }: {
+export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year, onSelectReading, shulId, active, linkAnalytics }: {
+    linkAnalytics: LinkAnalyticsState;
     schedule: ParshaObj[]; loading: boolean; error: string | null;
     users: ShulUser[]; usersLoading: boolean; usersError: string; year: number;
     onSelectReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
@@ -114,5 +116,16 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                 <div><dt>Admins</dt><dd>{users.filter(user => user.role === 'admin').length}</dd></div>
                 <div><dt>Frozen accounts</dt><dd>{users.filter(user => user.frozen).length}</dd></div>
             </dl>}
+        <div className="analytics-subheading"><h3>Events &amp; link activity</h3>
+            <button type="button" className="settings-reset-btn" onClick={linkAnalytics.refresh} disabled={linkAnalytics.loading}>Refresh</button>
+        </div>
+        {linkAnalytics.loading ? <div className="analytics-feedback" role="status">Loading event and link totals…</div>
+            : linkAnalytics.error ? <div className="analytics-feedback" role="alert">{linkAnalytics.error}</div>
+            : linkAnalytics.data && <dl className="analytics-metrics analytics-link-metrics">
+                <div><dt>Current events</dt><dd>{linkAnalytics.data.currentEventCount}</dd><dd className="analytics-metric-note">Today and upcoming</dd></div>
+                <div><dt>Event registration link clicks</dt><dd>{linkAnalytics.data.eventRegistrationClicks}</dd><dd className="analytics-metric-note">Today’s and upcoming events only</dd></div>
+                <div><dt>Shul donation link clicks</dt><dd>{linkAnalytics.data.donationClicks}</dd><dd className="analytics-metric-note">All time</dd></div>
+            </dl>}
+        <p className="analytics-explanation">Click totals start when tracking is enabled and include repeat opens from My Shul and schedule highlights. They measure link opens, not completed registrations or donations, and are independent of the selected reading timeframe.</p>
     </section>;
 }

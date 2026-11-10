@@ -1,3 +1,4 @@
+import type { LinkAnalyticsState } from '../shulLinkAnalytics.ts';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EventDeletionConfirmation } from './eventDeletionConfirmation.tsx';
@@ -15,7 +16,8 @@ const fields = [
     { key: 'registrationLink', label: 'Registration link (optional)', type: 'url', max: 2048 },
 ] as const;
 
-export function ShulEventsEditor({ shulId, events, loading, error, onRetry, onChanged }: {
+export function ShulEventsEditor({ shulId, events, loading, error, onRetry, onChanged, linkAnalytics }: {
+    linkAnalytics: LinkAnalyticsState;
     shulId: string; events: ShulEvent[]; loading: boolean; error: string;
     onRetry: () => void; onChanged: (events: ShulEvent[]) => void;
 }) {
@@ -77,7 +79,9 @@ export function ShulEventsEditor({ shulId, events, loading, error, onRetry, onCh
         {!loading && !error && <>
             {events.length === 0 && <div className="event-feedback">No featured events yet. Add your first event below.</div>}
             {events.length > 0 && <ul className="shul-events-admin-list">{events.map(event => <li key={event.id}>
-                <div><strong>{event.name}</strong><span>{formatEventDate(event.date)} · {formatEventTime(event.time)} · {event.location}</span></div>
+                <div><strong>{event.name}</strong><span>{formatEventDate(event.date)} · {formatEventTime(event.time)} · {event.location}</span>
+                    <span>{linkAnalytics.loading ? 'Loading registration clicks…' : linkAnalytics.error ? 'Registration clicks unavailable' : `${linkAnalytics.data?.eventRegistrationByEvent[event.id] ?? '—'} registration link clicks`}</span>
+                </div>
                 <div className="shul-events-admin-actions">
                     <button type="button" className="settings-reset-btn" disabled={busy} onClick={() => {
                         if (changed && !window.confirm('Discard your unsaved event changes?')) return;
