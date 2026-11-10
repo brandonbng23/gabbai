@@ -69,9 +69,11 @@ export function ShulDonationsEditor({ shul, onSaved }: { shul: Shul; onSaved: (s
                             onBlur={() => setSettings(previous => ({ ...previous, donationHeadline: previous.donationHeadline.trim() ? previous.donationHeadline : defaultDonationSettings.donationHeadline }))}
                             onChange={event => setSettings(previous => ({ ...previous, donationHeadline: event.target.value }))} /></div>
                     <div className="settings-field-edit donation-settings-message"><label htmlFor="shul-donation-message">Message</label>
-                        <textarea id="shul-donation-message" value={settings.donationMessage} required maxLength={500} rows={3}
+                        <textarea id="shul-donation-message" value={settings.donationMessage} required maxLength={500} rows={3} aria-describedby="donation-message-count"
                             onBlur={() => setSettings(previous => ({ ...previous, donationMessage: previous.donationMessage.trim() ? previous.donationMessage : defaultDonationSettings.donationMessage }))}
-                            onChange={event => setSettings(previous => ({ ...previous, donationMessage: event.target.value }))} /></div>
+                            onChange={event => setSettings(previous => ({ ...previous, donationMessage: event.target.value }))} />
+                        <span id="donation-message-count" className="donation-message-count">{settings.donationMessage.length}/500 characters</span>
+                    </div>
                 </div>
                 <div className="donation-default-action">
                     <button type="button" className="settings-reset-btn" aria-label="Reset headline and message to default"
