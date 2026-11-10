@@ -223,6 +223,17 @@ export type { User, ShulUser, UserReading, UserViewProfile, GuestReading } from 
 
 export type UserProfile = Pick<User, 'title' | 'firstName' | 'lastName' | 'hebrewName' | 'email' | 'phone'>;
 
+export async function saveSignificantPortions(portions: import('../../interfaces/significantPortions.mts').SignificantPortion[]): Promise<User> {
+    const response = await fetch('/api/me/significant-portions', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portions }),
+    });
+    if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+        throw new Error(failure?.error || 'Unable to save significant parshiyot.');
+    }
+    return response.json();
+}
+
 export async function updateCurrentUser(changes: Partial<UserProfile> & { picture?: string | null }): Promise<User> {
     const response = await fetch('/api/me', {
         method: 'PATCH',

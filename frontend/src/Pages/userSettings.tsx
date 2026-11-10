@@ -1,4 +1,5 @@
 import { AccountSecurity } from '../Components/accountSecurity.tsx';
+import { SignificantPortions } from '../Components/significantPortions.tsx';
 import { UserReadingStats } from '../Components/userReadingStats.tsx';
 import { DismissMessageButton } from '../Components/dismissMessageButton.tsx';
 import { useEffect, useState } from 'react';
@@ -188,6 +189,7 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                             </fieldset>
                         </form>
                     </section>
+                    <SignificantPortions user={user} onSaved={onSaved} />
                     <AccountSecurity />
                 </div>
             </div>

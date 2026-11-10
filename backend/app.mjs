@@ -420,6 +420,20 @@ export function createApp(database, {
         return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
     });
 
+    app.patch('/api/me/significant-portions', (req, res, next) => {
+        res.set('Cache-Control', 'no-store');
+        if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to save significant parshiyot.' });
+        if (!database.getUser(req.currentUserId)) return res.status(404).json({ error: 'Current user not found.' });
+        try {
+            validateKeys(req.body, ['portions'], 'significant parshiyot');
+            const user = database.setSignificantPortions(req.currentUserId, req.body.portions);
+            return res.json({ ...user, assignedReadings: getAssignedReadingDetails(database, user) });
+        } catch (error) {
+            if (error instanceof TypeError) return res.status(400).json({ error: error.message });
+            return next(error);
+        }
+    });
+
     app.patch('/api/me', (req, res, next) => {
         res.set('Cache-Control', 'no-store');
         if (!req.currentUserId) return res.status(401).json({ error: 'Sign in to edit your profile.' });

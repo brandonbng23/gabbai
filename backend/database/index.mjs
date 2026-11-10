@@ -1,5 +1,6 @@
 import { validatePicture } from '../pictures.mjs';
 import { validateAliyahNote } from '../../interfaces/readingNote.mts';
+import { validateSignificantPortions } from '../../interfaces/significantPortions.mts';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -753,6 +754,16 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
                 db.prepare(`UPDATE shul_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                     WHERE shul_id = ?`).run(JSON.stringify(settings), id);
                 return getShul(id);
+            });
+        },
+        setSignificantPortions(id, portions) {
+            const validated = validateSignificantPortions(portions);
+            return transaction(() => {
+                const user = requireRecord(getUser(id), 'User');
+                const json = serializeUserSettings({ ...user.settings, significantPortions: validated });
+                db.prepare(`UPDATE user_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    WHERE user_id = ?`).run(json, id);
+                return getUser(id);
             });
         },
         // Replace the whole preferences object; shul settings use partial updates.

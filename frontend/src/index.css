@@ -6645,3 +6645,96 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
         padding-inline: 15px;
     }
 }
+.significant-parshiyot-list {
+    display: grid;
+    gap: 0;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.significant-parsha-saved {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--settings-border);
+}
+
+.significant-parsha-saved > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.significant-parsha-saved strong,
+.significant-parsha-saved span {
+    display: block;
+}
+
+.significant-parsha-saved span {
+    margin-top: 3px;
+    color: var(--settings-muted);
+    font-size: 14px;
+}
+
+.significant-parsha-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 12px;
+}
+
+@media (max-width: 700px) {
+    .significant-parsha-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+.portion-typeahead {
+    position: relative;
+}
+
+.portion-typeahead-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 200;
+    width: 100%;
+    max-height: 248px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px;
+    border: 1px solid var(--settings-border, #646167);
+    border-radius: 9px;
+    background: #302f30;
+    color: #f6f5f7;
+    box-shadow: 0 8px 24px #0005;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff26 transparent;
+}
+
+.portion-typeahead-menu [role="option"] {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.portion-typeahead-menu [role="option"]:is(:hover, [aria-selected="true"]) {
+    background: #66b1f2;
+    color: #fff;
+    font-weight: 700;
+}
+
+.portion-typeahead-empty {
+    display: block;
+    padding: 8px 12px;
+    color: var(--settings-muted);
+}
