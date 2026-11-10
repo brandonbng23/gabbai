@@ -6801,7 +6801,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     line-height: 1.35;
 }
 
-.upcoming-significant-parshiyot :is(.significant-parsha-dates, .significant-parsha-occasion, .significant-parshiyot-prompt-copy) {
+.upcoming-significant-parshiyot :is(.significant-parsha-dates, .significant-parsha-availability, .significant-parsha-occasion, .significant-parshiyot-prompt-copy) {
     color: #bdbcc4;
     font-size: 13px;
     font-weight: 400;
@@ -6810,6 +6810,16 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 
 .upcoming-significant-parshiyot a .significant-parsha-occasion {
     color: #8bc8ff;
+}
+
+.upcoming-significant-parshiyot .significant-parsha-availability {
+    align-self: flex-start;
+    padding: 3px 9px;
+    border: 1px solid #8bc8ff33;
+    border-radius: 999px;
+    background: #8bc8ff1a;
+    color: #8bc8ff;
+    font-weight: 600;
 }
 .significant-parsha-entry-mode {
     display: flex;
