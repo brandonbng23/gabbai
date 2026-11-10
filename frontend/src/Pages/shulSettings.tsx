@@ -15,6 +15,7 @@ import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import { UserEditor } from '../Components/userEditor.tsx';
 import InfoIcon  from "../Components/infoTip.tsx"
 import NotificationSettings from '../Components/notificationSettings.tsx';
+import ShulSettingsNavigation from '../Components/shulSettingsNavigation.tsx';
 import { formatTorahServiceTime } from '../torahServiceTime.ts';
 
 type SettingsSection = 'info' | 'schedule' | 'readings' | 'permissions';
@@ -695,6 +696,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
             </header>
 
             <main className="account-page-content">
+                <ShulSettingsNavigation />
                 <div className="account-page-sections">
                     <aside className="summary-card" aria-label="Published shul information">
                         <div className="summary-card-heading shul-profile-heading">

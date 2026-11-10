@@ -6406,15 +6406,23 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     --app-sidebar-panel: 226px;
     --app-sidebar-inset: 12px;
 }
-.app-shell .sidebar { left: var(--app-sidebar-inset); width: var(--app-sidebar-panel); }
+.app-shell .sidebar {
+    left: var(--app-sidebar-inset);
+    width: var(--app-sidebar-panel);
+    transition: width 260ms ease, left 260ms ease;
+}
 .app-shell .content-window {
     --content-offset: var(--app-sidebar-space);
     --settings-sidebar-width: var(--app-sidebar-space);
     --parsha-left-gap: max(16px, 1.5vw);
     margin-left: var(--app-sidebar-space);
     width: calc(100% - var(--app-sidebar-space));
+    transition: margin-left 260ms ease, width 260ms ease;
 }
-.app-shell .footer { --footer-sidebar-width: var(--app-sidebar-space); }
+.app-shell .footer {
+    --footer-sidebar-width: var(--app-sidebar-space);
+    transition: margin-left 260ms ease, width 260ms ease;
+}
 .sidebar-toggle {
     display: flex;
     align-items: center;
@@ -6433,7 +6441,7 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 }
 .sidebar-toggle:hover { background: #ffffff0d; color: #dcefff; }
 .sidebar-toggle:focus-visible { outline: 2px solid #8bc8ff; outline-offset: -2px; }
-.sidebar-toggle svg { flex-shrink: 0; transform: rotate(-90deg); }
+.sidebar-toggle svg { flex-shrink: 0; transform: rotate(-90deg); transition: transform 260ms ease; }
 .app-shell[data-sidebar-collapsed="false"] .sidebar-text { display: inline; }
 @media (max-width: 1200px) {
     .app-shell { --app-sidebar-space: 150px; --app-sidebar-panel: 126px; }
@@ -6479,4 +6487,161 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
 .torah-service-inputs > :is(select, input) {
     flex: 1 1 120px;
     min-width: 0;
+}
+
+/* Experimental Manage Shul section navigation. */
+.shul-settings-navigation {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: sticky;
+    top: 77px;
+    z-index: 20;
+    width: 98.5%;
+    max-width: none;
+    margin-inline: 0.75%;
+    margin-bottom: 16px;
+    padding: 4px;
+    border: 1px solid var(--settings-border);
+    border-radius: 10px;
+    background: rgb(48 47 48 / 65%);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 5px 16px #0002;
+    transition: width 260ms ease, gap 260ms ease;
+}
+
+.shul-settings-navigation-links {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 180ms ease, visibility 0s;
+}
+
+.shul-settings-navigation-collapsed .shul-settings-navigation-links {
+    flex: 0 1 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 120ms ease, visibility 0s 120ms;
+}
+
+.shul-settings-navigation-collapsed {
+    width: min(250px, 98.5%);
+    gap: 0;
+}
+
+.shul-settings-navigation-collapsed .shul-settings-navigation-toggle {
+    display: flex;
+    flex: 1 1 0;
+    justify-content: flex-start;
+    gap: 4px;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+}
+
+.shul-settings-navigation-current {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 11px;
+    border-radius: 8px;
+    background: #8bc8ff1a;
+    color: var(--settings-accent);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.shul-settings-navigation-collapsed .shul-settings-navigation-toggle svg {
+    margin-inline: 8px;
+}
+
+.shul-settings-navigation-toggle {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--settings-muted);
+    cursor: pointer;
+}
+
+.shul-settings-navigation-toggle svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.shul-settings-navigation-toggle:hover {
+    background: #ffffff0a;
+    color: var(--settings-accent);
+}
+
+.shul-settings-navigation a {
+    flex: 1 0 0;
+    padding: 7px 11px;
+    border-radius: 8px;
+    color: var(--settings-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+    transition: background-color 220ms ease, color 220ms ease, flex-grow 220ms ease, padding-inline 220ms ease;
+}
+
+.shul-settings-navigation a:hover {
+    background: #ffffff0a;
+    color: #f6f5f7;
+}
+
+.shul-settings-navigation a[aria-current="location"] {
+    flex-grow: 1.35;
+    background: #8bc8ff1a;
+    color: var(--settings-accent);
+}
+
+.shul-settings-navigation :is(a, button):focus-visible {
+    outline: 2px solid var(--settings-accent);
+    outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shul-settings-navigation,
+    .shul-settings-navigation .shul-settings-navigation-links,
+    .shul-settings-navigation a,
+    .app-shell .sidebar,
+    .app-shell .content-window,
+    .app-shell .footer,
+    .sidebar-toggle svg {
+        transition: none;
+    }
+}
+
+.account-page-content:has(> .shul-settings-navigation) .content-panel h2 {
+    scroll-margin-top: var(--shul-section-offset, 140px);
+}
+
+@media (max-width: 700px) {
+    .shul-settings-navigation a {
+        flex: 0 0 auto;
+    }
+
+    .shul-settings-navigation a[aria-current="location"] {
+        flex-grow: 0;
+        padding-inline: 15px;
+    }
 }
