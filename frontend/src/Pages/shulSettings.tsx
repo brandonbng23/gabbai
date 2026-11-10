@@ -317,7 +317,12 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
     const allYontifsSelected = yontifAbr.every((abbreviation) => yontifs[abbreviation]);
 
     const [search, setSearch] = useState<string>("");
-    const matchingReadings = schedule.filter(reading => reading.searchTerms.some(term =>
+    const [readingToReveal, setReadingToReveal] = useState<{ key: string; request: number } | null>(null);
+    function revealReading(reading: Pick<ParshaObj, 'dateString' | 'desc'>) {
+        setSearch(reading.desc);
+        setReadingToReveal(previous => ({ key: readingKey(reading), request: (previous?.request ?? 0) + 1 }));
+    }
+    const matchingReadings = schedule.filter(reading => [reading.desc, ...reading.searchTerms].some(term =>
         term.toLowerCase().includes(search.trim().toLowerCase())));
     const matchingUsers = searchUsers(sortUsers());
 
@@ -890,7 +895,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                     </div>
                     <div className="shul-admin-view" hidden={view !== 'management'}>
                     <ShulAnalytics schedule={schedule} loading={scheduleLoading} error={scheduleError}
-                        users={users} usersLoading={usersLoading} usersError={usersError} year={settings.hebYear} />
+                        users={users} usersLoading={usersLoading} usersError={usersError} year={settings.hebYear} onSelectReading={revealReading} />
                     <section className="content-panel" aria-labelledby="adjustments-heading">
                         <div className="settings-section-header">
                             <div><h2 id="adjustments-heading">Reading Adjustments</h2><p>Search for a reading. Then, manage its details, aliyot, and readers.</p></div>
@@ -906,7 +911,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                             type="text"
                                             placeholder="e.g. Pinchas or Pesach"
                                             value={search}
-                                            onChange={(event) => setSearch(event.target.value)}
+                                            onChange={(event) => { setSearch(event.target.value); setReadingToReveal(null); }}
                                             onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
                                         />
                                         <img className="reading-search-icon" src={searchIcon} alt="" aria-hidden="true" />
@@ -924,6 +929,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                     key={`${reading.dateString}:${reading.desc}`}
                                                     savedOccasions={reading.manualOccasions ?? []}
                                                     reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
+                                                    revealRequest={readingToReveal?.key === readingKey(reading) ? readingToReveal.request : undefined}
                                                     users={users}
                                                     disabled={busy}
                                                     onLockChange={changeReadingLock}
@@ -946,6 +952,7 @@ export default function ShulSettings({ shul, currentUserId, onSaved, schedule, s
                                                         key={`${reading.dateString}:${reading.desc}`}
                                                         savedOccasions={reading.manualOccasions ?? []}
                                                         reading={previewReadingLocks(reading, readingDrafts, occasionDrafts, readerDrafts, countDrafts, noteDrafts)}
+                                                        revealRequest={readingToReveal?.key === readingKey(reading) ? readingToReveal.request : undefined}
                                                         users={users}
                                                         disabled={busy}
                                                         onLockChange={changeReadingLock}

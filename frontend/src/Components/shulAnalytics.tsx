@@ -4,12 +4,21 @@ import type { ShulUser } from '../api.ts';
 import { shulAnalytics } from '../shulAnalytics.ts';
 import { localToday } from '../scheduleHighlights.ts';
 import { formatEventDate } from '../../../interfaces/shulEvent.mts';
+import { readingAdjustmentAnchor } from '../readingAnchor.ts';
 
 const aliyahLabels = ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shvi’i', 'Maftir', 'Haftarah'];
 
-export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year }: {
+function AdjustmentLink({ reading, onSelect }: { reading: Pick<ParshaObj, 'dateString' | 'desc'>; onSelect: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void }) {
+    return <a className="analytics-reading-link" href={`#${encodeURIComponent(readingAdjustmentAnchor(reading))}`} onClick={event => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault(); onSelect(reading);
+    }}>{reading.desc}</a>;
+}
+
+export function ShulAnalytics({ schedule, loading, error, users, usersLoading, usersError, year, onSelectReading }: {
     schedule: ParshaObj[]; loading: boolean; error: string | null;
     users: ShulUser[]; usersLoading: boolean; usersError: string; year: number;
+    onSelectReading: (reading: Pick<ParshaObj, 'dateString' | 'desc'>) => void;
 }) {
     const [weeks, setWeeks] = useState(8);
     const today = localToday();
@@ -49,7 +58,7 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                             <span className="analytics-reader-summary">{reader.role === 'guest' ? 'Guest · ' : ''}{aliyahCount} {aliyahCount === 1 ? 'aliyah' : 'aliyot'}</span>
                         </th>
                         <td><ul className="analytics-reader-assignments">{readings.map(reading => <li key={`${reading.dateString}:${reading.desc}`}>
-                            <strong>{reading.desc}</strong><span aria-hidden="true"> · </span>
+                            <AdjustmentLink reading={reading} onSelect={onSelectReading} /><span aria-hidden="true"> · </span>
                             <time dateTime={reading.dateString}>{formatEventDate(reading.dateString)}</time><span aria-hidden="true"> · </span>
                             <span>{reading.aliyot.map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(', ')}</span>
                         </li>)}</ul></td>
@@ -81,7 +90,7 @@ export function ShulAnalytics({ schedule, loading, error, users, usersLoading, u
                 {stats.readingCount > 0 && <div className="analytics-open-readings">
                     <h3>Next readings with open aliyot</h3>
                     {stats.attention.length ? <ul className="analytics-attention">{stats.attention.map(({ reading, open }) => <li key={`${reading.dateString}:${reading.desc}`}>
-                        <div><strong>{reading.desc}</strong><span>{reading.gregDate}</span></div>
+                        <div><AdjustmentLink reading={reading} onSelect={onSelectReading} /><span>{reading.gregDate}</span></div>
                         <span className="analytics-open-count">{open} {open === 1 ? 'aliyah' : 'aliyot'} open</span>
                     </li>)}</ul> : <div className="analytics-feedback">All unlocked aliyot in this range are assigned.</div>}
                 </div>}

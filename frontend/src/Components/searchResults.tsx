@@ -5,6 +5,7 @@ import type { Aliyah, ParshaObj } from "./parsha.tsx";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { UserDropDown } from "./dropdown.tsx";
 import { GuestReaderEditor } from './guestReaderEditor.tsx';
+import { readingAdjustmentAnchor } from '../readingAnchor.ts';
 import type { UserProfile } from '../api.ts';
 import { ReaderCard } from "./userCard.tsx";
 import type { ShulUser } from "../api.ts";
@@ -189,8 +190,9 @@ function AdminAliyah(props: Omit<Aliyah, 'verseCount'> & {
     )
 }
 
-export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onGuestChange, onCountChange, onNoteChange, noteApplications, onApplyNoteScope }: {
+export function SearchResult({ reading, savedOccasions, disabled, users, onLockChange, onOccasionsChange, onReaderChange, onGuestChange, onCountChange, onNoteChange, noteApplications, onApplyNoteScope, revealRequest }: {
     reading: ParshaObj;
+    revealRequest?: number;
     savedOccasions: string[];
     disabled: boolean;
     users: ShulUser[];
@@ -212,6 +214,16 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
             onCountChange(reading, nextCount === reading.defaultAliyahCount ? null : nextCount);
         }
         const [expanded, setExpanded] = useState<boolean>(false);
+        const result = useRef<HTMLDivElement>(null);
+        useEffect(() => {
+            if (!revealRequest) return;
+            setExpanded(true);
+            const frame = requestAnimationFrame(() => {
+                result.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+                result.current?.focus({ preventScroll: true });
+            });
+            return () => cancelAnimationFrame(frame);
+        }, [revealRequest]);
         const [newOccasion, setNewOccasion] = useState<string>("");
         const [draggedOccasion, setDraggedOccasion] = useState<string | null>(null);
         const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -233,7 +245,7 @@ export function SearchResult({ reading, savedOccasions, disabled, users, onLockC
         const locked = reading.locked;
 
         return (
-            <div className="reading-result">
+            <div ref={result} id={readingAdjustmentAnchor(reading)} className="reading-result" tabIndex={-1}>
                 <div className="reading-result-head">
                         <div
                             className="result-heading"
