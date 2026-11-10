@@ -189,7 +189,7 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                             </fieldset>
                         </form>
                     </section>
-                    <SignificantPortions user={user} onSaved={onSaved} />
+                    <SignificantPortions user={user} israel={shul?.settings.il ?? false} onSaved={onSaved} />
                     <AccountSecurity />
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import { LoadingSkeleton } from './loadingSkeleton.tsx';
+import { ReadingCardArrow } from './readingCardArrow.tsx';
 import WelcomeBar from './welcomeBar.tsx';
 import searchIcon from '../Assets/magnifying-glass-solid-full-white.svg';
 import type { ParshaObj } from './parsha.tsx';
@@ -23,7 +24,7 @@ function QuickStartResult({ reading, onSelect }: {
         onSelect(reading);
     }}>
             <span className="quick-start-result-info">
-                <strong>{reading.desc}</strong>
+                <strong>{reading.desc}<ReadingCardArrow /></strong>
                 <span>{reading.gregDate} · {reading.hDate}</span>
             </span>
             <span className="quick-start-result-counts"><span>{assigned} assigned</span><span>{available} available</span></span>
@@ -99,7 +100,7 @@ export function QuickStart({ firstName, readings, loading, error, onSelectReadin
                                     onSelectReading(reading);
                                 }}>
                                 <span className="quick-start-preview-date">{reading.gregDate}</span>
-                                <h3>{reading.desc}</h3>
+                                <h3>{reading.desc}<ReadingCardArrow /></h3>
                                 <span className="quick-start-preview-availability">{available.length} {available.length === 1 ? 'aliyah' : 'aliyot'} available</span>
                                 <span className="quick-start-preview-slots">{available.map(aliyah => aliyahLabels[aliyah - 1] ?? `Aliyah ${aliyah}`).join(' · ')}</span>
                             </a>;

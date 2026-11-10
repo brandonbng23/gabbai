@@ -28,10 +28,17 @@ test('significant portions survive reopening and changes preserve unrelated pref
         assert.deepEqual(db.getUser(id).settings.significantPortions[0], portion);
         assert.equal(db.getUser(id).settings.language, 'he');
         for (const invalid of [null, {}, [null], [{ portion: '', occasion: '' }], [{ ...portion, portion: 'x'.repeat(101) }],
-            [{ ...portion, occasion: 'x'.repeat(201) }], [{ ...portion, userId: 'other' }], Array(21).fill(portion)]) {
+            [{ ...portion, occasion: 'x'.repeat(201) }], [{ ...portion, userId: 'other' }], Array(21).fill(portion),
+            [{ ...portion, gregorianDate: '2026-02-29' }]]) {
             assert.throws(() => db.setSignificantPortions(id, invalid), TypeError);
             assert.equal(db.getUser(id).settings.significantPortions.length, 2, 'Invalid writes preserve the saved list');
         }
+        db.setSignificantPortions(id, [{ ...portion, gregorianDate: '2026-11-09' }]);
+        assert.deepEqual(db.getUser(id).settings.significantPortions,
+            [{ ...portion, portion: 'Toldot', gregorianDate: '2026-11-09' }], 'Server calculates the parsha instead of trusting the supplied name');
+        db.close();
+        db = openDatabase(path);
+        assert.equal(db.getUser(id).settings.significantPortions[0].gregorianDate, '2026-11-09');
         db.setSignificantPortions(id, []);
         assert.deepEqual(db.getUser(id).settings, { language: 'he', significantPortions: [] });
     } finally { db.close(); }
@@ -69,6 +76,10 @@ test('significant portion API saves only the current user preferences and reject
     }
     assert.deepEqual(db.getUser(user.id).settings.significantPortions, [portion]);
     assert.deepEqual(db.getUser(other.id).settings, {});
+    const dateResponse = await request('/api/me/significant-portions', patch({ portions: [{ ...portion, gregorianDate: '2026-11-09' }] }));
+    assert.equal(dateResponse.status, 200);
+    assert.deepEqual((await dateResponse.json()).settings.significantPortions,
+        [{ ...portion, portion: 'Toldot', gregorianDate: '2026-11-09' }]);
     assert.equal((await request('/api/me/significant-portions', patch({ portions: [] }))).status, 200);
     assert.deepEqual(db.getUser(user.id).settings.significantPortions, []);
 });

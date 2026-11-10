@@ -156,6 +156,7 @@ function App() {
                 : <p className="page-message" role="alert">Only shul administrators can access these settings.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : isSchedulePage ? <SchedulePage
                   firstName={user?.firstName} shulId={shulId} readings={schedule}
+                  significantParshiyot={user?.settings.significantPortions}
                   loading={scheduleLoading} error={scheduleError}
                   currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
               : <main className="page-message"><h1>Page not found</h1><a href="/">Go home</a></main>}

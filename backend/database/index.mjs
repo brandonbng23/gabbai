@@ -1,6 +1,7 @@
 import { validatePicture } from '../pictures.mjs';
 import { validateAliyahNote } from '../../interfaces/readingNote.mts';
 import { validateSignificantPortions } from '../../interfaces/significantPortions.mts';
+import { parshaForSignificantDate } from '../../core/significantDate.mts';
 import { userTitles } from '../../interfaces/titles.mts';
 import { DatabaseSync } from 'node:sqlite';
 import { randomInt, randomUUID } from 'node:crypto';
@@ -760,7 +761,10 @@ export function openDatabase(filename = process.env.GABBAI_DATABASE_PATH || defa
             const validated = validateSignificantPortions(portions);
             return transaction(() => {
                 const user = requireRecord(getUser(id), 'User');
-                const json = serializeUserSettings({ ...user.settings, significantPortions: validated });
+                const israel = user.shulId ? getShul(user.shulId)?.settings.il ?? false : false;
+                const resolved = validated.map(entry => entry.gregorianDate
+                    ? { ...entry, portion: parshaForSignificantDate(entry.gregorianDate, israel).portion } : entry);
+                const json = serializeUserSettings({ ...user.settings, significantPortions: resolved });
                 db.prepare(`UPDATE user_settings SET settings_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                     WHERE user_id = ?`).run(json, id);
                 return getUser(id);

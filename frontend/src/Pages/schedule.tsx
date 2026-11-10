@@ -2,15 +2,18 @@ import Schedule from '../Components/schedule.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { ScheduleHandle } from '../Components/schedule.tsx';
 import { QuickStart } from '../Components/quickStart.tsx';
+import { UpcomingSignificantParshiyot } from '../Components/upcomingSignificantParshiyot.tsx';
+import type { SignificantPortion } from '../../../interfaces/significantPortions.mts';
 import { LoadingSkeleton } from '../Components/loadingSkeleton.tsx';
 import type { ParshaObj, ReadingActions } from '../Components/parsha.tsx';
 
-export default function SchedulePage({ firstName, shulId, readings, loading, error, currentUserId, onReadingCancelled, ...readingStars }: {
+export default function SchedulePage({ firstName, shulId, readings, loading, error, currentUserId, onReadingCancelled, significantParshiyot = [], ...readingStars }: {
     firstName?: string;
     shulId?: string;
     readings: ParshaObj[];
     loading: boolean;
     error: string | null;
+    significantParshiyot?: SignificantPortion[];
 } & ReadingActions) {
     const schedule = useRef<ScheduleHandle>(null);
     const page = useRef<HTMLElement>(null);
@@ -28,6 +31,8 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
             onSelectReading={reading => schedule.current?.revealReading(reading)} />
 
         <div id="full-schedule" className="schedule-content" tabIndex={-1} aria-label="Full schedule">
+        {!loading && !error && currentUserId && <UpcomingSignificantParshiyot readings={readings} saved={significantParshiyot}
+            onSelect={reading => schedule.current?.revealReading(reading)} />}
         {readingStars.starError && <p className="page-message" role="alert">Starred readings could not be loaded. {readingStars.starError}</p>}
         {loading ? <LoadingSkeleton variant="schedule" />
             : error ? <p className="page-message" role="alert">{error}</p>

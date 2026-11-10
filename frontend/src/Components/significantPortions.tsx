@@ -7,15 +7,35 @@ import { saveSignificantPortions } from '../api.ts';
 import type { User } from '../api.ts';
 import { significantPortionLimit, validateSignificantPortions } from '../../../interfaces/significantPortions.mts';
 import type { SignificantPortion } from '../../../interfaces/significantPortions.mts';
+import { formatSignificantDate, parshaForSignificantDate } from '../../../core/significantDate.mts';
 
-export function SignificantPortions({ user, onSaved }: { user: User; onSaved: (user: User) => void }) {
+export function SignificantPortions({ user, israel, onSaved }: { user: User; israel: boolean; onSaved: (user: User) => void }) {
     const saved = user.settings.significantPortions ?? [];
     const [parsha, setParsha] = useState('');
     const [occasion, setOccasion] = useState('');
+    const [entryMode, setEntryMode] = useState<'parsha' | 'date'>('parsha');
+    const [gregorianDate, setGregorianDate] = useState('');
     const [busy, setBusy] = useState(false);
     const [removing, setRemoving] = useState<{ index: number; parsha: SignificantPortion } | null>(null);
     const [feedback, setFeedback] = useState<{ error?: boolean; text: string } | null>(null);
-    const changed = Boolean(parsha || occasion);
+    const changed = Boolean(parsha || occasion || gregorianDate);
+    let datePreview: ReturnType<typeof parshaForSignificantDate> | null = null;
+    let dateError = '';
+    if (entryMode === 'date' && gregorianDate) {
+        try { datePreview = parshaForSignificantDate(gregorianDate, israel); }
+        catch (error) { dateError = error instanceof Error ? error.message : 'Unable to calculate this parsha.'; }
+    }
+    const selectedParsha = entryMode === 'date' ? datePreview?.portion ?? '' : parsha;
+
+    useEffect(() => {
+        if (window.location.hash !== '#significant-parshiyot-heading') return;
+        const frame = requestAnimationFrame(() => {
+            const heading = document.getElementById('significant-parshiyot-heading');
+            heading?.scrollIntoView({ block: 'start', behavior: 'instant' });
+            heading?.focus({ preventScroll: true });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, []);
 
     useEffect(() => {
         if (!changed) return;
@@ -43,23 +63,26 @@ export function SignificantPortions({ user, onSaved }: { user: User; onSaved: (u
 
     async function addParsha(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (!parsha.trim() || saved.length >= significantPortionLimit) return;
-        if (await save([...saved, { portion: parsha, occasion }], 'Your parsha has been added.')) {
+        if (!selectedParsha.trim() || saved.length >= significantPortionLimit) return;
+        const entry = { portion: selectedParsha, occasion, ...(entryMode === 'date' ? { gregorianDate } : {}) };
+        if (await save([...saved, entry], 'Your parsha has been added.')) {
             setParsha('');
             setOccasion('');
+            setGregorianDate('');
         }
     }
 
     return <section className="content-panel" aria-labelledby="significant-parshiyot-heading">
         <div className="settings-section-header">
             <div>
-                <h2 id="significant-parshiyot-heading">Significant Parshiyot</h2>
-                <p>Save your b’nai mitzvah parsha or other parshiyot that are meaningful to you.</p>
+                <h2 id="significant-parshiyot-heading" tabIndex={-1}>Significant Parshiyot</h2>
+                <p>Save your b’nai mitzvah parsha or other parshiyot that are meaningful to you. Choose a parsha or calculate it from a significant date.</p>
             </div>
         </div>
         {saved.length > 0 && <ul className="significant-parshiyot-list" aria-label="Saved significant parshiyot">
             {saved.map((entry, index) => <li className="significant-parsha-saved" key={index}>
-                <div><strong>{entry.portion}</strong>{entry.occasion && <span>{entry.occasion}</span>}</div>
+                <div><strong>{entry.portion}</strong>{entry.occasion && <span>{entry.occasion}</span>}
+                    {entry.gregorianDate && <span>Significant date: {formatSignificantDate(entry.gregorianDate)}</span>}</div>
                 <button type="button" className="settings-reset-btn" disabled={busy || removing !== null}
                     aria-label={`Remove ${entry.portion}`} onClick={() => setRemoving({ index, parsha: entry })}>Remove</button>
             </li>)}
@@ -67,13 +90,24 @@ export function SignificantPortions({ user, onSaved }: { user: User; onSaved: (u
         <form className="settings-edit-form" onSubmit={addParsha} onChange={() => setFeedback(null)}>
             <fieldset className="settings-fieldset" disabled={busy}>
                 <legend className="visually-hidden">Add a significant parsha</legend>
+                <div className="significant-parsha-entry-mode" role="group" aria-label="Add by parsha or date">
+                    <button type="button" aria-pressed={entryMode === 'parsha'} onClick={() => { setEntryMode('parsha'); setFeedback(null); }}>Choose parsha</button>
+                    <button type="button" aria-pressed={entryMode === 'date'} onClick={() => { setEntryMode('date'); setFeedback(null); }}>Use Gregorian date</button>
+                </div>
                 <div className="significant-parsha-fields">
                     <div className="settings-field-edit">
+                        {entryMode === 'parsha' ? <>
                         <label htmlFor="significant-parsha">Parsha</label>
                         <PortionTypeahead id="significant-parsha" value={parsha} onChange={value => {
                             setParsha(value);
                             setFeedback(null);
                         }} />
+                        </> : <>
+                            <label htmlFor="significant-gregorian-date">Significant date (Gregorian)</label>
+                            <input id="significant-gregorian-date" type="date" required min="0001-01-01" max="9999-12-31"
+                                value={gregorianDate} aria-describedby="significant-date-help" aria-invalid={Boolean(dateError)}
+                                onChange={event => setGregorianDate(event.target.value)} />
+                        </>}
                     </div>
                     <div className="settings-field-edit">
                         <label htmlFor="significant-occasion">Occasion (optional)</label>
@@ -81,6 +115,13 @@ export function SignificantPortions({ user, onSaved }: { user: User; onSaved: (u
                             placeholder="e.g., B’nai mitzvah" onChange={event => setOccasion(event.target.value)} />
                     </div>
                 </div>
+                {entryMode === 'date' && <div className="significant-date-preview">
+                    <p id="significant-date-help">Uses the first Shabbat on or after your date, including the same day if it is Shabbat, with the {israel ? 'Israel' : 'Diaspora'} calendar.</p>
+                    <div role="status">
+                        {datePreview && <p><strong>{datePreview.portion}</strong> · Shabbat, {formatSignificantDate(datePreview.shabbatDate)}</p>}
+                        {dateError && <p className="significant-date-error">{dateError}</p>}
+                    </div>
+                </div>}
                 <div className="settings-form-footer user-settings-footer">
                     <div className={`submission-msg${feedback ? ` submission-msg-${feedback.error ? 'error' : 'success'}` : ''}`}
                         role={feedback?.error ? 'alert' : 'status'}>{busy ? 'Saving your parshiyot…' : feedback?.text}</div>
@@ -90,9 +131,10 @@ export function SignificantPortions({ user, onSaved }: { user: User; onSaved: (u
                             <button type="button" className="settings-reset-btn" disabled={!changed} onClick={() => {
                                 setParsha('');
                                 setOccasion('');
+                                setGregorianDate('');
                                 setFeedback(null);
                             }}>Reset</button>
-                            <button type="submit" className="submit-btn" disabled={!parsha.trim() || saved.length >= significantPortionLimit}>{busy ? 'Saving…' : 'Add parsha'}</button>
+                            <button type="submit" className="submit-btn" disabled={!selectedParsha.trim() || saved.length >= significantPortionLimit}>{busy ? 'Saving…' : 'Add parsha'}</button>
                         </div>
                     </div>
                 </div>

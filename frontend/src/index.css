@@ -6738,3 +6738,153 @@ html:has(.content-window-schedule), body:has(.content-window-schedule) {
     padding: 8px 12px;
     color: var(--settings-muted);
 }
+.upcoming-significant-parshiyot {
+    margin-bottom: 20px;
+    padding: 18px;
+    border: 1px solid #504f52;
+    border-radius: 12px;
+    background: #302f30;
+    color: #f6f5f7;
+    font-family: Fustat, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.45;
+}
+
+.upcoming-significant-parshiyot .significant-parshiyot-title {
+    display: block;
+    margin: 0 0 12px;
+    padding: 0;
+    border: 0;
+    height: auto;
+    font-size: 18px;
+    font-family: inherit;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.upcoming-significant-parshiyot ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.upcoming-significant-parshiyot a {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+    padding: 12px 14px;
+    border: 1px solid #8bc8ff26;
+    border-radius: 9px;
+    background: #8bc8ff0a;
+    color: #f6f5f7;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.upcoming-significant-parshiyot a:hover {
+    background: #8bc8ff1a;
+}
+
+.upcoming-significant-parshiyot a:focus-visible {
+    outline: 2px solid #8bc8ff;
+    outline-offset: 2px;
+}
+
+.upcoming-significant-parshiyot .significant-parsha-name {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.upcoming-significant-parshiyot :is(.significant-parsha-dates, .significant-parsha-occasion, .significant-parshiyot-prompt-copy) {
+    color: #bdbcc4;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.upcoming-significant-parshiyot a .significant-parsha-occasion {
+    color: #8bc8ff;
+}
+.significant-parsha-entry-mode {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.significant-parsha-entry-mode button {
+    padding: 8px 12px;
+    border: 1px solid var(--settings-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--settings-muted);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.significant-parsha-entry-mode button[aria-pressed="true"] {
+    border-color: #8bc8ff66;
+    background: #8bc8ff1a;
+    color: var(--settings-accent);
+}
+
+.significant-date-preview {
+    margin-top: 12px;
+    color: var(--settings-muted);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.significant-date-preview p {
+    margin: 6px 0;
+    color: inherit;
+    font: inherit;
+}
+
+.significant-date-preview strong {
+    color: var(--settings-accent);
+    font-weight: 600;
+}
+
+.significant-date-preview .significant-date-error {
+    color: #ffb8b8;
+}
+.upcoming-significant-parshiyot .significant-parshiyot-prompt a {
+    justify-content: center;
+    border-style: dashed;
+    background: transparent;
+}
+
+.upcoming-significant-parshiyot .significant-parshiyot-prompt-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.upcoming-significant-parshiyot .significant-parshiyot-prompt-action {
+    margin-top: 4px;
+    color: #8bc8ff;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+#significant-parshiyot-heading {
+    scroll-margin-top: 85px;
+}
+.reading-card-arrow {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-left: 8px;
+    vertical-align: middle;
+    color: #8bc8ff;
+    flex-shrink: 0;
+}
