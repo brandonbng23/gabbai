@@ -44,3 +44,23 @@ test('empty or fully locked schedules do not report misleading coverage and date
     assert.equal(locked.locked, 3);
     assert.deepEqual(locked.attention, []);
 });
+
+test('named participation groups each reader’s real aliyot by reading and excludes out-of-range assignments', () => {
+    const member = { id: 'member', firstName: 'Sarah', lastName: 'Cohen', role: 'member' };
+    const guest = { id: 'guest', firstName: 'David', lastName: 'Levy', role: 'guest' };
+    const input = [
+        reading('2026-11-17', { readers: [member, guest, null, guest] }),
+        reading('2026-11-10', { readers: [member, member, guest], locked: true }),
+        reading('2026-11-09', { readers: [guest] }),
+        reading('2026-11-24', { readers: [guest] }),
+    ];
+    const stats = shulAnalytics(input, '2026-11-10', 2);
+    assert.equal(stats.registeredReaders.length, 2);
+    assert.equal(stats.registeredReaders[0].reader.firstName, 'Sarah');
+    assert.equal(stats.registeredReaders[0].aliyahCount, 3);
+    assert.deepEqual(stats.registeredReaders[0].readings.map(item => [item.dateString, item.aliyot]),
+        [['2026-11-10', [1, 2]], ['2026-11-17', [1]]]);
+    assert.equal(stats.registeredReaders[1].reader.role, 'guest');
+    assert.equal(stats.registeredReaders[1].aliyahCount, 2, 'Hidden and out-of-range slots are excluded');
+    assert.equal(stats.registeredReaders.reduce((sum, reader) => sum + reader.aliyahCount, 0), stats.assigned);
+});
