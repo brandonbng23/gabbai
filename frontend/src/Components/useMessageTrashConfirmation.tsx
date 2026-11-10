@@ -20,21 +20,21 @@ function MessageTrashDialog({ message, onDecision }: {
         return () => element?.close();
     }, []);
 
-    return <dialog ref={dialog} className="reading-removal-dialog"
+    return <dialog ref={dialog} className="confirmation-dialog"
         aria-labelledby={titleId} aria-describedby={descriptionId}
         onCancel={event => { event.preventDefault(); onDecision(false); }}>
-        <span className="reading-removal-eyebrow">MESSAGES</span>
+        <span className="confirmation-dialog-eyebrow">MESSAGES</span>
         <h2 id={titleId}>Move this message to Trash?</h2>
         <div id={descriptionId}>
             <p><strong>{message.subject}</strong></p>
             <p>Messages moved to Trash are permanently deleted after 30 days.</p>
-            {message.replyRestoresInbox && <p className="reading-removal-note">
+            {message.replyRestoresInbox && <p className="confirmation-dialog-note">
                 This only removes the conversation from your inbox. A new reply will bring it back, even after the 30-day Trash period.
             </p>}
         </div>
-        <div className="reading-removal-actions">
-            <button ref={cancelButton} type="button" className="reading-removal-keep" onClick={() => onDecision(false)}>Cancel</button>
-            <button type="button" className="reading-removal-confirm" onClick={() => onDecision(true)}>Move to Trash</button>
+        <div className="confirmation-dialog-actions">
+            <button ref={cancelButton} type="button" className="confirmation-dialog-cancel" onClick={() => onDecision(false)}>Cancel</button>
+            <button type="button" className="confirmation-dialog-confirm" onClick={() => onDecision(true)}>Move to Trash</button>
         </div>
     </dialog>;
 }

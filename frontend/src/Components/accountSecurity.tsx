@@ -40,12 +40,12 @@ export function AccountSecurity() {
         } catch (error) { setFeedback({ error: true, text: error instanceof Error ? error.message : 'Unable to save your password.' }); }
         finally { setSaving(false); }
     }
-    return <section className="settings-panel" aria-labelledby="account-security-heading">
+    return <section className="content-panel" aria-labelledby="account-security-heading">
         <div className="settings-section-header"><div><h2 id="account-security-heading">Sign-in &amp; Security</h2>
             <p>{configured ? 'Update the password you use to sign in.' : 'Set a password to sign in to your existing profile with your email.'}</p></div></div>
         {configured === null ? feedback ? <p role="alert">{feedback.text}</p> : <LoadingSkeleton variant="readings" />
             : <form onSubmit={save}>
-                <fieldset className="shul-edit" disabled={saving}>
+                <fieldset className="settings-fieldset" disabled={saving}>
                     <legend className="visually-hidden">Password settings</legend>
                     <div className="account-password-fields">
                         {configured && <div className="settings-field-edit"><label htmlFor="account-current-password">Current password</label>

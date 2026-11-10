@@ -62,7 +62,7 @@ export function ReadingCard({ user, reading, onCancelReading, cancellationDisabl
                 </div>
                 {reading.psukim && <div className="reading-card-verses">{reading.psukim}</div>}
             </div>
-            {(isGuestReading(reading) || (starred && 'shulName' in reading)) && <span className="reading-card-guest-label">{String(reading.shulName)}</span>}
+            {(isGuestReading(reading) || (starred && 'shulName' in reading)) && <span className="reading-card-shul-name">{String(reading.shulName)}</span>}
             {error && <p className="reading-card-error" role="alert">{error}</p>}
             {(showTags || onCancelReading) && <div className="reading-card-footer">
                 {showTags && <div className="reading-card-tags">
@@ -72,7 +72,7 @@ export function ReadingCard({ user, reading, onCancelReading, cancellationDisabl
                     {isGuestReading(reading) && <span className="reading-card-tag reading-card-tag-guest">Guest registration</span>}
                 </div>}
                 <div className="reading-card-actions">
-                    {onCancelReading && <button type="button" className="reader-remove-btn"
+                    {onCancelReading && <button type="button" className="reading-assignment-remove-button"
                         disabled={cancelling || cancellationDisabled} aria-busy={cancelling}
                         aria-label={`Cancel your ${aliyahLabels[reading.aliyah - 1]} reading for ${reading.desc}, ${reading.dateString}`}
                         title={cancelling ? 'Cancelling…' : 'Cancel your reading'} onClick={() => void cancel()}>

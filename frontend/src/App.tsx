@@ -132,8 +132,8 @@ function App() {
             <div className="app-layout">
               <Navbar user={user}></Navbar>
               <Aside user={user} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(value => !value)} />
-            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-settings' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
-              {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : loading ? <LoadingSkeleton page variant="messages" /> : error ? <p className="shul-context" role="alert">{error}</p> : null) : isRegistrationPage ? (
+            <div className={`content-window${isShulSettingsPage || isUserSettingsPage || isUserViewPage || isUserReadingsPage || isMessagesPage || isRegistrationPage || isShulPage ? ' content-window-with-sidebar' : ''}${isSchedulePage ? ' content-window-schedule' : ''}`}>
+              {isMessagesPage ? (user ? <Messages key={user.id} user={user} /> : loading ? <LoadingSkeleton page variant="messages" /> : error ? <p className="page-message" role="alert">{error}</p> : null) : isRegistrationPage ? (
                 <AliyahRegistration shulId={shulId} schedule={schedule} loading={loading || (!error && scheduleLoading)} error={error || scheduleError} user={user} />
               ) : loading ? <LoadingSkeleton page variant={isUserReadingsPage ? 'user-readings' : isUserSettingsPage ? 'user-settings' : isShulSettingsPage ? 'settings' : isUserViewPage ? 'profile' : isShulPage ? 'shul' : 'schedule'} />
               : isUserReadingsPage && user ? <UserReadings key={viewedUserId || user.id} user={user}
@@ -141,24 +141,24 @@ function App() {
               : isUserViewPage ? (
                 user && ['member', 'admin'].includes(user.role)
                     ? <UserView key={viewedUserId} userId={viewedUserId} />
-                    : <p className="shul-context" role="alert">Only signed-in members and administrators can view user profiles.</p>
+                    : <p className="page-message" role="alert">Only signed-in members and administrators can view user profiles.</p>
               )
               : isUserSettingsPage ? (
                 user ? <UserSettings key={user.id} user={user} shul={shul} onSaved={setUser}
-                    onReadingCancelled={handleReadingCancelled} /> : <p className="shul-context" role="alert">Sign in to view your preferences.</p>
+                    onReadingCancelled={handleReadingCancelled} /> : <p className="page-message" role="alert">Sign in to view your preferences.</p>
               )
-              : error ? <div className="shul-context" role="alert">{error} <a href="/schedule">Back to schedule</a></div>
-              : !shul ? <p className="shul-context">Your account is not associated with a shul. Contact your shul administrator.</p>
+              : error ? <div className="page-message" role="alert">{error} <a href="/schedule">Back to schedule</a></div>
+              : !shul ? <p className="page-message">Your account is not associated with a shul. Contact your shul administrator.</p>
               : isShulSettingsPage ? (
                 user?.role === 'admin' ? <ShulSettings shul={shul} currentUserId={user.id} schedule={schedule} scheduleLoading={scheduleLoading} scheduleError={scheduleError} onSaved={setShul}
                     onReadingUpdated={(updated) => setSchedule((previous) => previous.map((reading) =>
                         reading.dateString === updated.dateString && reading.desc === updated.desc ? updated : reading))} />
-                : <p className="shul-context" role="alert">Only shul administrators can access these settings.</p>
+                : <p className="page-message" role="alert">Only shul administrators can access these settings.</p>
               ) : isShulPage ? <MyShul shul={shul} /> : isSchedulePage ? <SchedulePage
                   firstName={user?.firstName} shulId={shulId} readings={schedule}
                   loading={scheduleLoading} error={scheduleError}
                   currentUserId={user?.id} onReadingCancelled={handleReadingCancelled} {...readingStars} />
-              : <main className="shul-context"><h1>Page not found</h1><a href="/">Go home</a></main>}
+              : <main className="page-message"><h1>Page not found</h1><a href="/">Go home</a></main>}
             </div>
         </div>
           <Footer></Footer>

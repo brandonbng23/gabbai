@@ -28,9 +28,9 @@ export default function SchedulePage({ firstName, shulId, readings, loading, err
             onSelectReading={reading => schedule.current?.revealReading(reading)} />
 
         <div id="full-schedule" className="schedule-content" tabIndex={-1} aria-label="Full schedule">
-        {readingStars.starError && <p className="shul-context" role="alert">Starred readings could not be loaded. {readingStars.starError}</p>}
+        {readingStars.starError && <p className="page-message" role="alert">Starred readings could not be loaded. {readingStars.starError}</p>}
         {loading ? <LoadingSkeleton variant="schedule" />
-            : error ? <p className="shul-context" role="alert">{error}</p>
+            : error ? <p className="page-message" role="alert">{error}</p>
             : <Schedule ref={schedule} shulId={shulId} parshiyot={readings}
                 currentUserId={currentUserId} onReadingCancelled={onReadingCancelled} {...readingStars} />}
         </div>

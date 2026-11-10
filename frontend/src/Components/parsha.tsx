@@ -95,14 +95,14 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                     onChange={starred => props.onReadingStarred!({
                         shulId: props.shulId, dateString: props.dateString, desc: props.desc, aliyah: props.a,
                     }, starred)} />}
-                <div className={`pandora-box${suffix}`}>
+                <div className={`aliyah-assignment${suffix}`}>
                     <div className={`aliyah-label${suffix}`}>{aliyahLabels[props.a - 1]}</div>
                     {props.reader ? (
-                        <div className="schedule-reader-assignment">
+                        <div className="aliyah-reader-assignment">
                             <AssignedReader reader={props.reader} />
-                            <div className="schedule-reader-actions">
+                            <div className="aliyah-reader-actions">
                                 {props.reader.id === props.currentUserId && props.shulId && props.onReadingCancelled && (
-                                    <button type="button" className="reader-remove-btn" disabled={cancelling}
+                                    <button type="button" className="reading-assignment-remove-button" disabled={cancelling}
                                         aria-label={`Cancel your ${aliyahLabels[props.a - 1]} reading for ${props.desc}, ${props.dateString}`}
                                         title={cancelling ? 'Cancelling…' : 'Cancel your reading'}
                                         aria-busy={cancelling} onClick={() => void cancel()}>
@@ -117,14 +117,14 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                             Register
                         </button>
                     ) : (
-                        <div className="locked">
+                        <div className="aliyah-availability">
                             <img src={hovered ? '/lock-solid-full.svg' : '/lock-solid-full-blue.svg'} alt="" />
                             {props.locked ? 'Locked' : 'Unavailable'}
                         </div>
                     )}
                 </div>
-                <div className={`verse-count${suffix}`}>{`${props.verseCount} verses`}</div>
-                <div className={`psukim-text${suffix}`}>{props.psukim}</div>
+                <div className={`aliyah-verse-count${suffix}`}>{`${props.verseCount} verses`}</div>
+                <div className={`aliyah-verse-range${suffix}`}>{props.psukim}</div>
             </div>
             {cancelError && <p className="schedule-cancel-error" role="alert">{cancelError}</p>}
             {confirmationDialog}
@@ -151,15 +151,15 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
     return (
         <div className="parsha" id={readingAnchor(props)} tabIndex={-1}>
 
-            <div className="notices">
+            <div className="parsha-notices">
                 {(props.locked || props.lockedArr.every((a: boolean) => a)) && (
-                    <div className="locked-msg">
+                    <div className="parsha-lock-notice">
                         <img src="/lock-solid-full.svg" alt="" />
                         This parsha has been locked by your shul
                     </div>
                 )}
                 {[...props.occassions, ...(props.manualOccasions ?? [])].map((o: string, index) => (
-                    <div key={index} className="occassion">
+                    <div key={index} className="parsha-occasion">
                         {formatOccassionView(o)}
                     </div>
                 ))}
@@ -176,8 +176,8 @@ export default function Parsha(props: ParshaObj & ReadingActions & { shulId?: st
 
                 <div>
                     <h5 className="parsha-dates">
-                        <span className="engl">{props.gregDate}</span>
-                        <span className="heb">{props.hDate}</span>
+                        <span className="parsha-gregorian-date">{props.gregDate}</span>
+                        <span className="parsha-hebrew-date">{props.hDate}</span>
                     </h5>
                 </div>
 

@@ -22,18 +22,18 @@ function ReadingRemovalDialog({ reading, kind, onDecision }: {
         return () => element?.close();
     }, []);
 
-    return <dialog ref={dialog} className="reading-removal-dialog"
+    return <dialog ref={dialog} className="confirmation-dialog"
         aria-labelledby={titleId} aria-describedby={descriptionId}
         onCancel={event => { event.preventDefault(); onDecision(false); }}>
-        <span className="reading-removal-eyebrow">{kind === 'star' ? 'STARRED READING' : 'READING REGISTRATION'}</span>
+        <span className="confirmation-dialog-eyebrow">{kind === 'star' ? 'STARRED READING' : 'READING REGISTRATION'}</span>
         <h2 id={titleId}>{kind === 'star' ? 'Unstar this reading?' : 'Remove this reading?'}</h2>
         <div id={descriptionId}>
             <p>{kind === 'star' ? 'Remove your star for' : 'Remove your registration for'} <strong>{aliyahLabels[reading.aliyah - 1]}</strong> of <strong>{reading.desc}</strong> on {reading.gregDate || reading.dateString}?</p>
-            <p className="reading-removal-note">{kind === 'star' ? 'This removes it from Starred. Any registration stays unchanged.' : 'Your assigned slot will be released.'}</p>
+            <p className="confirmation-dialog-note">{kind === 'star' ? 'This removes it from Starred. Any registration stays unchanged.' : 'Your assigned slot will be released.'}</p>
         </div>
-        <div className="reading-removal-actions">
-            <button ref={keepButton} type="button" className="reading-removal-keep" onClick={() => onDecision(false)}>{kind === 'star' ? 'Keep starred' : 'Keep reading'}</button>
-            <button type="button" className="reading-removal-confirm" onClick={() => onDecision(true)}>{kind === 'star' ? 'Remove star' : 'Remove reading'}</button>
+        <div className="confirmation-dialog-actions">
+            <button ref={keepButton} type="button" className="confirmation-dialog-cancel" onClick={() => onDecision(false)}>{kind === 'star' ? 'Keep starred' : 'Keep reading'}</button>
+            <button type="button" className="confirmation-dialog-confirm" onClick={() => onDecision(true)}>{kind === 'star' ? 'Remove star' : 'Remove reading'}</button>
         </div>
     </dialog>;
 }

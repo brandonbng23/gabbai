@@ -22,7 +22,7 @@ export function UserEditor({ id, saved, draft, disabled, pictureUrl, pictureChan
             <h3 id={`${id}-heading`}>Edit {saved.firstName} {saved.lastName}</h3>
             <button type="button" className="settings-reset-btn" disabled={disabled} onClick={onClose}>Close editor</button>
         </div>
-        <fieldset className="shul-edit" disabled={disabled}>
+        <fieldset className="settings-fieldset" disabled={disabled}>
             <legend className="visually-hidden">User information</legend>
             <div className="inline-user-editor-body">
             <div className="inline-user-editor-picture">

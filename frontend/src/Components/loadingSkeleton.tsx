@@ -13,8 +13,8 @@ function Details() {
 }
 
 function Profile() {
-    return <div className="shul-card skeleton-profile">
-        <div className="settings-summary-heading">
+    return <div className="summary-card skeleton-profile">
+        <div className="summary-card-heading">
             <Block className="skeleton-avatar" width="80px" />
             <div className="skeleton-profile-name"><Block width="35%" className="skeleton-label" /><Block width="70%" className="skeleton-title" /></div>
         </div>
@@ -26,7 +26,7 @@ function ReadingCardPlaceholder({ showTags = true }: { showTags?: boolean }) {
     return <div className="reading-card">
         <div className="reading-card-header">
             <div className="reading-card-title"><Block width="150px" className="skeleton-title" /></div>
-            <div className="schedule-assigned-reader"><Block width="32px" className="skeleton-avatar-small" /></div>
+            <div className="assigned-reader-profile"><Block width="32px" className="skeleton-avatar-small" /></div>
         </div>
         <div className="reading-card-body">
             <Block width="140px" /><Block width="190px" />
@@ -39,8 +39,8 @@ function ReadingCardPlaceholder({ showTags = true }: { showTags?: boolean }) {
 }
 
 function ReadingStats() {
-    return <div className="shul-card user-stats">
-        <div className="settings-summary-heading">
+    return <div className="summary-card user-stats">
+        <div className="summary-card-heading">
             <div className="skeleton-stats-heading">
                 <Block width="64px" className="skeleton-label" />
                 <Block width="240px" className="skeleton-title" />
@@ -120,11 +120,11 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
     const label = ({ 'quick-start': 'upcoming readings', schedule: 'schedule', profile: 'user profile', settings: 'settings', 'user-settings': 'user settings', 'user-readings': 'user readings', shul: 'shul information',
         registration: 'registration details', users: 'shul users', readings: 'readings', messages: 'messages', 'message-view': 'message', 'message-thread': 'conversation', 'message-recipients': 'recipients' })[variant];
     const settingsPage = page && ['profile', 'settings', 'user-settings', 'user-readings'].includes(variant);
-    return <div className={`skeleton-state skeleton-state-${variant}${settingsPage ? ' shul-admin-page' : ''}${variant === 'shul' ? ' my-shul-page' : ''}`}
+    return <div className={`skeleton-state skeleton-state-${variant}${settingsPage ? ' account-page' : ''}${variant === 'shul' ? ' my-shul-page' : ''}`}
         role="status" aria-label={`Loading ${label}`} aria-busy="true">
         <span className="visually-hidden">Loading {label}…</span>
         <div aria-hidden="true">
-            {page && variant !== 'shul' && <div className={`skeleton-page-heading${settingsPage ? ' settings-page-header' : ''}`}>
+            {page && variant !== 'shul' && <div className={`skeleton-page-heading${settingsPage ? ' account-page-header' : ''}`}>
                 <Block width="180px" className="skeleton-title" />
             </div>}
             {variant === 'shul' ? <ShulInformation /> : variant === 'quick-start' ? <UpcomingReadings /> : variant === 'messages' ? <div className="skeleton-message-list">
@@ -143,8 +143,8 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
                 <Block className="skeleton-reply-editor" />
             </div> : variant === 'message-recipients' ? <div className="skeleton-message-recipients">
                 {Array.from({ length: 3 }, (_, index) => <div className="skeleton-message-sender" key={index}><Block width="16px" /><Block width={index % 2 ? '45%' : '65%'} /></div>)}
-            </div> : variant === 'user-readings' ? <div className="shul-settings user-readings-page">
-                <div className="settings-panel user-readings-panel">
+            </div> : variant === 'user-readings' ? <div className="account-page-content user-readings-page">
+                <div className="content-panel user-readings-panel">
                     <div className="user-readings-toolbar">
                         <div className="user-readings-filters skeleton-reading-filters">{['68px', '115px', '122px', '176px', '100px'].map((width, index) => <Block width={width} className="skeleton-input" key={index} />)}</div>
                         <div className="user-readings-search skeleton-reading-search"><Block width="170px" className="skeleton-label" /><Block className="skeleton-input" /></div>
@@ -155,11 +155,11 @@ export function LoadingSkeleton({ variant = 'schedule', page = false }: { varian
                         {Array.from({ length: 4 }, (_, index) => <ReadingCardPlaceholder key={index} />)}
                     </div>
                 </div>
-            </div> : variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="shul-settings">
-                <div className="settings-view">
+            </div> : variant === 'profile' || variant === 'settings' || variant === 'user-settings' ? <div className="account-page-content">
+                <div className="account-page-sections">
                     <Profile />
                     {variant !== 'settings' && <ReadingStats />}
-                    {(variant === 'settings' || variant === 'user-settings') && <div className="settings-panel skeleton-form">
+                    {(variant === 'settings' || variant === 'user-settings') && <div className="content-panel skeleton-form">
                         <Block width="35%" className="skeleton-title" />
                         <Details />
                         <Block width="140px" className="skeleton-input" />

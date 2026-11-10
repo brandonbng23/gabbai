@@ -223,7 +223,7 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
     return <main className="auth-page">
         <a className="auth-brand" href="/">Gabbai</a>
         <section className={`auth-card${signup ? ' auth-card-signup' : ''}`} aria-labelledby="auth-heading">
-            <span className="settings-eyebrow">WELCOME TO GABBAI</span>
+            <span className="section-eyebrow">WELCOME TO GABBAI</span>
             <h1 id="auth-heading">{signup ? 'Create your account' : 'Sign in'}</h1>
             <p>{signup ? 'Enter your shul code or search for your congregation to get started.' : 'Your shul, readings, and preferences in one place.'}</p>
             <form onSubmit={submit} onKeyDown={navigateFields}>

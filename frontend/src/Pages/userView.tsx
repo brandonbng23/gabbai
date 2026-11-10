@@ -33,29 +33,29 @@ export function UserView({ userId }: { userId: string }): JSX.Element {
     ] : [];
 
     return (
-        <main className="shul-admin-page user-page">
-            <header className="settings-page-header">
+        <main className="account-page user-page">
+            <header className="account-page-header">
                 <div>
-                    <span className="settings-eyebrow">VISIT PROFILE</span>
+                    <span className="section-eyebrow">VISIT PROFILE</span>
                     <h1>User Profile</h1>
                 </div>
             </header>
-            {!userId || error ? <p className="shul-context" role="alert">{error || 'Choose a user to view.'}</p>
+            {!userId || error ? <p className="page-message" role="alert">{error || 'Choose a user to view.'}</p>
                 : !profile ? <LoadingSkeleton variant="profile" />
-                : <div className="shul-settings">
-                    <div className="settings-view">
-                        <section className="shul-card" aria-labelledby="user-profile-heading">
-                            <div className="settings-summary-heading user-profile-heading">
+                : <div className="account-page-content">
+                    <div className="account-page-sections">
+                        <section className="summary-card" aria-labelledby="user-profile-heading">
+                            <div className="summary-card-heading user-profile-heading">
                                 <ProfilePicture src={profile.pictureUrl} name={fullName} />
                                 <div>
-                                    <span className="settings-eyebrow">SUMMARY</span>
+                                    <span className="section-eyebrow">SUMMARY</span>
                                     <h2 id="user-profile-heading">{fullName}</h2>
                                 </div>
                             </div>
                             <dl className="settings-contact-grid user-profile-fields">
                                 {fields.map(field => (
                                     <div key={field.label}>
-                                        <dt className="settings-contact-label">{field.label}</dt>
+                                        <dt className="summary-field-label">{field.label}</dt>
                                         <dd>{field.value || '-'}</dd>
                                     </div>
                                 ))}

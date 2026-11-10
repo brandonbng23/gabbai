@@ -87,18 +87,18 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
         ...(user.role === 'admin' ? [{ label: 'Role', value: 'Admin' }] : []),
     ];
     return (
-        <main className="shul-admin-page user-page">
-            <header className="settings-page-header">
+        <main className="account-page user-page">
+            <header className="account-page-header">
                 <div>
-                    <span className="settings-eyebrow">PROFILE MANAGEMENT</span>
+                    <span className="section-eyebrow">PROFILE MANAGEMENT</span>
                     <h1>My Preferences</h1>
                     <p>Manage your profile and personal preferences.</p>
                 </div>
             </header>
-            <div className="shul-settings">
-                <div className="settings-view">
-                    <section className="shul-card" aria-labelledby="user-profile-heading">
-                        <div className="settings-summary-heading user-profile-heading">
+            <div className="account-page-content">
+                <div className="account-page-sections">
+                    <section className="summary-card" aria-labelledby="user-profile-heading">
+                        <div className="summary-card-heading user-profile-heading">
                             <ProfilePicture src={user.pictureUrl} name={`${user.firstName} ${user.lastName}`} />
                             <div>
                                 <h2 id="user-profile-heading">{`${getGreeting()}, ${user.firstName}`}</h2>
@@ -108,7 +108,7 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                         <dl className="settings-contact-grid user-profile-fields">
                             {profileFields.map(field => (
                                 <div key={field.label} className={field.label === 'Hebrew Name' ? 'user-profile-hebrew-name' : undefined}>
-                                    <dt className="settings-contact-label">{field.label}</dt>
+                                    <dt className="summary-field-label">{field.label}</dt>
                                     <dd>{field.value || '-'}</dd>
                                 </div>
                             ))}
@@ -116,14 +116,14 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                     </section>
                     <UserReadingStats user={user} onCancelReading={user.shulId ? cancelAssignedReading : undefined}
                         cancellationDisabled={saving} />
-                    <section className="settings-panel" aria-labelledby="user-details-heading">
+                    <section className="content-panel" aria-labelledby="user-details-heading">
                         <div className="settings-section-header">
                             <div>
                                 <h2 id="user-details-heading">Personal Information</h2>
                                 <p>Update your name and contact details.</p>
                             </div>
                         </div>
-                        <form className="shul-settings-edit" onSubmit={saveProfile}>
+                        <form className="settings-edit-form" onSubmit={saveProfile}>
                             <span className="settings-field-label">Profile picture</span>
                             <PictureEditor pictureUrl={picturePreview} name={`${user.firstName} ${user.lastName}`}
                                 onChange={picture => {
@@ -131,7 +131,7 @@ export function UserSettings({ user, shul, onSaved, onReadingCancelled }: {
                                     setFeedback(null);
                                 }} onReset={() => setPictureDraft(undefined)} changed={pictureDraft !== undefined}
                                 disabled={saving} onBusyChange={setPictureBusy} />
-                            <fieldset className="shul-edit" disabled={saving || pictureBusy}>
+                            <fieldset className="settings-fieldset" disabled={saving || pictureBusy}>
                                 <legend className="visually-hidden">Edit personal information</legend>
                                 <div className="user-settings-fields">
                                 {editableFields.map(field => (

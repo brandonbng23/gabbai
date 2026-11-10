@@ -64,16 +64,16 @@ export function UserReadings({ user, userId, onReadingCancelled, starredReadings
         setNotice('Your reading registration was removed.');
     }
 
-    return <main className="shul-admin-page user-readings-page">
-        <header className="settings-page-header">
+    return <main className="account-page user-readings-page">
+        <header className="account-page-header">
             <div>
                 <h1>My Readings</h1>
             </div>
         </header>
         {error ? <p className="user-readings-error" role="alert">{error}</p>
             : !reader || (ownReadings && guestLoading) ? <LoadingSkeleton variant="user-readings" />
-            : <div className="shul-settings">
-                <section className="settings-panel user-readings-panel" aria-labelledby="readings-list-heading">
+            : <div className="account-page-content">
+                <section className="content-panel user-readings-panel" aria-labelledby="readings-list-heading">
                     <div className="user-readings-toolbar">
                         <div className="user-readings-filters" role="group" aria-label="Filter readings">
                             {options.map(option => <button key={option.value} type="button"
@@ -93,8 +93,8 @@ export function UserReadings({ user, userId, onReadingCancelled, starredReadings
                     {guestError && <p className="user-readings-error" role="alert">Guest registrations could not be loaded. {guestError}</p>}
                     {ownReadings && starError && <p className="user-readings-error" role="alert">Starred readings could not be loaded. {starError}</p>}
                     <h2 id="readings-list-heading" className="user-readings-list-heading">{view === 'starred' ? 'Starred readings' : view === 'guest' ? 'Guest registrations' : `${options.find(option => option.value === view)?.label} readings`}</h2>
-                    {ownReadings && view === 'starred' && <p className="user-readings-guest-note">Your private short list. A starred reading is not reserved or registered in your name and is not an upcoming or completed reading.</p>}
-                    {ownReadings && view === 'guest' && <p className="user-readings-guest-note">Bookings made while signed in using the guest form. These do not count toward your activity or statistics.</p>}
+                    {ownReadings && view === 'starred' && <p className="user-readings-filter-note">Your private short list. A starred reading is not reserved or registered in your name and is not an upcoming or completed reading.</p>}
+                    {ownReadings && view === 'guest' && <p className="user-readings-filter-note">Bookings made while signed in using the guest form. These do not count toward your activity or statistics.</p>}
                     <p className="user-readings-notice" role="status">{notice}</p>
                     {ownReadings && view === 'starred' && !starredReadings && !starError ? <p role="status">Loading starred readings…</p>
                     : ownReadings && view === 'starred' && starError ? null

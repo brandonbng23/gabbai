@@ -49,7 +49,7 @@ export default function AssignedReader({ reader, portal = false }: { reader: Rea
     </div>;
 
     return (
-        <div ref={container} className="assigned-reader-name schedule-assigned-reader"
+        <div ref={container} className="assigned-reader-name assigned-reader-profile"
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={event => {
                 if (!containsFocus(event.relatedTarget)) setOpen(false);

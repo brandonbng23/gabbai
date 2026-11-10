@@ -64,7 +64,7 @@ export default function NotificationSettings({ shulId }: { shulId: string }) {
         catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to save.'); }
         finally { setBusy(false); }
     }
-    return <section className="settings-panel notification-settings" aria-labelledby="notification-settings-heading">
+    return <section className="content-panel notification-settings" aria-labelledby="notification-settings-heading">
         <h2 id="notification-settings-heading">Communication Settings</h2>
         <p>Manage registration summaries and new-booking alerts for your admins.</p>
         {error && <p role="alert">{error} {!settings && <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry</button>}</p>}

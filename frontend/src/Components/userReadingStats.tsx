@@ -12,10 +12,10 @@ export function UserReadingStats({ user, onCancelReading, cancellationDisabled =
     const headingId = useId();
     const upcomingReadings = user.assignedReadings.filter(reading => new Date(reading.dateString) > new Date());
     return (
-        <section className="shul-card user-stats" aria-labelledby={headingId}>
-            <header className="settings-summary-heading">
+        <section className="summary-card user-stats" aria-labelledby={headingId}>
+            <header className="summary-card-heading">
                 <div>
-                    <span className="settings-eyebrow">ACTIVITY</span>
+                    <span className="section-eyebrow">ACTIVITY</span>
                     <h2 id={headingId}>Reading statistics</h2>
                 </div>
                 <a className="user-readings-link" href={`/userReadings?${new URLSearchParams({ user: user.id })}`}>View all readings →</a>

@@ -69,7 +69,7 @@ function AdminAliyah(props: Aliyah & { disabled: boolean; onToggleLock: () => vo
                             {props.reader && <ReaderCard user={props.reader} />}
                         </div>
                     </div>
-                    <button type="button" className="reader-remove-btn"
+                    <button type="button" className="reading-assignment-remove-button"
                         aria-label={`Remove ${readerName} from ${aliyahLabels[props.a - 1]}`}
                         title="Remove reader"
                         disabled={props.disabled || props.locked}
