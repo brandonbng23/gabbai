@@ -126,7 +126,7 @@ function Aliyah(props: Aliyah & ReadingActions & { shulId?: string; dateString: 
                 </div>
                 <div className={`aliyah-verse-count${suffix}`}>{`${props.verseCount} verses`}</div>
                 <div className={`aliyah-verse-range${suffix}`}>{props.psukim}</div>
-                {props.note && <div className="aliyah-note" title={props.note}>{props.note}</div>}
+                {props.note && <div className="aliyah-note" title={`From your shul: ${props.note}`}><strong>From your shul: </strong>{props.note}</div>}
             </div>
             {cancelError && <p className="schedule-cancel-error" role="alert">{cancelError}</p>}
             {confirmationDialog}
